@@ -9,6 +9,20 @@ body {
   @apply antialiased text-[#1e293b] bg-[#fdfdfd];
 }
 
+/* Respecte l'encoche / la barre gestuelle des mobiles (bottom nav fixe). */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Cibles tactiles confortables : pas de zoom iOS sur les champs < 16px. */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 /* FullCalendar Customizations */
 .fc .fc-toolbar-title {
   @apply text-lg font-bold text-[#0f172a] uppercase tracking-tight;
@@ -36,4 +50,32 @@ body {
 }
 .fc-event-main {
   @apply !p-1 !text-xs !font-medium;
+}
+
+/* --- Adaptation mobile de FullCalendar --- */
+@media (max-width: 767px) {
+  /* La barre d'outils s'empile et se centre au lieu de déborder. */
+  .fc .fc-toolbar.fc-header-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .fc .fc-toolbar.fc-header-toolbar .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+  }
+  .fc .fc-footer-toolbar.fc-toolbar {
+    margin-top: 0.75rem;
+  }
+  .fc .fc-toolbar-title {
+    @apply !text-sm;
+  }
+  .fc .fc-button-primary {
+    @apply !px-2.5 !py-1 !text-[11px];
+  }
+  /* Lignes de slots un peu plus hautes : confort tactile. */
+  .fc .fc-timegrid-slot {
+    height: 2.25rem;
+  }
 }

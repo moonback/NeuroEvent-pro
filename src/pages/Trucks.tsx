@@ -6,8 +6,10 @@ import { Pencil } from 'lucide-react';
 import { useStore } from '../store';
 import { Truck } from '../types';
 import TruckModal from '../components/TruckModal';
+import { useIsMobile } from '../hooks/useMediaQuery';
 
 export default function Trucks() {
+  const isMobile = useIsMobile();
   const trucks = useStore(state => state.trucks);
   const missions = useStore(state => state.missions);
   const updateMission = useStore(state => state.updateMission);
@@ -58,27 +60,33 @@ export default function Trucks() {
   };
 
   return (
-    <div className="h-full bg-white border border-[#e2e8f0] p-6 flex flex-col relative z-0">
-      <div className="mb-4 flex justify-between items-center">
+    <div className="h-full bg-white border border-[#e2e8f0] p-3 sm:p-6 flex flex-col relative z-0">
+      <div className="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="text-xl font-bold text-[#0f172a] uppercase tracking-tight">Planning des Camions</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-[#0f172a] uppercase tracking-tight">Planning des Camions</h2>
           <p className="text-xs text-[#64748b] font-medium">Glissez une mission pour changer son créneau ou son véhicule — cliquez sur un camion pour le modifier</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 bg-[#0f172a] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-black transition-colors">
+        <button onClick={openCreate} className="flex items-center justify-center gap-2 bg-[#0f172a] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-black transition-colors shrink-0 self-start sm:self-auto">
           + Nouveau Camion
         </button>
       </div>
 
       <div className="flex-1 min-h-0">
         <FullCalendar
+          key={isMobile ? 'mobile' : 'desktop'}
           schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
           plugins={[resourceTimelinePlugin, interactionPlugin]}
-          initialView="resourceTimelineWeek"
-          headerToolbar={{
-            left: 'prev,next today',
-            center: 'title',
-            right: 'resourceTimelineDay,resourceTimelineWeek,resourceTimelineMonth'
-          }}
+          initialView={isMobile ? 'resourceTimelineDay' : 'resourceTimelineWeek'}
+          headerToolbar={
+            isMobile
+              ? { left: 'prev,next', center: 'title', right: 'today' }
+              : { left: 'prev,next today', center: 'title', right: 'resourceTimelineDay,resourceTimelineWeek,resourceTimelineMonth' }
+          }
+          footerToolbar={
+            isMobile
+              ? { left: '', center: 'resourceTimelineDay,resourceTimelineWeek,resourceTimelineMonth', right: '' }
+              : undefined
+          }
           resources={resources}
           events={events}
           editable={true}
@@ -93,7 +101,7 @@ export default function Trucks() {
             week: 'Semaine',
             day: 'Jour'
           }}
-          resourceAreaWidth="280px"
+          resourceAreaWidth={isMobile ? '130px' : '280px'}
           resourceAreaHeaderContent="Véhicules"
           slotMinTime="06:00:00"
           slotMaxTime="24:00:00"

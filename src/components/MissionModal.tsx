@@ -162,8 +162,8 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2">
             <label htmlFor="mission-title" className={labelClass}>Titre de la mission</label>
             <input id="mission-title" required type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="ex: Soirée annuelle Acme Corp" className={inputClass} />
           </div>
@@ -214,7 +214,7 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
             </select>
           </div>
 
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label htmlFor="mission-address" className={labelClass}>Adresse</label>
             <input id="mission-address" required type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder="ex: 12 rue des Fêtes, 75019 Paris" className={inputClass} />
           </div>
@@ -229,7 +229,7 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
             <input id="mission-end" required type="datetime-local" value={endDate} onChange={e => setEndDate(e.target.value)} className={inputClass} />
           </div>
 
-          <fieldset className="col-span-2">
+          <fieldset className="sm:col-span-2">
             <legend className="block text-[10px] font-bold text-[#64748b] tracking-wider uppercase mb-2">Techniciens assignés</legend>
             {technicians.length === 0 ? (
               <p className="text-xs text-[#64748b] italic">Aucun technicien enregistré pour le moment.</p>
@@ -272,7 +272,7 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
             </select>
           </div>
 
-          <fieldset className="col-span-2">
+          <fieldset className="sm:col-span-2">
             <legend className="block text-[10px] font-bold text-[#64748b] tracking-wider uppercase mb-2">Matériel requis</legend>
             <div className="space-y-3">
               {selectedEquipments.map((eq, index) => (

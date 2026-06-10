@@ -7,8 +7,10 @@ import { AlertTriangle } from 'lucide-react';
 import { useStore } from '../store';
 import MissionModal from '../components/MissionModal';
 import { getGlobalConflicts } from '../lib/conflicts';
+import { useIsMobile } from '../hooks/useMediaQuery';
 
 export default function Planning() {
+  const isMobile = useIsMobile();
   const missions = useStore(state => state.missions);
   const technicians = useStore(state => state.technicians);
   const trucks = useStore(state => state.trucks);
@@ -67,9 +69,9 @@ export default function Planning() {
   const displayedConflicts = conflictsExpanded ? conflicts : conflicts.slice(0, 3);
 
   return (
-    <div className="h-full bg-white border border-[#e2e8f0] p-6 flex flex-col relative z-0">
+    <div className="h-full bg-white border border-[#e2e8f0] p-3 sm:p-6 flex flex-col relative z-0">
       <div className="mb-4 flex flex-col gap-1">
-        <h2 className="text-xl font-bold text-[#0f172a] uppercase tracking-tight">Calendrier Global</h2>
+        <h2 className="text-lg sm:text-xl font-bold text-[#0f172a] uppercase tracking-tight">Calendrier Global</h2>
         <p className="text-xs text-[#64748b] font-medium">Visualisation et gestion des missions événementielles</p>
       </div>
 
@@ -95,13 +97,19 @@ export default function Planning() {
 
       <div className="flex-1 min-h-0">
         <FullCalendar
+          key={isMobile ? 'mobile' : 'desktop'}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView="timeGridWeek"
-          headerToolbar={{
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay'
-          }}
+          initialView={isMobile ? 'timeGridDay' : 'timeGridWeek'}
+          headerToolbar={
+            isMobile
+              ? { left: 'prev,next', center: 'title', right: 'today' }
+              : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }
+          }
+          footerToolbar={
+            isMobile
+              ? { left: '', center: 'dayGridMonth,timeGridWeek,timeGridDay', right: '' }
+              : undefined
+          }
           events={events}
           editable={true}
           selectable={true}

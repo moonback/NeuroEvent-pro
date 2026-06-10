@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
-import { FileText, Printer, Search, Calendar as CalendarIcon, MapPin, Truck as TruckIcon, Users, Package } from 'lucide-react';
+import { FileText, Printer, Search, Calendar as CalendarIcon, MapPin, Truck as TruckIcon, Users, Package, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -24,9 +24,9 @@ export default function MissionBriefs() {
   };
 
   return (
-    <div className="flex h-full gap-6">
-      {/* Sidebar List (hidden on print) */}
-      <div className="w-80 flex flex-col bg-white border border-[#e2e8f0] rounded-xl overflow-hidden shrink-0 print:hidden">
+    <div className="flex flex-col md:flex-row h-full gap-4 md:gap-6">
+      {/* Liste (sur mobile : masquée dès qu'une fiche est ouverte) */}
+      <div className={`${selectedMissionId ? 'hidden md:flex' : 'flex'} w-full md:w-80 flex-col bg-white border border-[#e2e8f0] rounded-xl overflow-hidden shrink-0 print:hidden`}>
         <div className="p-4 border-b border-[#e2e8f0] bg-[#f8fafc]">
           <h2 className="font-bold text-[#0f172a] flex items-center gap-2">
             <FileText className="w-5 h-5 text-[#2563eb]" />
@@ -67,38 +67,47 @@ export default function MissionBriefs() {
         </div>
       </div>
 
-      {/* Main Print Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white border border-[#e2e8f0] rounded-xl overflow-hidden print:border-none print:shadow-none">
+      {/* Zone d'aperçu / impression (sur mobile : visible seulement si une fiche est ouverte) */}
+      <div className={`${selectedMissionId ? 'flex' : 'hidden md:flex'} flex-1 flex-col min-w-0 bg-white border border-[#e2e8f0] rounded-xl overflow-hidden print:border-none print:shadow-none`}>
         {selectedMission ? (
           <>
-            <div className="p-4 border-b border-[#e2e8f0] flex justify-between items-center bg-[#f8fafc] print:hidden">
-              <h3 className="font-bold text-[#0f172a]">Aperçu de la Fiche</h3>
+            <div className="p-4 border-b border-[#e2e8f0] flex justify-between items-center gap-3 bg-[#f8fafc] print:hidden">
+              <div className="flex items-center gap-2 min-w-0">
+                <button
+                  onClick={() => setSelectedMissionId(null)}
+                  className="md:hidden p-2 -ml-1 text-[#64748b] hover:text-[#0f172a] rounded-lg shrink-0"
+                  aria-label="Retour à la liste"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <h3 className="font-bold text-[#0f172a] truncate">Aperçu de la Fiche</h3>
+              </div>
               <button
                 onClick={handlePrint}
-                className="flex items-center gap-2 bg-[#2563eb] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm"
+                className="flex items-center gap-2 bg-[#2563eb] text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm shrink-0"
               >
                 <Printer className="w-4 h-4" />
-                Imprimer
+                <span className="hidden sm:inline">Imprimer</span>
               </button>
             </div>
             
             {/* Printable Content */}
-            <div className="flex-1 overflow-y-auto p-8 print:p-0">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 print:p-0">
               <div className="max-w-3xl mx-auto printable-sheet">
                 {/* Header */}
-                <div className="border-b-2 border-black pb-4 mb-6 flex justify-between items-end">
+                <div className="border-b-2 border-black pb-4 mb-6 flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-end print:flex-row print:justify-between print:items-end">
                   <div>
-                    <h1 className="text-3xl font-black uppercase tracking-tight text-black mb-1">{selectedMission.title}</h1>
-                    <p className="text-lg font-medium text-gray-700">{selectedMission.client}</p>
+                    <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black mb-1">{selectedMission.title}</h1>
+                    <p className="text-base sm:text-lg font-medium text-gray-700">{selectedMission.client}</p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-left sm:text-right print:text-right">
                     <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Fiche de Mission</p>
                     <p className="font-mono text-xs text-gray-400">ID: {selectedMission.id.toUpperCase().substring(0,8)}</p>
                   </div>
                 </div>
 
                 {/* Details Grid */}
-                <div className="grid grid-cols-2 gap-8 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-6 sm:gap-8 mb-8">
                   <div className="space-y-4">
                     <div className="flex items-start gap-3">
                       <CalendarIcon className="w-5 h-5 text-gray-400 mt-0.5 shrink-0" />
@@ -197,7 +206,7 @@ export default function MissionBriefs() {
                 </div>
 
                 {/* Signatures */}
-                <div className="grid grid-cols-2 gap-8 mt-12 bg-gray-50 p-6 rounded-xl border border-gray-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-6 sm:gap-8 mt-12 bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-200">
                   <div className="h-32 border-2 border-dashed border-gray-300 rounded-lg p-4 relative">
                     <span className="absolute top-2 left-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Visa Technicien</span>
                   </div>
