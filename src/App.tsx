@@ -16,6 +16,9 @@ import Settings from './pages/Settings';
 import { useAuthStore } from './store/auth';
 import { useStore } from './store';
 
+import MissionBriefs from './pages/MissionBriefs';
+import Stats from './pages/Stats';
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const session = useAuthStore(state => state.session);
   const loading = useAuthStore(state => state.loading);
@@ -60,6 +63,8 @@ export default function App() {
             <Route path="technicians" element={<Technicians />} />
             <Route path="trucks" element={<Trucks />} />
             <Route path="equipment" element={<Equipment />} />
+            <Route path="fiches" element={<MissionBriefs />} />
+            <Route path="stats" element={<Stats />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         )}

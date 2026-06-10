@@ -2,12 +2,17 @@ import React, { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import interactionPlugin from '@fullcalendar/interaction';
+import { QrCode } from 'lucide-react';
 import { useStore } from '../store';
 import EquipmentModal from '../components/EquipmentModal';
+import { QRCodePrintModal } from '../components/QRCodePrintModal';
 
 export default function Equipment() {
   const store = useStore();
   const [modalOpen, setModalOpen] = useState(false);
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [selectedEqId, setSelectedEqId] = useState('');
+  const [selectedEqName, setSelectedEqName] = useState('');
 
   const resources = store.equipment.map(item => ({
     id: item.id,
@@ -64,7 +69,7 @@ export default function Equipment() {
             week: 'Semaine',
             day: 'Jour'
           }}
-          resourceAreaWidth="300px"
+          resourceAreaWidth="350px"
           resourceAreaHeaderContent="Matériel"
           slotMinTime="06:00:00"
           slotMaxTime="24:00:00"
@@ -72,15 +77,36 @@ export default function Equipment() {
           resourceLabelContent={(arg) => (
             <div className="flex justify-between items-center w-full pr-2 p-1">
               <span className="font-semibold text-[#0f172a] text-sm truncate">{arg.resource.title}</span>
-              <span className="text-xs bg-[#f1f5f9] text-[#64748b] px-2 py-1 rounded-full font-medium ml-2 whitespace-nowrap">
-                Total: {arg.resource.extendedProps.totalQuantity}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs bg-[#f1f5f9] text-[#64748b] px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                  Total: {arg.resource.extendedProps.totalQuantity}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedEqId(arg.resource.id);
+                    setSelectedEqName(arg.resource.title);
+                    setPrintModalOpen(true);
+                  }}
+                  className="p-1.5 text-[#64748b] hover:text-[#2563eb] hover:bg-[#eff6ff] rounded-md transition-colors"
+                  title="Générer QR Code"
+                >
+                  <QrCode className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
         />
       </div>
 
       <EquipmentModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
+      
+      <QRCodePrintModal 
+        isOpen={printModalOpen}
+        onClose={() => setPrintModalOpen(false)}
+        equipmentId={selectedEqId}
+        equipmentName={selectedEqName}
+      />
     </div>
   );
 }

@@ -81,12 +81,12 @@ export function Layout() {
             ))}
             
             <div className="pt-6 text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider mb-2 ml-2">Outils & Exports</div>
-            <a href="#" className="flex items-center gap-3 px-3 py-2 text-[#64748b] hover:bg-[#f1f5f9] rounded-md text-sm font-medium">
-              <span className="opacity-70">📄</span> Fiches Mission
-            </a>
-            <a href="#" className="flex items-center gap-3 px-3 py-2 text-[#64748b] hover:bg-[#f1f5f9] rounded-md text-sm font-medium">
-              <span className="opacity-70">📈</span> Statistiques
-            </a>
+            <NavLink to="/fiches" className={({ isActive }) => cn('flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors', isActive ? 'bg-[#e2e8f0] text-[#2563eb] font-semibold' : 'text-[#64748b] hover:bg-[#f1f5f9]')}>
+              <span className={cn("opacity-70", "grayscale")}>📄</span> Fiches Mission
+            </NavLink>
+            <NavLink to="/stats" className={({ isActive }) => cn('flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors', isActive ? 'bg-[#e2e8f0] text-[#2563eb] font-semibold' : 'text-[#64748b] hover:bg-[#f1f5f9]')}>
+              <span className={cn("opacity-70", "grayscale")}>📈</span> Statistiques
+            </NavLink>
             <NavLink to="/settings" className={({ isActive }) => cn('flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors', isActive ? 'bg-[#e2e8f0] text-[#2563eb] font-semibold' : 'text-[#64748b] hover:bg-[#f1f5f9]')}>
               <Settings className="flex-shrink-0 h-4 w-4 opacity-70" /> Paramètres
             </NavLink>

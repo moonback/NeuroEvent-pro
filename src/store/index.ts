@@ -7,11 +7,11 @@ interface AppState {
   technicians: Technician[];
   trucks: Truck[];
   equipment: Equipment[];
-
+  
   loading: boolean;
-
+  
   initialize: () => Promise<void>;
-
+  
   addMission: (mission: Omit<Mission, 'id'>) => Promise<void>;
   updateMission: (id: string, mission: Partial<Mission>) => Promise<void>;
   deleteMission: (id: string) => Promise<void>;
@@ -191,7 +191,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (updatedFields.lastName !== undefined) changes.last_name = updatedFields.lastName;
     if (updatedFields.specialty !== undefined) changes.specialty = updatedFields.specialty;
     if (updatedFields.color !== undefined) changes.color = updatedFields.color;
-
+    
     if (Object.keys(changes).length > 0) {
       await supabase.from('technicians').update(changes).eq('id', id);
       get().initialize();
@@ -236,7 +236,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (updatedFields.name !== undefined) changes.name = updatedFields.name;
     if (updatedFields.category !== undefined) changes.category = updatedFields.category;
     if (updatedFields.totalQuantity !== undefined) changes.total_quantity = updatedFields.totalQuantity;
-
+    
     if (Object.keys(changes).length > 0) {
       await supabase.from('equipments').update(changes).eq('id', id);
       get().initialize();
