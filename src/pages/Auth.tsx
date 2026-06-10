@@ -40,6 +40,7 @@ export default function Auth() {
           // crée déjà ces lignes côté serveur après migration.
           await supabase.from('profiles').insert({
             id: data.user.id,
+            email: data.user.email ?? email,
             first_name: firstName,
             last_name: lastName,
             role: 'Technicien'

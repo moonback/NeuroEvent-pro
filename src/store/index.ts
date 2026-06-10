@@ -1,7 +1,18 @@
 import { create } from 'zustand';
 import { Mission, Technician, Truck, Equipment, Client, MissionType, MissionStatus, EquipmentCategory } from '../types';
+import { TableRow, TableInsert, TableUpdate } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { toast } from './toast';
+
+/**
+ * Ligne `missions` enrichie des deux tables de jointure. Comme les relations
+ * ne sont pas décrites dans le type `Database`, l'inférence d'embed de
+ * supabase-js ne s'applique pas : on précise le type de retour via `.returns()`.
+ */
+type MissionRowWithRelations = TableRow<'missions'> & {
+  mission_technicians: Pick<TableRow<'mission_technicians'>, 'technician_id'>[] | null;
+  mission_equipments: TableRow<'mission_equipments'>[] | null;
+};
 
 interface AppState {
   missions: Mission[];
@@ -62,7 +73,10 @@ export const useStore = create<AppState>((set, get) => ({
         supabase.from('equipments').select('*'),
         // mission_equipments(*) : tolère l'absence de la colonne `checked`
         // tant que la migration SQL n'a pas été appliquée.
-        supabase.from('missions').select('*, mission_technicians(technician_id), mission_equipments(*)'),
+        supabase
+          .from('missions')
+          .select('*, mission_technicians(technician_id), mission_equipments(*)')
+          .returns<MissionRowWithRelations[]>(),
         supabase.from('clients').select('*').order('name'),
       ]);
 
@@ -88,7 +102,7 @@ export const useStore = create<AppState>((set, get) => ({
         totalQuantity: e.total_quantity
       })) || [];
 
-      const clients: Client[] = clientsRes.data?.map((c: any) => ({
+      const clients: Client[] = clientsRes.data?.map((c) => ({
         id: c.id,
         name: c.name,
         contactName: c.contact_name || undefined,
@@ -98,7 +112,7 @@ export const useStore = create<AppState>((set, get) => ({
         notes: c.notes || undefined
       })) || [];
 
-      const missions: Mission[] = missionsRes.data?.map((m: any) => ({
+      const missions: Mission[] = missionsRes.data?.map((m) => ({
         id: m.id,
         title: m.title,
         type: m.type as MissionType,
@@ -107,11 +121,11 @@ export const useStore = create<AppState>((set, get) => ({
         address: m.address,
         start: new Date(m.start_date),
         end: new Date(m.end_date),
-        technicianIds: m.mission_technicians?.map((mt: any) => mt.technician_id) || [],
+        technicianIds: m.mission_technicians?.map((mt) => mt.technician_id) || [],
         truckId: m.truck_id || undefined,
         status: m.status as MissionStatus,
         color: m.color,
-        equipments: m.mission_equipments?.map((me: any) => ({
+        equipments: m.mission_equipments?.map((me) => ({
           equipmentId: me.equipment_id,
           quantity: me.quantity,
           checked: !!me.checked
@@ -141,7 +155,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   addMission: async (mission) => {
-    const payload: Record<string, unknown> = {
+    const payload: TableInsert<'missions'> = {
       title: mission.title,
       type: mission.type,
       client: mission.client,
@@ -176,7 +190,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateMission: async (id, updatedFields) => {
-    const changes: any = {};
+    const changes: TableUpdate<'missions'> = {};
     if (updatedFields.title !== undefined) changes.title = updatedFields.title;
     if (updatedFields.type !== undefined) changes.type = updatedFields.type;
     if (updatedFields.client !== undefined) changes.client = updatedFields.client;
@@ -255,7 +269,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateTechnician: async (id, updatedFields) => {
-    const changes: any = {};
+    const changes: TableUpdate<'technicians'> = {};
     if (updatedFields.firstName !== undefined) changes.first_name = updatedFields.firstName;
     if (updatedFields.lastName !== undefined) changes.last_name = updatedFields.lastName;
     if (updatedFields.specialty !== undefined) changes.specialty = updatedFields.specialty;
@@ -288,7 +302,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateTruck: async (id, updatedFields) => {
-    const changes: any = {};
+    const changes: TableUpdate<'trucks'> = {};
     if (updatedFields.name !== undefined) changes.name = updatedFields.name;
     if (updatedFields.plate !== undefined) changes.plate = updatedFields.plate;
     if (updatedFields.volume !== undefined) changes.volume = updatedFields.volume;
@@ -320,7 +334,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateEquipment: async (id, updatedFields) => {
-    const changes: any = {};
+    const changes: TableUpdate<'equipments'> = {};
     if (updatedFields.name !== undefined) changes.name = updatedFields.name;
     if (updatedFields.category !== undefined) changes.category = updatedFields.category;
     if (updatedFields.totalQuantity !== undefined) changes.total_quantity = updatedFields.totalQuantity;
@@ -355,7 +369,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateClient: async (id, updatedFields) => {
-    const changes: any = {};
+    const changes: TableUpdate<'clients'> = {};
     if (updatedFields.name !== undefined) changes.name = updatedFields.name;
     if (updatedFields.contactName !== undefined) changes.contact_name = updatedFields.contactName || null;
     if (updatedFields.email !== undefined) changes.email = updatedFields.email || null;
