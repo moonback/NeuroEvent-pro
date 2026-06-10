@@ -39,6 +39,35 @@ alter table public.profiles add column if not exists last_name text not null def
 alter table public.profiles add column if not exists role text not null default 'Technicien';
 alter table public.profiles add column if not exists created_at timestamptz not null default now();
 
+-- Anciennes politiques RLS sur profiles : on les retire toutes (elles seraient
+-- bloquantes pour le changement de type ci-dessous, et les nôtres sont
+-- recréées plus bas dans ce script).
+do $$
+declare pol record;
+begin
+  for pol in
+    select policyname from pg_policies
+    where schemaname = 'public' and tablename = 'profiles'
+  loop
+    execute format('drop policy if exists %I on public.profiles', pol.policyname);
+  end loop;
+end $$;
+
+-- Si `role` est un type enum hérité (ex: user_role), conversion en text.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles'
+      and column_name = 'role' and data_type = 'USER-DEFINED'
+  ) then
+    alter table public.profiles alter column role drop default;
+    alter table public.profiles alter column role type text using role::text;
+  end if;
+end $$;
+
+alter table public.profiles alter column role set default 'Technicien';
+
 -- Normalisation des rôles existants avant pose de la contrainte.
 update public.profiles set role = 'Admin' where lower(role) = 'admin' and role <> 'Admin';
 update public.profiles set role = 'Technicien' where role not in ('Admin', 'Technicien');
