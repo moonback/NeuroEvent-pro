@@ -1,20 +1,23 @@
 import { create } from 'zustand';
-import { Mission, Technician, Truck, Equipment, MissionType, MissionStatus, EquipmentCategory } from '../types';
+import { Mission, Technician, Truck, Equipment, Client, MissionType, MissionStatus, EquipmentCategory } from '../types';
 import { supabase } from '../lib/supabase';
+import { toast } from './toast';
 
 interface AppState {
   missions: Mission[];
   technicians: Technician[];
   trucks: Truck[];
   equipment: Equipment[];
-  
+  clients: Client[];
+
   loading: boolean;
-  
+
   initialize: () => Promise<void>;
-  
+
   addMission: (mission: Omit<Mission, 'id'>) => Promise<void>;
   updateMission: (id: string, mission: Partial<Mission>) => Promise<void>;
   deleteMission: (id: string) => Promise<void>;
+  toggleEquipmentCheck: (missionId: string, equipmentId: string, checked: boolean) => Promise<void>;
 
   addTechnician: (tech: Omit<Technician, 'id'>) => Promise<void>;
   updateTechnician: (id: string, tech: Partial<Technician>) => Promise<void>;
@@ -27,22 +30,40 @@ interface AppState {
   addEquipment: (item: Omit<Equipment, 'id'>) => Promise<void>;
   updateEquipment: (id: string, item: Partial<Equipment>) => Promise<void>;
   deleteEquipment: (id: string) => Promise<void>;
+
+  addClient: (client: Omit<Client, 'id'>) => Promise<void>;
+  updateClient: (id: string, client: Partial<Client>) => Promise<void>;
+  deleteClient: (id: string) => Promise<void>;
 }
+
+/** Aucun échec Supabase ne doit rester silencieux : on prévient l'utilisateur. */
+function reportError(action: string, error: { message: string } | null | undefined): boolean {
+  if (!error) return false;
+  console.error(action, error);
+  toast.error(`${action} : ${error.message}`);
+  return true;
+}
+
+let refetchTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useStore = create<AppState>((set, get) => ({
   missions: [],
   technicians: [],
   trucks: [],
   equipment: [],
+  clients: [],
   loading: true,
 
   initialize: async () => {
     try {
-      const [techsRes, trucksRes, equipRes, missionsRes] = await Promise.all([
+      const [techsRes, trucksRes, equipRes, missionsRes, clientsRes] = await Promise.all([
         supabase.from('technicians').select('*'),
         supabase.from('trucks').select('*'),
         supabase.from('equipments').select('*'),
-        supabase.from('missions').select('*, mission_technicians(technician_id), mission_equipments(equipment_id, quantity)')
+        // mission_equipments(*) : tolère l'absence de la colonne `checked`
+        // tant que la migration SQL n'a pas été appliquée.
+        supabase.from('missions').select('*, mission_technicians(technician_id), mission_equipments(*)'),
+        supabase.from('clients').select('*').order('name'),
       ]);
 
       const technicians: Technician[] = techsRes.data?.map(t => ({
@@ -67,11 +88,22 @@ export const useStore = create<AppState>((set, get) => ({
         totalQuantity: e.total_quantity
       })) || [];
 
+      const clients: Client[] = clientsRes.data?.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        contactName: c.contact_name || undefined,
+        email: c.email || undefined,
+        phone: c.phone || undefined,
+        address: c.address || undefined,
+        notes: c.notes || undefined
+      })) || [];
+
       const missions: Mission[] = missionsRes.data?.map((m: any) => ({
         id: m.id,
         title: m.title,
         type: m.type as MissionType,
         client: m.client,
+        clientId: m.client_id || undefined,
         address: m.address,
         start: new Date(m.start_date),
         end: new Date(m.end_date),
@@ -81,21 +113,23 @@ export const useStore = create<AppState>((set, get) => ({
         color: m.color,
         equipments: m.mission_equipments?.map((me: any) => ({
           equipmentId: me.equipment_id,
-          quantity: me.quantity
+          quantity: me.quantity,
+          checked: !!me.checked
         })) || []
       })) || [];
 
-      set({ technicians, trucks, equipment, missions, loading: false });
+      set({ technicians, trucks, equipment, missions, clients, loading: false });
 
-      // Realtime subscriptions
+      // Realtime : un seul canal, et les rafales d'événements sont
+      // regroupées en un unique re-fetch (debounce 400 ms).
       const channels = supabase.getChannels();
       const hasChannel = channels.some(c => c.topic === 'realtime:public_db_changes');
 
       if (!hasChannel) {
         supabase.channel('public_db_changes')
           .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-            // Re-fetch data on any change
-            get().initialize();
+            if (refetchTimer) clearTimeout(refetchTimer);
+            refetchTimer = setTimeout(() => get().initialize(), 400);
           })
           .subscribe();
       }
@@ -107,7 +141,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   addMission: async (mission) => {
-    const { data: mData, error: mError } = await supabase.from('missions').insert({
+    const payload: Record<string, unknown> = {
       title: mission.title,
       type: mission.type,
       client: mission.client,
@@ -117,20 +151,27 @@ export const useStore = create<AppState>((set, get) => ({
       truck_id: mission.truckId || null,
       status: mission.status,
       color: mission.color
-    }).select().single();
+    };
+    // client_id seulement si renseigné : reste compatible avec une base non migrée.
+    if (mission.clientId) payload.client_id = mission.clientId;
 
-    if (mError || !mData) return;
+    const { data: mData, error: mError } = await supabase.from('missions').insert(payload).select().single();
+
+    if (reportError('Création de la mission', mError) || !mData) return;
 
     if (mission.technicianIds.length > 0) {
-      await supabase.from('mission_technicians').insert(
+      const { error } = await supabase.from('mission_technicians').insert(
         mission.technicianIds.map(tid => ({ mission_id: mData.id, technician_id: tid }))
       );
+      reportError('Affectation des techniciens', error);
     }
     if (mission.equipments.length > 0) {
-      await supabase.from('mission_equipments').insert(
+      const { error } = await supabase.from('mission_equipments').insert(
         mission.equipments.map(eq => ({ mission_id: mData.id, equipment_id: eq.equipmentId, quantity: eq.quantity }))
       );
+      reportError('Affectation du matériel', error);
     }
+    toast.success('Mission créée.');
     get().initialize();
   },
 
@@ -139,6 +180,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (updatedFields.title !== undefined) changes.title = updatedFields.title;
     if (updatedFields.type !== undefined) changes.type = updatedFields.type;
     if (updatedFields.client !== undefined) changes.client = updatedFields.client;
+    if (updatedFields.clientId !== undefined) changes.client_id = updatedFields.clientId || null;
     if (updatedFields.address !== undefined) changes.address = updatedFields.address;
     if (updatedFields.start !== undefined) changes.start_date = updatedFields.start.toISOString();
     if (updatedFields.end !== undefined) changes.end_date = updatedFields.end.toISOString();
@@ -147,41 +189,68 @@ export const useStore = create<AppState>((set, get) => ({
     if (updatedFields.color !== undefined) changes.color = updatedFields.color;
 
     if (Object.keys(changes).length > 0) {
-      await supabase.from('missions').update(changes).eq('id', id);
+      const { error } = await supabase.from('missions').update(changes).eq('id', id);
+      if (reportError('Mise à jour de la mission', error)) return;
     }
 
     if (updatedFields.technicianIds !== undefined) {
       await supabase.from('mission_technicians').delete().eq('mission_id', id);
       if (updatedFields.technicianIds.length > 0) {
-        await supabase.from('mission_technicians').insert(
+        const { error } = await supabase.from('mission_technicians').insert(
           updatedFields.technicianIds.map(tid => ({ mission_id: id, technician_id: tid }))
         );
+        reportError('Affectation des techniciens', error);
       }
     }
 
     if (updatedFields.equipments !== undefined) {
       await supabase.from('mission_equipments').delete().eq('mission_id', id);
       if (updatedFields.equipments.length > 0) {
-        await supabase.from('mission_equipments').insert(
+        const { error } = await supabase.from('mission_equipments').insert(
           updatedFields.equipments.map(eq => ({ mission_id: id, equipment_id: eq.equipmentId, quantity: eq.quantity }))
         );
+        reportError('Affectation du matériel', error);
       }
     }
     get().initialize();
   },
 
   deleteMission: async (id) => {
-    await supabase.from('missions').delete().eq('id', id);
+    const { error } = await supabase.from('missions').delete().eq('id', id);
+    if (reportError('Suppression de la mission', error)) return;
+    toast.success('Mission supprimée.');
     get().initialize();
   },
 
+  toggleEquipmentCheck: async (missionId, equipmentId, checked) => {
+    // Mise à jour optimiste : l'UI réagit immédiatement, le realtime resynchronise.
+    set(state => ({
+      missions: state.missions.map(m =>
+        m.id === missionId
+          ? { ...m, equipments: m.equipments.map(e => e.equipmentId === equipmentId ? { ...e, checked } : e) }
+          : m
+      )
+    }));
+    const { error } = await supabase
+      .from('mission_equipments')
+      .update({ checked })
+      .eq('mission_id', missionId)
+      .eq('equipment_id', equipmentId);
+    if (error) {
+      console.error('toggleEquipmentCheck', error);
+      toast.error("Pointage non enregistré (la migration SQL a-t-elle été appliquée ?)");
+    }
+  },
+
   addTechnician: async (tech) => {
-    await supabase.from('technicians').insert({
+    const { error } = await supabase.from('technicians').insert({
       first_name: tech.firstName,
       last_name: tech.lastName,
       specialty: tech.specialty,
       color: tech.color
     });
+    if (reportError('Création du technicien', error)) return;
+    toast.success('Technicien ajouté.');
     get().initialize();
   },
 
@@ -191,43 +260,62 @@ export const useStore = create<AppState>((set, get) => ({
     if (updatedFields.lastName !== undefined) changes.last_name = updatedFields.lastName;
     if (updatedFields.specialty !== undefined) changes.specialty = updatedFields.specialty;
     if (updatedFields.color !== undefined) changes.color = updatedFields.color;
-    
+
     if (Object.keys(changes).length > 0) {
-      await supabase.from('technicians').update(changes).eq('id', id);
+      const { error } = await supabase.from('technicians').update(changes).eq('id', id);
+      if (reportError('Mise à jour du technicien', error)) return;
+      toast.success('Technicien mis à jour.');
       get().initialize();
     }
   },
 
   deleteTechnician: async (id) => {
-    await supabase.from('technicians').delete().eq('id', id);
+    const { error } = await supabase.from('technicians').delete().eq('id', id);
+    if (reportError('Suppression du technicien', error)) return;
+    toast.success('Technicien supprimé.');
     get().initialize();
   },
 
   addTruck: async (truck) => {
-    await supabase.from('trucks').insert({
+    const { error } = await supabase.from('trucks').insert({
       name: truck.name,
       plate: truck.plate,
       volume: truck.volume
     });
+    if (reportError('Création du camion', error)) return;
+    toast.success('Camion ajouté.');
     get().initialize();
   },
 
   updateTruck: async (id, updatedFields) => {
-    await supabase.from('trucks').update(updatedFields).eq('id', id);
-    get().initialize();
+    const changes: any = {};
+    if (updatedFields.name !== undefined) changes.name = updatedFields.name;
+    if (updatedFields.plate !== undefined) changes.plate = updatedFields.plate;
+    if (updatedFields.volume !== undefined) changes.volume = updatedFields.volume;
+
+    if (Object.keys(changes).length > 0) {
+      const { error } = await supabase.from('trucks').update(changes).eq('id', id);
+      if (reportError('Mise à jour du camion', error)) return;
+      toast.success('Camion mis à jour.');
+      get().initialize();
+    }
   },
 
   deleteTruck: async (id) => {
-    await supabase.from('trucks').delete().eq('id', id);
+    const { error } = await supabase.from('trucks').delete().eq('id', id);
+    if (reportError('Suppression du camion', error)) return;
+    toast.success('Camion supprimé.');
     get().initialize();
   },
 
   addEquipment: async (item) => {
-    await supabase.from('equipments').insert({
+    const { error } = await supabase.from('equipments').insert({
       name: item.name,
       category: item.category,
       total_quantity: item.totalQuantity
     });
+    if (reportError('Création du matériel', error)) return;
+    toast.success('Matériel ajouté.');
     get().initialize();
   },
 
@@ -236,15 +324,57 @@ export const useStore = create<AppState>((set, get) => ({
     if (updatedFields.name !== undefined) changes.name = updatedFields.name;
     if (updatedFields.category !== undefined) changes.category = updatedFields.category;
     if (updatedFields.totalQuantity !== undefined) changes.total_quantity = updatedFields.totalQuantity;
-    
+
     if (Object.keys(changes).length > 0) {
-      await supabase.from('equipments').update(changes).eq('id', id);
+      const { error } = await supabase.from('equipments').update(changes).eq('id', id);
+      if (reportError('Mise à jour du matériel', error)) return;
+      toast.success('Matériel mis à jour.');
       get().initialize();
     }
   },
 
   deleteEquipment: async (id) => {
-    await supabase.from('equipments').delete().eq('id', id);
+    const { error } = await supabase.from('equipments').delete().eq('id', id);
+    if (reportError('Suppression du matériel', error)) return;
+    toast.success('Matériel supprimé.');
+    get().initialize();
+  },
+
+  addClient: async (client) => {
+    const { error } = await supabase.from('clients').insert({
+      name: client.name,
+      contact_name: client.contactName || null,
+      email: client.email || null,
+      phone: client.phone || null,
+      address: client.address || null,
+      notes: client.notes || null
+    });
+    if (reportError('Création du client', error)) return;
+    toast.success('Client créé.');
+    get().initialize();
+  },
+
+  updateClient: async (id, updatedFields) => {
+    const changes: any = {};
+    if (updatedFields.name !== undefined) changes.name = updatedFields.name;
+    if (updatedFields.contactName !== undefined) changes.contact_name = updatedFields.contactName || null;
+    if (updatedFields.email !== undefined) changes.email = updatedFields.email || null;
+    if (updatedFields.phone !== undefined) changes.phone = updatedFields.phone || null;
+    if (updatedFields.address !== undefined) changes.address = updatedFields.address || null;
+    if (updatedFields.notes !== undefined) changes.notes = updatedFields.notes || null;
+
+    if (Object.keys(changes).length > 0) {
+      const { error } = await supabase.from('clients').update(changes).eq('id', id);
+      if (reportError('Mise à jour du client', error)) return;
+      toast.success('Client mis à jour.');
+      get().initialize();
+    }
+  },
+
+  deleteClient: async (id) => {
+    const { error } = await supabase.from('clients').delete().eq('id', id);
+    if (reportError('Suppression du client', error)) return;
+    toast.success('Client supprimé.');
     get().initialize();
   }
 }));

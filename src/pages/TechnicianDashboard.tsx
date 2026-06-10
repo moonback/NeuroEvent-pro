@@ -6,42 +6,50 @@ import { format, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import { QRScannerModal } from '../components/QRScannerModal';
+import { toast } from '../store/toast';
 
 export default function TechnicianDashboard() {
   const user = useAuthStore(state => state.user);
   const signOut = useAuthStore(state => state.signOut);
   const missions = useStore(state => state.missions);
   const updateMission = useStore(state => state.updateMission);
+  const toggleEquipmentCheck = useStore(state => state.toggleEquipmentCheck);
   const trucks = useStore(state => state.trucks);
   const technicians = useStore(state => state.technicians);
+  const equipmentDefs = useStore(state => state.equipment);
 
   const [activeTab, setActiveTab] = React.useState<'active' | 'history'>('active');
-  const [checkedEquipments, setCheckedEquipments] = React.useState<Record<string, boolean>>({});
   const [scannerOpen, setScannerOpen] = React.useState(false);
   const [activeMissionIdForScanner, setActiveMissionIdForScanner] = React.useState<string | null>(null);
-
-  const toggleEquipment = (missionId: string, equipmentId: string) => {
-    const key = `${missionId}-${equipmentId}`;
-    setCheckedEquipments(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
-
-  const handleScan = (decodedText: string) => {
-    if (activeMissionIdForScanner) {
-      // Assuming decodedText is the equipmentId
-      toggleEquipment(activeMissionIdForScanner, decodedText);
-    }
-  };
 
   const myMissions = missions
     .filter(m => m.technicianIds.includes(user?.id || ''))
     .sort((a, b) => a.start.getTime() - b.start.getTime());
 
-  const displayedMissions = myMissions.filter(m => 
+  const displayedMissions = myMissions.filter(m =>
     activeTab === 'active' ? m.status !== 'Terminée' : m.status === 'Terminée'
   );
+
+  // Le pointage est persisté en base (colonne mission_equipments.checked) :
+  // il survit au rechargement et se synchronise entre les appareils.
+  const handleToggle = (missionId: string, equipmentId: string) => {
+    const mission = missions.find(m => m.id === missionId);
+    const current = mission?.equipments.find(e => e.equipmentId === equipmentId)?.checked ?? false;
+    toggleEquipmentCheck(missionId, equipmentId, !current);
+  };
+
+  const handleScan = (decodedText: string) => {
+    if (!activeMissionIdForScanner) return;
+    const mission = missions.find(m => m.id === activeMissionIdForScanner);
+    const item = mission?.equipments.find(e => e.equipmentId === decodedText);
+    if (!item) {
+      toast.error('Ce QR code ne correspond à aucun matériel de cette mission.');
+      return;
+    }
+    toggleEquipmentCheck(activeMissionIdForScanner, decodedText, true);
+    const def = equipmentDefs.find(e => e.id === decodedText);
+    toast.success(`${def?.name || 'Matériel'} pointé.`);
+  };
 
   const getTruckName = (truckId?: string) => {
     if (!truckId) return 'Aucun camion';
@@ -77,13 +85,13 @@ export default function TechnicianDashboard() {
       </header>
 
       <div className="bg-white border-b border-[#e2e8f0] px-4 py-2 flex gap-4 sticky top-[73px] z-10">
-        <button 
+        <button
           onClick={() => setActiveTab('active')}
           className={`pb-2 px-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'active' ? 'border-[#2563eb] text-[#2563eb]' : 'border-transparent text-[#64748b]'}`}
         >
           À venir & En cours
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('history')}
           className={`pb-2 px-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'history' ? 'border-[#2563eb] text-[#2563eb]' : 'border-transparent text-[#64748b]'}`}
         >
@@ -102,7 +110,7 @@ export default function TechnicianDashboard() {
           displayedMissions.map(mission => {
             const colleagues = getColleagues(mission.technicianIds);
             const isToday = isSameDay(mission.start, new Date());
-            
+
             return (
               <div key={mission.id} className="bg-white rounded-xl shadow-sm border border-[#e2e8f0] overflow-hidden transition-all hover:shadow-md">
                 <div className="h-2 w-full" style={{ backgroundColor: mission.color }}></div>
@@ -129,16 +137,16 @@ export default function TechnicianDashboard() {
                     </div>
                     <div className="flex items-start gap-2 text-sm text-[#334155]">
                       <MapPin className="w-4 h-4 text-[#94a3b8] shrink-0 mt-0.5" />
-                      <a 
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mission.address)}`} 
-                        target="_blank" 
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mission.address)}`}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-[#2563eb] hover:underline leading-snug"
                       >
                         {mission.address}
                       </a>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-2 mt-2">
                       {mission.truckId && (
                         <div className="flex items-center gap-2 text-sm text-[#334155] bg-[#f8fafc] p-2 rounded-lg border border-[#e2e8f0]">
@@ -155,13 +163,13 @@ export default function TechnicianDashboard() {
                         </div>
                       )}
                     </div>
-                    
-                    {/* Equipment list */}
+
+                    {/* Check-list matériel (persistée en base) */}
                     {mission.equipments && mission.equipments.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-[#f1f5f9]">
                         <div className="flex justify-between items-center mb-2">
                           <h4 className="text-xs font-bold text-[#64748b] uppercase tracking-wider">Matériel requis</h4>
-                          <button 
+                          <button
                             onClick={() => {
                               setActiveMissionIdForScanner(mission.id);
                               setScannerOpen(true);
@@ -173,13 +181,13 @@ export default function TechnicianDashboard() {
                           </button>
                         </div>
                         <ul className="space-y-1">
-                          {mission.equipments.map((me, idx) => {
-                            const equipmentDef = useStore.getState().equipment.find(e => e.id === me.equipmentId);
-                            const isChecked = checkedEquipments[`${mission.id}-${me.equipmentId}`];
+                          {mission.equipments.map((me) => {
+                            const equipmentDef = equipmentDefs.find(e => e.id === me.equipmentId);
+                            const isChecked = !!me.checked;
                             return (
-                              <li 
-                                key={idx} 
-                                onClick={() => toggleEquipment(mission.id, me.equipmentId)}
+                              <li
+                                key={me.equipmentId}
+                                onClick={() => handleToggle(mission.id, me.equipmentId)}
                                 className={`flex justify-between items-center text-sm py-2 px-1 border-b border-[#f8fafc] last:border-0 cursor-pointer transition-colors ${isChecked ? 'text-[#94a3b8]' : 'text-[#334155]'}`}
                               >
                                 <div className="flex items-center gap-3">
@@ -191,7 +199,7 @@ export default function TechnicianDashboard() {
                                   </span>
                                 </div>
                                 <span className={`font-semibold px-2 py-0.5 rounded text-xs transition-colors ${isChecked ? 'bg-emerald-50 text-emerald-600' : 'bg-[#f1f5f9]'}`}>
-                                  {me.quantity} unités
+                                  {me.quantity} unité{me.quantity > 1 ? 's' : ''}
                                 </span>
                               </li>
                             );
@@ -200,10 +208,10 @@ export default function TechnicianDashboard() {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex flex-col gap-2 pt-3 border-t border-[#f1f5f9]">
                     {mission.status === 'Planifiée' && (
-                      <button 
+                      <button
                         onClick={() => updateMission(mission.id, { status: 'En cours' })}
                         className="w-full py-3 px-4 text-center text-sm font-bold bg-[#2563eb] text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
                       >
@@ -211,7 +219,7 @@ export default function TechnicianDashboard() {
                       </button>
                     )}
                     {mission.status === 'En cours' && (
-                      <button 
+                      <button
                         onClick={() => updateMission(mission.id, { status: 'Terminée' })}
                         className="w-full py-3 px-4 text-center text-sm font-bold bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors shadow-sm"
                       >
@@ -229,11 +237,11 @@ export default function TechnicianDashboard() {
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] pb-safe z-50">
         <div className="flex justify-around items-center h-16 max-w-md mx-auto px-4">
-          <button className="flex flex-col items-center justify-center w-full h-full text-[#2563eb]">
+          <span className="flex flex-col items-center justify-center w-full h-full text-[#2563eb]" aria-current="page">
             <Calendar className="w-6 h-6 mb-1" />
             <span className="text-[10px] font-semibold">Missions</span>
-          </button>
-          
+          </span>
+
           <Link to="/settings" className="flex flex-col items-center justify-center w-full h-full text-[#64748b] hover:text-[#0f172a]">
             <SettingsIcon className="w-6 h-6 mb-1" />
             <span className="text-[10px] font-medium">Profil</span>
@@ -246,14 +254,16 @@ export default function TechnicianDashboard() {
         </div>
       </nav>
 
-      <QRScannerModal 
-        isOpen={scannerOpen}
-        onClose={() => {
-          setScannerOpen(false);
-          setActiveMissionIdForScanner(null);
-        }}
-        onScan={handleScan}
-      />
+      {scannerOpen && (
+        <QRScannerModal
+          isOpen={scannerOpen}
+          onClose={() => {
+            setScannerOpen(false);
+            setActiveMissionIdForScanner(null);
+          }}
+          onScan={handleScan}
+        />
+      )}
     </div>
   );
 }

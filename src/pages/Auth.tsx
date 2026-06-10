@@ -7,7 +7,6 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [role, setRole] = useState('Technicien');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -27,7 +26,9 @@ export default function Auth() {
           data: {
             first_name: firstName,
             last_name: lastName,
-            role: role
+            // Sécurité : toute inscription publique est Technicien.
+            // La promotion Admin se fait depuis la page Utilisateurs (ou SQL).
+            role: 'Technicien'
           }
         }
       });
@@ -35,23 +36,22 @@ export default function Auth() {
         setError(error.message);
       } else {
         if (data.user) {
-          // Attempt to insert into a profiles table if it exists
+          // Repli pour les bases non migrées : le trigger handle_new_user
+          // crée déjà ces lignes côté serveur après migration.
           await supabase.from('profiles').insert({
             id: data.user.id,
             first_name: firstName,
             last_name: lastName,
-            role: role
+            role: 'Technicien'
           });
-          
-          if (role === 'Technicien') {
-            await supabase.from('technicians').insert({
-              id: data.user.id,
-              first_name: firstName,
-              last_name: lastName,
-              specialty: 'Général',
-              color: '#3b82f6'
-            });
-          }
+
+          await supabase.from('technicians').insert({
+            id: data.user.id,
+            first_name: firstName,
+            last_name: lastName,
+            specialty: 'Général',
+            color: '#3b82f6'
+          });
         }
         setMessage("Inscription réussie. Veuillez vérifier votre boîte mail.");
       }
@@ -97,11 +97,13 @@ export default function Auth() {
             {isSignUp && (
               <>
                 <div>
-                  <label className="block text-[10px] font-bold text-[#64748b] tracking-wider uppercase mb-1">Prénom</label>
+                  <label htmlFor="auth-firstname" className="block text-[10px] font-bold text-[#64748b] tracking-wider uppercase mb-1">Prénom</label>
                   <div className="mt-1">
                     <input
+                      id="auth-firstname"
                       type="text"
                       required
+                      autoComplete="given-name"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       className="w-full rounded-md border border-[#e2e8f0] px-3 py-2 focus:ring-2 focus:ring-[#2563eb] focus:border-transparent outline-none bg-[#f8fafc] text-sm"
@@ -109,39 +111,30 @@ export default function Auth() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-[#64748b] tracking-wider uppercase mb-1">Nom</label>
+                  <label htmlFor="auth-lastname" className="block text-[10px] font-bold text-[#64748b] tracking-wider uppercase mb-1">Nom</label>
                   <div className="mt-1">
                     <input
+                      id="auth-lastname"
                       type="text"
                       required
+                      autoComplete="family-name"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       className="w-full rounded-md border border-[#e2e8f0] px-3 py-2 focus:ring-2 focus:ring-[#2563eb] focus:border-transparent outline-none bg-[#f8fafc] text-sm"
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#64748b] tracking-wider uppercase mb-1">Rôle</label>
-                  <div className="mt-1">
-                    <select
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                      className="w-full rounded-md border border-[#e2e8f0] px-3 py-2 focus:ring-2 focus:ring-[#2563eb] focus:border-transparent outline-none bg-[#f8fafc] text-sm"
-                    >
-                      <option value="Technicien">Technicien</option>
-                      <option value="Admin">Admin</option>
-                    </select>
-                  </div>
-                </div>
               </>
             )}
 
             <div>
-              <label className="block text-[10px] font-bold text-[#64748b] tracking-wider uppercase mb-1">Email</label>
+              <label htmlFor="auth-email" className="block text-[10px] font-bold text-[#64748b] tracking-wider uppercase mb-1">Email</label>
               <div className="mt-1">
                 <input
+                  id="auth-email"
                   type="email"
                   required
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-md border border-[#e2e8f0] px-3 py-2 focus:ring-2 focus:ring-[#2563eb] focus:border-transparent outline-none bg-[#f8fafc] text-sm"
@@ -150,11 +143,14 @@ export default function Auth() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-[#64748b] tracking-wider uppercase mb-1">Mot de passe</label>
+              <label htmlFor="auth-password" className="block text-[10px] font-bold text-[#64748b] tracking-wider uppercase mb-1">Mot de passe</label>
               <div className="mt-1">
                 <input
+                  id="auth-password"
                   type="password"
                   required
+                  minLength={6}
+                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full rounded-md border border-[#e2e8f0] px-3 py-2 focus:ring-2 focus:ring-[#2563eb] focus:border-transparent outline-none bg-[#f8fafc] text-sm"
