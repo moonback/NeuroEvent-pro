@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  @apply antialiased text-[#1e293b] bg-[#fdfdfd];
+}
+
+/* FullCalendar Customizations */
+.fc .fc-toolbar-title {
+  @apply text-lg font-bold text-[#0f172a] uppercase tracking-tight;
+}
+.fc .fc-button-primary {
+  @apply !bg-white !text-[#64748b] !border-[#e2e8f0] hover:!bg-[#f1f5f9] hover:!text-[#2563eb] focus:!ring-2 focus:!ring-[#2563eb] !shadow-sm !rounded-md !px-4 !py-1.5 !text-xs !font-semibold capitalize transition-colors;
+}
+.fc .fc-button-primary:disabled {
+  @apply !bg-[#f8fafc] !text-[#94a3b8] !border-[#e2e8f0];
+}
+.fc .fc-button-active {
+  @apply !bg-[#e2e8f0] !text-[#2563eb] !border-[#e2e8f0];
+}
+.fc-theme-standard th {
+  @apply !border-[#e2e8f0] !py-2 !text-[10px] !font-bold !text-[#64748b] !uppercase !tracking-tighter !bg-[#f8fafc];
+}
+.fc-theme-standard td, .fc-theme-standard th {
+  @apply !border-[#f1f5f9];
+}
+.fc-timegrid-slot-label-cushion {
+  @apply !text-[11px] !text-[#94a3b8] font-medium;
+}
+.fc-event {
+  @apply !border-none !rounded-md shadow-sm overflow-hidden;
+}
+.fc-event-main {
+  @apply !p-1 !text-xs !font-medium;
+}
