@@ -3,21 +3,31 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
-import Planning from './pages/Planning';
-import Technicians from './pages/Technicians';
-import Trucks from './pages/Trucks';
-import Equipment from './pages/Equipment';
 import Auth from './pages/Auth';
-import TechnicianDashboard from './pages/TechnicianDashboard';
-import Settings from './pages/Settings';
 import { useAuthStore } from './store/auth';
 import { useStore } from './store';
 
-import MissionBriefs from './pages/MissionBriefs';
-import Stats from './pages/Stats';
+// Code-splitting par route : FullCalendar et Recharts ne sont téléchargés
+// que lorsque la page correspondante est réellement ouverte.
+const Planning = lazy(() => import('./pages/Planning'));
+const Technicians = lazy(() => import('./pages/Technicians'));
+const Trucks = lazy(() => import('./pages/Trucks'));
+const Equipment = lazy(() => import('./pages/Equipment'));
+const TechnicianDashboard = lazy(() => import('./pages/TechnicianDashboard'));
+const Settings = lazy(() => import('./pages/Settings'));
+const MissionBriefs = lazy(() => import('./pages/MissionBriefs'));
+const Stats = lazy(() => import('./pages/Stats'));
+
+function PageLoader() {
+  return (
+    <div className="h-full w-full flex items-center justify-center py-20 text-sm text-[#64748b]">
+      Chargement de la page...
+    </div>
+  );
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const session = useAuthStore(state => state.session);
@@ -49,6 +59,7 @@ export default function App() {
 
   return (
     <Router>
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/login" element={<Auth />} />
         
@@ -56,19 +67,26 @@ export default function App() {
           <>
             <Route path="/" element={<ProtectedRoute><TechnicianDashboard /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            {/* Tout chemin admin tenté par un technicien est redirigé vers son tableau de bord */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </>
         ) : (
-          <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-            <Route index element={<Planning />} />
-            <Route path="technicians" element={<Technicians />} />
-            <Route path="trucks" element={<Trucks />} />
-            <Route path="equipment" element={<Equipment />} />
-            <Route path="fiches" element={<MissionBriefs />} />
-            <Route path="stats" element={<Stats />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
+          <>
+            <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route index element={<Planning />} />
+              <Route path="technicians" element={<Technicians />} />
+              <Route path="trucks" element={<Trucks />} />
+              <Route path="equipment" element={<Equipment />} />
+              <Route path="fiches" element={<MissionBriefs />} />
+              <Route path="stats" element={<Stats />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+            {/* Catch-all : aucune URL ne doit aboutir à une page blanche */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </>
         )}
       </Routes>
+      </Suspense>
     </Router>
   );
 }

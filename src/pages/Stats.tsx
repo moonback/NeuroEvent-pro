@@ -1,11 +1,9 @@
 import React, { useMemo } from 'react';
 import { useStore } from '../store';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, Users, Package, Calendar } from 'lucide-react';
 import { format, subMonths, isAfter } from 'date-fns';
 import { fr } from 'date-fns/locale';
-
-const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
 export default function Stats() {
   const missions = useStore(state => state.missions);
@@ -36,7 +34,7 @@ export default function Stats() {
       m.technicianIds.forEach(tid => {
         const tech = technicians.find(t => t.id === tid);
         if (tech) {
-          const name = `${tech.first_name} ${tech.last_name}`;
+          const name = `${tech.firstName} ${tech.lastName}`;
           data[name] = (data[name] || 0) + 1;
         }
       });
@@ -46,14 +44,6 @@ export default function Stats() {
       .sort((a, b) => b.value - a.value)
       .slice(0, 5); // Top 5
   }, [missions, technicians]);
-
-  // Equipment categorization/usage mock
-  const eqStats = useMemo(() => {
-    return [
-      { name: 'En service', value: equipment.reduce((acc, eq) => acc + eq.quantity, 0) },
-      { name: 'En maintenance', value: 0 },
-    ];
-  }, [equipment]);
 
   return (
     <div className="space-y-6">

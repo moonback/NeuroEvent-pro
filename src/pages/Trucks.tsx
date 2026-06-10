@@ -44,6 +44,7 @@ export default function Trucks() {
 
       <div className="flex-1 min-h-0">
         <FullCalendar
+          schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
           plugins={[resourceTimelinePlugin, interactionPlugin]}
           initialView="resourceTimelineWeek"
           headerToolbar={{

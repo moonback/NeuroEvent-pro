@@ -1,43 +1,39 @@
-# Roadmap du Projet : EventFlow Planning
+# EventFlow Pro
 
-Cette roadmap détaille les prochaines étapes de développement de l'application, en mettant l'accent sur la transition vers une architecture cloud et le développement d'outils de terrain.
+Plateforme professionnelle de planification pour agences événementielles facilitant l'orchestration des missions de terrain, des ressources humaines (techniciens), des véhicules et du matériel technique.
 
-## Phase 1 : Migration vers une Base de Données Cloud (Supabase) ✅ [TERMINÉE]
+## 🚀 Fonctionnalités Actuelles
 
-L'objectif actuel était de remplacer le store local (Zustand en mémoire) par une véritable base de données relationnelle persistante et temps réel via **Supabase (PostgreSQL)**.
+*   **Calendrier Interactif & Plannings :** Visualisation globale et Timeline des missions, camions, et équipement (FullCalendar). Prévention des conflits logistiques.
+*   **Tableau de Bord Technicien :** 
+    *   Interface optimisée mobile pour les techniciens sur le terrain.
+    *   Vue détaillée des missions (colisages, collègues, camions).
+    *   **Scanner QR Code embarqué** pour valider rapidement les entrées/sorties du matériel assigné.
+*   **Gestion du Parc & Impression QR Codes :** Suivi des équipements avec génération facile et mode multi-impression de QR codes pour étiqueter son parc.
+*   **Fiches de Mission & Exports :** Génération de fiches récapitulatives propres et imprimables avec visa client pour l'approbation logistique.
+*   **Statistiques (Analytics) :** Tableau de bord analytique graphique de la volumétrie (Missions/mois, Top techniciens, taux de couverture matérielle) via Recharts.
 
-*   ✅ **Modélisation de la Base de Données :**
-    *   `missions` (id, titre, date_debut, date_fin, type, statut, adresse, client...)
-    *   `techniciens` (id, nom, prenom, specialite, couleur)
-    *   `camions` (id, nom, plaque, volume)
-    *   `equipements` (id, nom, categorie, quantite_totale)
-    *   `mission_techniciens` (table de jointure)
-    *   `mission_equipements` (table de jointure avec `quantite`)
-*   ✅ **Intégration du SDK Supabase :**
-    *   Configuration du client `@supabase/supabase-js`.
-    *   Mise en place des requêtes CRUD asynchrones pour remplacer les fonctions locales de Zustand.
-    *   Abonnement aux événements temps réel Supabase pour que le planning se mette à jour instantanément sur tous les écrans du bureau.
-*   ✅ **Authentification et Rôles (Supabase Auth) :**
-    *   Création des comptes d'accès avec gestion de rôles : `Admin` (régie/bureau) et `Technicien` (terrain) via la table `profiles`.
+## 🛠 Technologies Utilisées
+*   **Frontend :** React 19, TypeScript, Vite
+*   **État/State :** Zustand
+*   **UI & Styling :** Tailwind CSS v4, Lucide React
+*   **Libertés Techniques :** FullCalendar, Recharts, html5-qrcode, react-qr-code, date-fns
 
-## Phase 2 : Développement du Portail Mobile pour les Techniciens ✅ [TERMINÉE]
+## 🗺 Roadmap : Améliorations UX/UI & Fonctionnelles
 
-Afin d'améliorer la communication avec les équipes sur le terrain, une version web app mobile optimisée a été développée, adaptée au rôle de l'utilisateur connecté.
+### 🎨 Améliorations UX / UI (Expérience & Interface)
+* [ ] **Mode PWA (Progressive Web App) :** Rendre l'interface utilisateur installable sur smartphone et tablette et fonctionnelle hors ligne pour les lieux d'événements sans réseau ("Offline-first").
+* [ ] **Thème Mode Sombre (Dark Mode) :** Utile pour les monteurs/démonteurs d'événements intervenant la nuit ou tôt le matin, réduisant la fatigue visuelle.
+* [ ] **Glisser-Déposer Amélioré (Drag & Drop) :** Rendre les cartes de missions fluides, avec indicateur visuel (drop zones) lors du déplacement et assignation instantanée de camions/techniciens.
+* [ ] **Feedbacks & Toasts :** Ajouter des notifications de succès instantanées (ex: "QR code matériel scanné avec succès", "Mission assignée") via une librairie de toast non bloquante.
+* [ ] **Accessibilité Radix UI / Headless :** Continuer d'embarquer des composants headless pour la totale souplesse clavier (WAI-ARIA).
 
-*   ✅ **Interface "Mobile-First" :**
-    *   Vue simplifiée de type Agenda pour le technicien : "Mes missions du jour / de la semaine".
-    *   Accès détaillé à chaque fiche de mission (horaires, adresse, véhicule, collègues assignés).
-*   ✅ **Actions Terrain & Supabase :**
-    *   Mise à jour des statuts de mission par le technicien ("Planifiée", "En cours", "Terminée").
-    *   Mise à jour en temps réel sur le tableau de bord Admin.
-*   ✅ **Fonctionnalités Opérationnelles & Paramètres :**
-    *   Lien direct vers Google Maps/Waze depuis la fiche mission.
-    *   La création du compte Technicien lie automatiquement les données au backend.
-    *   Page de suppression / déconnexion / mise à jour du profil.
+### 🚀 Fonctionnalités Architecturales
+* [ ] **Backend Persistant (Supabase/Firebase) :** Connecter Zustand à une vraie base de données temps-réel (PostgreSQL via Supabase ou Firestore) avec Firebase Auth pour la connexion multi-agences et le travail asynchrone sécurisé en équipe.
+* [ ] **Rôles & Permissions (RBAC) :** Différencier l'Admin (agence), le Dispatcher (logistique), et l'Utilisateur Final (le technicien ne doit voir que son propre Dashboard réduit).
+* [ ] **Signature Électronique sur Mobile :** Ajouter un composant Canvas natif sur le portail Technicien pour signer de manière tactile le bon de livraison lors de la remise au client, plutôt qu'une version papier imprimée.
+* [ ] **Cartographie & Intégration GPS :** Rendre l'adresse de l'événement cliquable pour ouvrir Google Maps / Apple Maps (App-linking) ou afficher un panneau carte enrichi de calcul de trajets.
+* [ ] **Suivi des Pannes & Retours :** Créer un statut "Matériel en Panne / Maintenance" suite au retour de mission avec un champ "Ajouter une photo (preuve du dégât)".
+* [ ] **Notifications Push & Chat :** Mini messagerie en temps réel sur la mission pour permettre au bureau de prévenir le camion d'un changement logistique (remplace l'usage massif des SMS/WhatsApp).
 
-## Phase 3 : Optimisations & Pilotage (Back-Office)
-
-*   **Tableau de bord de rentabilité :** Suivi consolidé du coût des ressources.
-*   **Statistiques de taux d'occupation :** Visualisation de la charge de chaque camion et du taux de sortie du parc matériel.
-*   **Génération de documents automatisée :** Création des Devis et Bons de Livraison (PDF) directement depuis le calendrier.
-*   **Notifications Systèmes :** Envoi de SMS ou d'e-mails automatiques aux techniciens en cas de modification de l'horaire de leur mission pour le lendemain.
+---

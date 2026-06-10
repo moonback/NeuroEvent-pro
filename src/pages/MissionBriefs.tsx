@@ -128,7 +128,7 @@ export default function MissionBriefs() {
                           {selectedMission.technicianIds.length > 0 ? (
                             selectedMission.technicianIds.map(tid => {
                               const tech = techniciansDef.find(t => t.id === tid);
-                              return <li key={tid}>• {tech?.first_name} {tech?.last_name}</li>;
+                              return <li key={tid}>• {tech?.firstName} {tech?.lastName}</li>;
                             })
                           ) : (
                             <li className="text-gray-400 italic">Aucun technicien assigné</li>

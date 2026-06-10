@@ -77,11 +77,11 @@ export function QRCodePrintModal({ isOpen, onClose, equipmentId, equipmentName }
           
           <div className="hidden">
             <div ref={printRef}>
-              <h3>${equipmentName}</h3>
+              <h3>{equipmentName}</h3>
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <QRCode value={equipmentId} size={300} />
               </div>
-              <p>ID: ${equipmentId}</p>
+              <p>ID: {equipmentId}</p>
             </div>
           </div>
           
