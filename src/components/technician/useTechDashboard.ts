@@ -141,6 +141,11 @@ export function useTechDashboard() {
 
   const handleStatusChange = (newStatus: 'Planifiée' | 'En cours' | 'Terminée') => {
     if (!selectedMission || selectedMission.status === newStatus) return;
+    if (selectedMission.status === 'Terminée') {
+      triggerVibrate('error');
+      toast.error("Impossible de modifier le statut d'une mission terminée.");
+      return;
+    }
     triggerVibrate('double');
     const pad = (n: number) => String(n).padStart(2, '0');
     const now = new Date();

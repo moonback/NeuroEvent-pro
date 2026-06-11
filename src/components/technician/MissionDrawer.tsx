@@ -117,20 +117,17 @@ export default function MissionDrawer(props: MissionDrawerProps) {
               <p className="text-xs font-semibold text-white/80 mt-0.5">{mission.client}</p>
             </div>
             <button
-              onClick={onOpenSignature}
-              className="shrink-0 p-2.5 rounded-xl transition-all active:scale-95 flex flex-col items-center justify-center gap-1 shadow-sm"
+              onClick={mission.signatureUrl ? undefined : onOpenSignature}
+              disabled={!!mission.signatureUrl}
+              className={`shrink-0 p-2.5 rounded-xl flex flex-col items-center justify-center gap-1 shadow-sm transition-all ${
+                mission.signatureUrl ? 'cursor-not-allowed opacity-75' : 'active:scale-95 cursor-pointer'
+              }`}
               style={{ background: 'rgba(0,0,0,0.2)' }}
-              title="Gérer la signature"
+              title={mission.signatureUrl ? "Signature enregistrée" : "Gérer la signature"}
             >
               {mission.signatureUrl ? (
                 <>
-                  <div className="relative">
-                    <PenTool className="w-5 h-5 text-white" />
-                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: 'var(--tech-accent)' }} />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5" style={{ background: 'var(--tech-accent)' }} />
-                    </span>
-                  </div>
+                  <PenTool className="w-5 h-5 text-white/50" />
                   <span className="text-[9px] font-bold" style={{ color: '#86efac' }}>Signé</span>
                 </>
               ) : (
@@ -155,25 +152,36 @@ export default function MissionDrawer(props: MissionDrawerProps) {
 
           {/* Status stepper */}
           <div className="mt-4 flex items-center gap-2">
-            {steps.map((step, i) => (
-              <React.Fragment key={step.key}>
-                <div
-                  className="flex flex-col items-center gap-1 cursor-pointer hover:scale-105 active:scale-95 transition-transform"
-                  onClick={() => onStatusChange(step.key as any)}
-                >
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black transition-all ${
-                    step.active ? 'bg-white text-slate-800 shadow-md ring-2 ring-white/40' :
-                    step.done   ? 'bg-white/30 text-white' : 'bg-white/15 text-white/50'
-                  }`}>
-                    {step.done ? <Check className="w-3 h-3 stroke-[3]" /> : i + 1}
+            {steps.map((step, i) => {
+              const isTerminated = mission.status === 'Terminée';
+              return (
+                <React.Fragment key={step.key}>
+                  <div
+                    className={`flex flex-col items-center gap-1 transition-all ${
+                      isTerminated ? 'cursor-not-allowed opacity-75' : 'cursor-pointer hover:scale-105 active:scale-95'
+                    }`}
+                    onClick={() => {
+                      if (isTerminated) {
+                        triggerVibrate('error');
+                        return;
+                      }
+                      onStatusChange(step.key as any);
+                    }}
+                  >
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black transition-all ${
+                      step.active ? 'bg-white text-slate-800 shadow-md ring-2 ring-white/40' :
+                      step.done   ? 'bg-white/30 text-white' : 'bg-white/15 text-white/50'
+                    }`}>
+                      {step.done ? <Check className="w-3 h-3 stroke-[3]" /> : i + 1}
+                    </div>
+                    <span className={`text-[9px] font-bold whitespace-nowrap ${step.active || step.done ? 'text-white' : 'text-white/50'}`}>{step.label}</span>
                   </div>
-                  <span className={`text-[9px] font-bold whitespace-nowrap ${step.active || step.done ? 'text-white' : 'text-white/50'}`}>{step.label}</span>
-                </div>
-                {i < steps.length - 1 && (
-                  <div className={`flex-1 h-px rounded mb-4 ${step.done || step.active ? 'bg-white/50' : 'bg-white/20'}`} />
-                )}
-              </React.Fragment>
-            ))}
+                  {i < steps.length - 1 && (
+                    <div className={`flex-1 h-px rounded mb-4 ${step.done || step.active ? 'bg-white/50' : 'bg-white/20'}`} />
+                  )}
+                </React.Fragment>
+              );
+            })}
           </div>
         </div>
 
