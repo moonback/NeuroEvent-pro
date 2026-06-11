@@ -28,8 +28,8 @@ export default function SignaturePad({ missionId, onSave, onClose }: SignaturePa
 
     setIsUploading(true);
     try {
-      // Get base64 Data URL (PNG)
-      const dataUrl = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
+      // Get base64 Data URL (PNG) from the full canvas to avoid getTrimmedCanvas ESM bug
+      const dataUrl = sigCanvas.current.getCanvas().toDataURL('image/png');
       
       // Convert base64 to Blob
       const res = await fetch(dataUrl);

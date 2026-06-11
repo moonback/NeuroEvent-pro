@@ -320,11 +320,18 @@ export default function MissionBriefs() {
 
                 {/* Signatures */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-6 sm:gap-8 mt-12 bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-200">
-                  <div className="h-32 border-2 border-dashed border-gray-300 rounded-lg p-4 relative">
+                  <div className="h-32 border-2 border-dashed border-gray-300 rounded-lg p-4 relative flex items-center justify-center">
                     <span className="absolute top-2 left-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Visa Technicien</span>
                   </div>
-                  <div className="h-32 border-2 border-dashed border-gray-300 rounded-lg p-4 relative">
+                  <div className="h-32 border-2 border-dashed border-gray-300 rounded-lg p-4 relative flex items-center justify-center bg-white">
                     <span className="absolute top-2 left-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Visa Client / Référent</span>
+                    {selectedMission.signatureUrl && (
+                      <img 
+                        src={selectedMission.signatureUrl} 
+                        alt="Signature Client" 
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    )}
                   </div>
                 </div>
               </div>

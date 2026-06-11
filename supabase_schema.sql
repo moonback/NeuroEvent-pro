@@ -186,4 +186,16 @@ ON CONFLICT (id) DO NOTHING;
 CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'signatures');
 CREATE POLICY "Public Uploads" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'signatures');
 
+-- IMPORTANT FOR UPDATES:
+-- Since the table already exists, CREATE TABLE IF NOT EXISTS will not add new columns.
+-- Run this ALTER TABLE to add the signature_url column to existing deployments.
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name='missions' AND column_name='signature_url') THEN
+        ALTER TABLE missions ADD COLUMN signature_url TEXT;
+    END IF;
+END $$;
 
+-- Reload the PostgREST schema cache so the API recognizes the new column
+NOTIFY pgrst, 'reload schema';

@@ -957,8 +957,35 @@ className="flex flex-col items-center justify-center w-full h-full text-[#64748b
                   <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-md bg-white text-red-500 uppercase tracking-wider animate-pulse">Aujourd'hui</span>
                 )}
               </div>
-              <h2 className="text-lg font-black text-white leading-tight">{selectedMission.title}</h2>
-              <p className="text-xs font-semibold text-white/80 mt-0.5">{selectedMission.client}</p>
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex-1">
+                  <h2 className="text-lg font-black text-white leading-tight pr-2">{selectedMission.title}</h2>
+                  <p className="text-xs font-semibold text-white/80 mt-0.5">{selectedMission.client}</p>
+                </div>
+                <button
+                  onClick={() => setSignatureModalOpen(true)}
+                  className="shrink-0 p-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-all active:scale-95 flex flex-col items-center justify-center gap-1 shadow-sm"
+                  title="Gérer la signature"
+                >
+                  {selectedMission.signatureUrl ? (
+                    <>
+                      <div className="relative">
+                        <PenTool className="w-5 h-5" />
+                        <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-bold text-emerald-100">Signé</span>
+                    </>
+                  ) : (
+                    <>
+                      <PenTool className="w-5 h-5" />
+                      <span className="text-[9px] font-bold">Signer</span>
+                    </>
+                  )}
+                </button>
+              </div>
 
               <div className="mt-3 flex flex-col gap-1">
                 <div className="flex items-center gap-2 text-white/90 text-[11px] font-semibold">
@@ -1007,8 +1034,7 @@ className="flex flex-col items-center justify-center w-full h-full text-[#64748b
                 { id: 'team',      label: 'Équipe',   icon: Users },
                 { id: 'equipment', label: 'Matériel', icon: QrCode },
                 { id: 'hours',     label: 'Heures',   icon: Timer },
-                { id: 'report',    label: 'Rapport',  icon: FileText },
-                { id: 'signature', label: 'Signature', icon: PenTool }
+                { id: 'report',    label: 'Rapport',  icon: FileText }
               ] as const).map(tab => {
                 const TabIcon = tab.icon;
                 const isActive = drawerTab === tab.id;
@@ -1385,59 +1411,6 @@ className="flex flex-col items-center justify-center w-full h-full text-[#64748b
                   <div className="bg-white border border-[#e2e8f0]/60 p-4 rounded-2xl text-[11px] text-[#64748b] leading-relaxed font-semibold shadow-xs flex items-start gap-2">
                     <Info className="w-4 h-4 shrink-0 mt-0.5 text-[#94a3b8]" />
                     <span>Les rapports sont enregistrés sur votre terminal. L'administrateur les consultera lors de l'archivage ou du débriefing technique.</span>
-                  </div>
-                </div>
-              )}
-
-              {/* ══ SIGNATURE ══ */}
-              {drawerTab === 'signature' && (
-                <div className="space-y-3">
-                  <div className="bg-white border border-[#e2e8f0]/60 rounded-2xl p-4 shadow-xs">
-                    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#f1f5f9]">
-                      <PenTool className="w-4 h-4 shrink-0" style={{ color: selectedMission.color }} />
-                      <span className="text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider">Bon de Livraison</span>
-                    </div>
-                    
-                    {!selectedMission.signatureUrl ? (
-                      <div className="text-center py-6">
-                        <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <PenTool className="w-6 h-6 text-slate-400" />
-                        </div>
-                        <p className="text-sm font-bold text-slate-800 mb-1">Aucune signature</p>
-                        <p className="text-xs text-slate-500 mb-4">Le client n'a pas encore signé le bon de livraison pour cette mission.</p>
-                        <button
-                          onClick={() => setSignatureModalOpen(true)}
-                          className="px-4 py-2 bg-[#0f172a] text-white rounded-xl text-xs font-bold hover:bg-[#1e293b] active:scale-95 transition-all shadow-sm"
-                        >
-                          Faire signer maintenant
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-center justify-center min-h-[150px]">
-                          <img 
-                            src={selectedMission.signatureUrl} 
-                            alt="Signature du client" 
-                            className="max-w-full max-h-[200px] object-contain"
-                          />
-                        </div>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-emerald-600 font-bold flex items-center gap-1">
-                            <Check className="w-3.5 h-3.5" /> Signé
-                          </span>
-                          <button
-                            onClick={() => {
-                              if(window.confirm("Êtes-vous sûr de vouloir remplacer la signature actuelle ?")) {
-                                setSignatureModalOpen(true);
-                              }
-                            }}
-                            className="text-slate-500 hover:text-slate-800 font-semibold"
-                          >
-                            Refaire signer
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
