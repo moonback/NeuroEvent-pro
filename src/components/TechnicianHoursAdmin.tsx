@@ -66,7 +66,11 @@ export default function TechnicianHoursAdmin({ missionId }: TechnicianHoursAdmin
       if (!name.includes(searchTech.toLowerCase())) return false;
     }
     return true;
-  });
+  }).map(l => ({
+    ...l,
+    startTime: new Date(l.startTime),
+    endTime: l.endTime ? new Date(l.endTime) : null
+  }));
 
   // Group by technician
   const byTech = technicians
