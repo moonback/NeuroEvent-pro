@@ -1,8 +1,9 @@
 import React from 'react';
 import {
-  X, Check, Clock, MapPin, Info, Phone, Users, QrCode, FileText, Timer, PenTool
+  X, Check, Clock, MapPin, Info, Phone, Users, QrCode, FileText, Timer, PenTool,
+  Sparkles
 } from 'lucide-react';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, differenceInMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { triggerVibrate, DRAWER_TABS, type DrawerTab } from './useTechDashboard';
 import DrawerTabs from './DrawerTabs';
@@ -14,7 +15,6 @@ interface MissionDrawerProps {
   onClose: () => void;
   onStatusChange: (s: 'Planifiée' | 'En cours' | 'Terminée') => void;
   onOpenSignature: () => void;
-  // Drag
   dragOffsetY: number;
   isDragging: boolean;
   handleDragStart: (e: React.TouchEvent) => void;
@@ -22,7 +22,6 @@ interface MissionDrawerProps {
   handleDragEnd: () => void;
   handleContentTouchStart: (e: React.TouchEvent) => void;
   handleContentTouchEnd: (e: React.TouchEvent) => void;
-  // Tab helpers (forwarded to DrawerTabs)
   getTruckName: (id?: string) => string;
   getColleaguesDetailed: (ids: string[]) => any[];
   getClientInfo: (id?: string) => any;
@@ -38,7 +37,7 @@ interface MissionDrawerProps {
 }
 
 const TAB_CONFIG: { id: DrawerTab; label: string; icon: React.ElementType }[] = [
-  { id: 'general',   label: 'Général',  icon: Info },
+  { id: 'general',   label: 'Infos',    icon: Info },
   { id: 'client',    label: 'Client',   icon: Phone },
   { id: 'team',      label: 'Équipe',   icon: Users },
   { id: 'equipment', label: 'Matériel', icon: QrCode },
@@ -46,159 +45,224 @@ const TAB_CONFIG: { id: DrawerTab; label: string; icon: React.ElementType }[] = 
   { id: 'report',    label: 'Rapport',  icon: FileText },
 ];
 
+const STATUS_STEPS = [
+  { key: 'Planifiée', label: 'Planifiée',  short: 'Prévu' },
+  { key: 'En cours',  label: 'En cours',   short: 'Actif' },
+  { key: 'Terminée',  label: 'Terminée',   short: 'Fini' },
+] as const;
+
 export default function MissionDrawer(props: MissionDrawerProps) {
   const { mission, drawerTab, setDrawerTab, onClose, onStatusChange, onOpenSignature } = props;
+  const isToday = isSameDay(mission.start, new Date());
+  const durationMins = differenceInMinutes(mission.end, mission.start);
+  const durationLabel = durationMins >= 60
+    ? `${Math.floor(durationMins / 60)}h${String(durationMins % 60).padStart(2, '0')}`
+    : `${durationMins}min`;
 
-  const steps = [
-    { key: 'Planifiée', label: 'Planifiée', done: ['En cours', 'Terminée'].includes(mission.status), active: mission.status === 'Planifiée' },
-    { key: 'En cours',  label: 'En cours',  done: mission.status === 'Terminée',                     active: mission.status === 'En cours' },
-    { key: 'Terminée',  label: 'Terminée',  done: false,                                             active: mission.status === 'Terminée' },
-  ];
+  const stepIndex = STATUS_STEPS.findIndex(s => s.key === mission.status);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
-      {/* Overlay */}
+      {/* Backdrop */}
       <div
         className="absolute inset-0"
-        style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+        style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
         onClick={() => { triggerVibrate('click'); onClose(); }}
       />
 
       {/* Bottom sheet */}
       <div
-        className="w-full max-w-md h-[92vh] flex flex-col z-10 overflow-hidden tech-animate-slide-up"
+        className="w-full max-w-md flex flex-col z-10 overflow-hidden tech-animate-slide-up"
         style={{
-          background: 'var(--tech-surface)',
-          borderRadius: '1.5rem 1.5rem 0 0',
-          boxShadow: '0 -8px 40px rgba(0,0,0,0.6)',
+          height: '92dvh',
+          background: '#0d1118',
+          borderRadius: '1.75rem 1.75rem 0 0',
+          boxShadow: '0 -12px 60px rgba(0,0,0,0.7), 0 -1px 0 rgba(255,255,255,0.06)',
           transform: `translateY(${props.dragOffsetY}px)`,
           transition: props.isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
-        {/* Drag notch */}
+        {/* ── Drag handle ── */}
         <div
           onTouchStart={props.handleDragStart}
           onTouchMove={props.handleDragMove}
           onTouchEnd={props.handleDragEnd}
-          className="w-full pt-3 pb-1 flex flex-col items-center cursor-grab shrink-0 select-none absolute top-0 left-0 right-0 z-20"
+          className="w-full pt-3 pb-2 flex justify-center cursor-grab select-none shrink-0"
         >
-          <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.2)' }} />
+          <div className="w-10 h-[3px] rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} />
         </div>
 
         {/* ── Hero Header ── */}
-        <div className="relative shrink-0 px-4 pt-6 pb-3" style={{ background: `linear-gradient(135deg, ${mission.color}, ${mission.color}cc)` }}>
-          {/* Decorative glow */}
-          <div className="absolute right-0 top-0 w-32 h-32 rounded-full opacity-30 -translate-y-1/2 translate-x-1/2" style={{ background: 'rgba(255,255,255,0.25)', filter: 'blur(40px)' }} />
+        <div
+          className="relative shrink-0 mx-3 mb-0 rounded-2xl overflow-hidden"
+          style={{
+            background: `linear-gradient(140deg, ${mission.color}dd 0%, ${mission.color}88 100%)`,
+          }}
+        >
+          {/* Mesh glow orbs */}
+          <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full opacity-30 pointer-events-none"
+            style={{ background: 'rgba(255,255,255,0.3)', filter: 'blur(32px)' }} />
+          <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full opacity-20 pointer-events-none"
+            style={{ background: 'rgba(0,0,0,0.5)', filter: 'blur(20px)' }} />
 
+          {/* Close button */}
           <button
             onClick={() => { triggerVibrate('click'); onClose(); }}
-            className="absolute top-3 right-3 p-1.5 rounded-full transition-colors cursor-pointer active:scale-90"
-            style={{ background: 'rgba(0,0,0,0.2)' }}
+            className="absolute top-3 right-3 p-1.5 rounded-full transition-all active:scale-90 z-10"
+            style={{ background: 'rgba(0,0,0,0.25)' }}
           >
             <X className="w-3.5 h-3.5 text-white" />
           </button>
 
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <span className="text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider"
-              style={{ background: 'rgba(0,0,0,0.2)', color: '#fff' }}>
-              {mission.type}
-            </span>
-            {isSameDay(mission.start, new Date()) && (
-              <span className="text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider animate-pulse"
-                style={{ background: '#fff', color: '#ef4444' }}>
-                Aujourd'hui
+          <div className="px-4 pt-3.5 pb-4 relative z-10">
+            {/* Tags */}
+            <div className="flex items-center gap-1.5 mb-2">
+              <span
+                className="text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider"
+                style={{ background: 'rgba(0,0,0,0.22)', color: '#fff' }}
+              >
+                {mission.type}
               </span>
-            )}
-          </div>
-
-          <div className="flex justify-between items-start gap-3">
-            <div className="min-w-0 flex-1">
-              <h2 className="text-base font-black text-white leading-tight pr-2 truncate">{mission.title}</h2>
-              <p className="text-[11px] font-semibold text-white/80 mt-0.5">{mission.client}</p>
-            </div>
-            <button
-              onClick={mission.signatureUrl ? undefined : onOpenSignature}
-              disabled={!!mission.signatureUrl}
-              className={`shrink-0 p-2 rounded-xl flex flex-col items-center justify-center gap-1 shadow-sm transition-all ${
-                mission.signatureUrl ? 'cursor-not-allowed opacity-75' : 'active:scale-95 cursor-pointer'
-              }`}
-              style={{ background: 'rgba(0,0,0,0.2)' }}
-              title={mission.signatureUrl ? "Signature enregistrée" : "Gérer la signature"}
-            >
-              {mission.signatureUrl ? (
-                <>
-                  <PenTool className="w-4.5 h-4.5 text-white/50" />
-                  <span className="text-[8px] font-black" style={{ color: '#86efac' }}>Signé</span>
-                </>
-              ) : (
-                <>
-                  <PenTool className="w-4.5 h-4.5 text-white" />
-                  <span className="text-[8px] font-black text-white">Signer</span>
-                </>
+              {isToday && (
+                <span
+                  className="text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider"
+                  style={{ background: 'rgba(255,255,255,0.9)', color: mission.color }}
+                >
+                  Aujourd'hui
+                </span>
               )}
-            </button>
-          </div>
-
-          <div className="mt-2 flex flex-col gap-0.5">
-            <div className="flex items-center gap-1.5 text-white/90 text-[10px] font-semibold">
-              <Clock className="w-3 h-3 shrink-0" />
-              <span>{format(mission.start, 'EEEE d MMM · HH:mm', { locale: fr })} → {format(mission.end, 'HH:mm')}</span>
+              <span
+                className="text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ml-auto"
+                style={{ background: 'rgba(0,0,0,0.22)', color: '#fff' }}
+              >
+                {durationLabel}
+              </span>
             </div>
-            <div className="flex items-center gap-1.5 text-white/90 text-[10px] font-semibold">
-              <MapPin className="w-3 h-3 shrink-0" />
-              <span className="line-clamp-1">{mission.address}</span>
-            </div>
-          </div>
 
-          {/* Status stepper */}
-          <div className="mt-3 flex items-center gap-2">
-            {steps.map((step, i) => {
-              const isTerminated = mission.status === 'Terminée';
-              return (
-                <React.Fragment key={step.key}>
-                  <div
-                    className={`flex flex-col items-center gap-1 transition-all ${
-                      isTerminated ? 'cursor-not-allowed opacity-75' : 'cursor-pointer hover:scale-105 active:scale-95'
-                    }`}
-                    onClick={() => {
-                      if (isTerminated) {
-                        triggerVibrate('error');
-                        return;
-                      }
-                      onStatusChange(step.key as any);
-                    }}
-                  >
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black transition-all ${
-                      step.active ? 'bg-white text-slate-800 shadow-md ring-2 ring-white/40' :
-                      step.done   ? 'bg-white/30 text-white' : 'bg-white/15 text-white/50'
-                    }`}>
-                      {step.done ? <Check className="w-3 h-3 stroke-[3]" /> : i + 1}
-                    </div>
-                    <span className={`text-[9px] font-bold whitespace-nowrap ${step.active || step.done ? 'text-white' : 'text-white/50'}`}>{step.label}</span>
-                  </div>
-                  {i < steps.length - 1 && (
-                    <div className={`flex-1 h-px rounded mb-4 ${step.done || step.active ? 'bg-white/50' : 'bg-white/20'}`} />
-                  )}
-                </React.Fragment>
-              );
-            })}
+            {/* Title + signature */}
+            <div className="flex justify-between items-start gap-3 mb-2.5">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg font-black text-white leading-tight truncate">{mission.title}</h2>
+                <p className="text-[11px] font-semibold mt-0.5" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                  {mission.client}
+                </p>
+              </div>
+              {/* Signature pill */}
+              <button
+                onClick={mission.signatureUrl ? undefined : onOpenSignature}
+                disabled={!!mission.signatureUrl}
+                className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-all ${
+                  mission.signatureUrl ? 'cursor-not-allowed' : 'active:scale-95 cursor-pointer'
+                }`}
+                style={{
+                  background: mission.signatureUrl ? 'rgba(0,229,160,0.25)' : 'rgba(0,0,0,0.22)',
+                  border: mission.signatureUrl ? '1px solid rgba(0,229,160,0.35)' : '1px solid rgba(255,255,255,0.15)',
+                }}
+                title={mission.signatureUrl ? 'Signature enregistrée' : 'Gérer la signature'}
+              >
+                <PenTool className="w-3.5 h-3.5" style={{ color: mission.signatureUrl ? '#86efac' : '#fff' }} />
+                <span className="text-[9px] font-black" style={{ color: mission.signatureUrl ? '#86efac' : '#fff' }}>
+                  {mission.signatureUrl ? 'Signé ✓' : 'Signer'}
+                </span>
+              </button>
+            </div>
+
+            {/* Date & location row */}
+            <div className="space-y-1 mb-3">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
+                <Clock className="w-3 h-3 shrink-0" />
+                <span>{format(mission.start, 'EEEE d MMM · HH:mm', { locale: fr })} → {format(mission.end, 'HH:mm')}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
+                <MapPin className="w-3 h-3 shrink-0" />
+                <span className="line-clamp-1">{mission.address}</span>
+              </div>
+            </div>
+
+            {/* ── Status stepper ── */}
+            <div
+              className="flex items-center p-2.5 rounded-xl gap-2"
+              style={{ background: 'rgba(0,0,0,0.22)' }}
+            >
+              {STATUS_STEPS.map((step, i) => {
+                const isDone   = i < stepIndex;
+                const isActive = i === stepIndex;
+                const isFuture = i > stepIndex;
+                const locked   = mission.status === 'Terminée';
+
+                return (
+                  <React.Fragment key={step.key}>
+                    <button
+                      onClick={() => {
+                        if (locked) { triggerVibrate('error'); return; }
+                        onStatusChange(step.key as any);
+                      }}
+                      className={`flex flex-col items-center gap-1 flex-1 transition-all ${
+                        locked ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'
+                      }`}
+                    >
+                      <div
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-black transition-all"
+                        style={{
+                          background: isActive
+                            ? '#fff'
+                            : isDone
+                              ? 'rgba(255,255,255,0.35)'
+                              : 'rgba(255,255,255,0.12)',
+                          color: isActive ? mission.color : isDone ? '#fff' : 'rgba(255,255,255,0.45)',
+                          boxShadow: isActive ? `0 0 16px rgba(255,255,255,0.4)` : 'none',
+                          transform: isActive ? 'scale(1.1)' : 'scale(1)',
+                        }}
+                      >
+                        {isDone ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : i + 1}
+                      </div>
+                      <span
+                        className="text-[9px] font-bold whitespace-nowrap"
+                        style={{ color: isActive || isDone ? '#fff' : 'rgba(255,255,255,0.45)' }}
+                      >
+                        {step.short}
+                      </span>
+                    </button>
+
+                    {i < STATUS_STEPS.length - 1 && (
+                      <div
+                        className="h-px flex-1 rounded"
+                        style={{ background: isDone ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.18)' }}
+                      />
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* ── Pill Tab Bar ── */}
-        <div className="px-3 py-2 flex gap-1 overflow-x-auto shrink-0 select-none no-scrollbar"
-          style={{ background: 'var(--tech-card)', borderBottom: '1px solid var(--tech-border)' }}>
-          {TAB_CONFIG.map(tab => {
+        {/* ── Tab Bar ── */}
+        <div
+          className="px-3 py-2.5 flex gap-1 overflow-x-auto shrink-0 select-none no-scrollbar"
+          style={{ background: '#0d1118', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+        >
+          {TAB_CONFIG.map((tab) => {
             const TabIcon = tab.icon;
             const isActive = drawerTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => { triggerVibrate('click'); setDrawerTab(tab.id); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-extrabold rounded-full whitespace-nowrap cursor-pointer transition-all active:scale-95"
-                style={isActive
-                  ? { background: mission.color, color: '#fff' }
-                  : { color: 'var(--tech-text-muted)' }
+                className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-extrabold rounded-2xl whitespace-nowrap cursor-pointer transition-all active:scale-95 shrink-0"
+                style={
+                  isActive
+                    ? {
+                        background: `${mission.color}18`,
+                        border: `1px solid ${mission.color}35`,
+                        color: mission.color,
+                        boxShadow: `0 0 12px ${mission.color}20`,
+                      }
+                    : {
+                        background: 'transparent',
+                        border: '1px solid transparent',
+                        color: 'var(--tech-text-muted)',
+                      }
                 }
               >
                 <TabIcon className="w-3.5 h-3.5" />
@@ -212,7 +276,7 @@ export default function MissionDrawer(props: MissionDrawerProps) {
         <div
           onTouchStart={props.handleContentTouchStart}
           onTouchEnd={props.handleContentTouchEnd}
-          className="flex-1 overflow-y-auto select-none"
+          className="flex-1 overflow-y-auto no-scrollbar"
           style={{ background: 'var(--tech-bg)' }}
         >
           <div key={drawerTab} className="p-4 tech-animate-in">
@@ -237,7 +301,7 @@ export default function MissionDrawer(props: MissionDrawerProps) {
         </div>
 
         {/* Bottom safe area */}
-        <div className="h-4 shrink-0" style={{ background: 'var(--tech-card)' }} />
+        <div className="h-3 shrink-0" style={{ background: 'var(--tech-bg)' }} />
       </div>
     </div>
   );
