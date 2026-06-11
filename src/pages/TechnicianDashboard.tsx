@@ -62,6 +62,32 @@ export default function TechnicianDashboard() {
   const [localReports, setLocalReports] = React.useState<Record<string, string>>({});
   const [savingStatus, setSavingStatus] = React.useState<'idle' | 'saving' | 'saved'>('idle');
 
+  // Network & Sync State
+  const syncQueue = useStore(state => state.syncQueue);
+  const processSyncQueue = useStore(state => state.processSyncQueue);
+  const [isOnline, setIsOnline] = React.useState(navigator.onLine);
+
+  React.useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      processSyncQueue();
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Initial check on mount if we have pending items
+    if (navigator.onLine && syncQueue.length > 0) {
+      processSyncQueue();
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [processSyncQueue, syncQueue.length]);
+
   // Drag and Swipe Gesture states
   const [dragOffsetY, setDragOffsetY] = React.useState(0);
   const [isDragging, setIsDragging] = React.useState(false);
@@ -379,10 +405,22 @@ export default function TechnicianDashboard() {
         <div className="flex justify-between items-center">
           <div>
             <span className="text-[9px] font-extrabold text-[#2563eb] uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-md">Pro Connect</span>
+            {!isOnline && (
+              <span className="ml-2 text-[9px] font-extrabold text-red-600 uppercase tracking-widest bg-red-50 px-2 py-0.5 rounded-md border border-red-100 animate-pulse">
+                Hors Ligne
+              </span>
+            )}
             <h1 className="text-xl font-black text-[#0f172a] tracking-tight mt-1">Mes Missions</h1>
-            <p className="text-[11px] text-[#64748b] mt-0.5">
-              Bonjour, <span className="font-bold text-[#475569]">{user?.user_metadata?.first_name || 'Technicien'}</span>
-            </p>
+            {syncQueue.length > 0 ? (
+              <p className="text-[11px] font-bold text-amber-600 mt-0.5 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                {syncQueue.length} action(s) en attente
+              </p>
+            ) : (
+              <p className="text-[11px] text-[#64748b] mt-0.5">
+                Bonjour, <span className="font-bold text-[#475569]">{user?.user_metadata?.first_name || 'Technicien'}</span>
+              </p>
+            )}
           </div>
           
           <div className="flex gap-2">

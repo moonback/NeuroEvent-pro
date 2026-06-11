@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { Mission, Technician, Truck, Equipment, Client, MissionType, MissionStatus, EquipmentCategory } from '../types';
 import { TableRow, TableInsert, TableUpdate } from '../types/database';
 import { supabase } from '../lib/supabase';
@@ -22,6 +23,14 @@ interface AppState {
   clients: Client[];
 
   loading: boolean;
+  
+  // Offline sync queue
+  syncQueue: Array<{
+    id: string;
+    type: 'TOGGLE_EQUIP';
+    payload: { missionId: string; equipmentId: string; checked: boolean };
+  }>;
+  processSyncQueue: () => Promise<void>;
 
   initialize: () => Promise<void>;
 
@@ -58,16 +67,58 @@ function reportError(action: string, error: { message: string } | null | undefin
 
 let refetchTimer: ReturnType<typeof setTimeout> | null = null;
 
-export const useStore = create<AppState>((set, get) => ({
-  missions: [],
-  technicians: [],
-  trucks: [],
-  equipment: [],
-  clients: [],
-  loading: true,
+export const useStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      missions: [],
+      technicians: [],
+      trucks: [],
+      equipment: [],
+      clients: [],
+      loading: true,
+      syncQueue: [],
 
-  initialize: async () => {
-    try {
+      processSyncQueue: async () => {
+        const queue = get().syncQueue;
+        if (queue.length === 0 || !navigator.onLine) return;
+
+        let remainingQueue = [...queue];
+        let hasErrors = false;
+
+        for (const action of queue) {
+          try {
+            if (action.type === 'TOGGLE_EQUIP') {
+              const { missionId, equipmentId, checked } = action.payload;
+              const { error } = await supabase
+                .from('mission_equipments')
+                .update({ checked })
+                .eq('mission_id', missionId)
+                .eq('equipment_id', equipmentId);
+              
+              if (error) throw error;
+            }
+            remainingQueue = remainingQueue.filter(a => a.id !== action.id);
+          } catch (e) {
+            console.error('Failed to sync action', action, e);
+            hasErrors = true;
+            break; // Stop at first error to preserve order
+          }
+        }
+        
+        set({ syncQueue: remainingQueue });
+        if (!hasErrors && queue.length > 0) {
+          toast.success(`${queue.length} action(s) synchronisée(s) avec succès !`);
+        }
+      },
+
+      initialize: async () => {
+        if (!navigator.onLine) {
+          console.log('Mode hors ligne : chargement depuis le cache local.');
+          set({ loading: false });
+          return;
+        }
+        
+        try {
       const [techsRes, trucksRes, equipRes, missionsRes, clientsRes] = await Promise.all([
         supabase.from('technicians').select('*'),
         supabase.from('trucks').select('*'),
@@ -240,7 +291,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   toggleEquipmentCheck: async (missionId, equipmentId, checked) => {
-    // Mise à jour optimiste : l'UI réagit immédiatement, le realtime resynchronise.
+    // Mise à jour optimiste : l'UI réagit immédiatement
     set(state => ({
       missions: state.missions.map(m =>
         m.id === missionId
@@ -248,14 +299,31 @@ export const useStore = create<AppState>((set, get) => ({
           : m
       )
     }));
+
+    if (!navigator.onLine) {
+      set(state => ({
+        syncQueue: [...state.syncQueue, { id: Date.now().toString(), type: 'TOGGLE_EQUIP', payload: { missionId, equipmentId, checked } }]
+      }));
+      toast.success("Mode hors ligne : pointage mis en attente.");
+      return;
+    }
+
     const { error } = await supabase
       .from('mission_equipments')
       .update({ checked })
       .eq('mission_id', missionId)
       .eq('equipment_id', equipmentId);
+
     if (error) {
-      console.error('toggleEquipmentCheck', error);
-      toast.error("Pointage non enregistré (la migration SQL a-t-elle été appliquée ?)");
+      if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch')) {
+        set(state => ({
+          syncQueue: [...state.syncQueue, { id: Date.now().toString(), type: 'TOGGLE_EQUIP', payload: { missionId, equipmentId, checked } }]
+        }));
+        toast.success("Réseau instable : pointage mis en attente.");
+      } else {
+        console.error('toggleEquipmentCheck', error);
+        toast.error("Pointage non enregistré (erreur serveur).");
+      }
     }
   },
 
@@ -415,4 +483,16 @@ export const useStore = create<AppState>((set, get) => ({
     toast.success('Client supprimé.');
     get().initialize();
   }
-}));
+  }),
+  {
+    name: 'eventplanner-storage',
+    partialize: (state) => ({
+      missions: state.missions,
+      technicians: state.technicians,
+      trucks: state.trucks,
+      equipment: state.equipment,
+      clients: state.clients,
+      syncQueue: state.syncQueue,
+    }),
+  }
+));
