@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
-import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import {
   QrCode, Pencil, Search, X, LayoutGrid, CalendarDays,
@@ -9,6 +10,7 @@ import {
 import { useStore } from '../store';
 import { Equipment as EquipmentType, EquipmentCategory, Mission } from '../types';
 import EquipmentModal from '../components/EquipmentModal';
+import MissionModal from '../components/MissionModal';
 import { QRCodePrintModal } from '../components/QRCodePrintModal';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { useFullscreen } from '../hooks/useFullscreen';
@@ -51,6 +53,8 @@ export default function Equipment() {
   const [activeCategories, setActiveCategories] = useState<Set<EquipmentCategory>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
   const { ref: fsRef, isFullscreen, toggle: toggleFullscreen } = useFullscreen();
+  const [missionModalOpen, setMissionModalOpen] = useState(false);
+  const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
 
   const toggleCategory = (cat: EquipmentCategory) => {
     setActiveCategories(prev => {
@@ -82,30 +86,34 @@ export default function Equipment() {
     return { totalItems, overbooked, fullyAvailable };
   }, [filteredEquipment, missions]);
 
-  // ── Ressources & évènements FullCalendar ──────────────────────────────────
-  const resources = filteredEquipment.map(item => ({
-    id: item.id,
-    title: item.name,
-    category: item.category,
-    totalQuantity: item.totalQuantity,
-  }));
+  // ── Événements calendrier timeGrid (1 par mission filtrée) ───────────────
+  const filteredEqIds = useMemo(
+    () => new Set(filteredEquipment.map(e => e.id)),
+    [filteredEquipment]
+  );
 
-  const events: any[] = [];
-  missions.forEach(mission => {
-    mission.equipments.forEach(eq => {
-      if (!filteredEquipment.find(e => e.id === eq.equipmentId)) return;
-      events.push({
-        id: `${mission.id}::${eq.equipmentId}`,
-        resourceId: eq.equipmentId,
-        title: `${mission.title} · ${eq.quantity}×`,
-        start: mission.start,
-        end: mission.end,
-        backgroundColor: mission.color,
-        borderColor: mission.color,
-        extendedProps: { quantity: eq.quantity, missionTitle: mission.title },
+  const calendarEvents = useMemo(() => {
+    return missions
+      .filter(m => m.equipments.some(eq => filteredEqIds.has(eq.equipmentId)))
+      .map(m => {
+        const usedEq = m.equipments
+          .filter(eq => filteredEqIds.has(eq.equipmentId))
+          .map(eq => {
+            const item = equipment.find(e => e.id === eq.equipmentId);
+            return item ? `${item.name}\u00a0\u00d7${eq.quantity}` : '';
+          })
+          .filter(Boolean);
+        return {
+          id: m.id,
+          title: m.title,
+          start: m.start,
+          end: m.end,
+          backgroundColor: m.color,
+          borderColor: m.color,
+          extendedProps: { missionId: m.id, eqList: usedEq },
+        };
       });
-    });
-  });
+  }, [missions, equipment, filteredEqIds]);
 
   const openCreate = () => { setEditing(null); setModalOpen(true); };
   const openEdit = (item: EquipmentType | undefined) => {
@@ -253,50 +261,46 @@ export default function Equipment() {
       <div className="flex-1 min-h-0">
         {viewMode === 'calendar' ? (
           <FullCalendar
-            key={isMobile ? 'mobile' : 'desktop'}
-            schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
-            plugins={[resourceTimelinePlugin, interactionPlugin]}
-            initialView={isMobile ? 'resourceTimelineDay' : 'resourceTimelineWeek'}
+            key={`${isMobile ? 'mobile' : 'desktop'}-${search}-${[...activeCategories].join()}`}
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            initialView={isMobile ? 'timeGridDay' : 'timeGridWeek'}
             headerToolbar={
               isMobile
                 ? { left: 'prev,next', center: 'title', right: 'today' }
-                : { left: 'prev,next today', center: 'title', right: 'resourceTimelineDay,resourceTimelineWeek,resourceTimelineMonth' }
+                : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }
             }
             footerToolbar={
               isMobile
-                ? { left: '', center: 'resourceTimelineDay,resourceTimelineWeek,resourceTimelineMonth', right: '' }
+                ? { left: '', center: 'dayGridMonth,timeGridWeek,timeGridDay', right: '' }
                 : undefined
             }
-            resources={resources}
-            events={events}
+            events={calendarEvents}
             editable={false}
             selectable={false}
+            dayMaxEvents={true}
+            eventClick={(info) => {
+              setSelectedMissionId(info.event.extendedProps.missionId);
+              setMissionModalOpen(true);
+            }}
             height="100%"
             locale="fr"
             buttonText={{
               today: "Aujourd'hui",
               month: 'Mois',
               week: 'Semaine',
-              day: 'Jour'
+              day: 'Jour',
+              list: 'Liste',
             }}
-            resourceAreaWidth={isMobile ? '160px' : '380px'}
-            resourceAreaHeaderContent="Matériel"
             slotMinTime="06:00:00"
             slotMaxTime="24:00:00"
-            resourceGroupField="category"
-            resourceLabelContent={(arg) => (
-              <ResourceRow
-                arg={arg}
-                equipment={equipment}
-                missions={missions}
-                onEdit={openEdit}
-                onQR={openQR}
-              />
-            )}
+            allDaySlot={false}
             eventContent={(info) => (
-              <div className="flex flex-col overflow-hidden text-[11px] px-1 py-0.5">
-                <div className="font-semibold truncate">{info.event.extendedProps.missionTitle}</div>
-                <div className="opacity-80">× {info.event.extendedProps.quantity}</div>
+              <div className="flex flex-col overflow-hidden text-xs px-0.5 py-0.5">
+                <div className="font-semibold truncate">{info.event.title}</div>
+                <div className="opacity-85 truncate text-[10px]">
+                  {info.event.extendedProps.eqList.slice(0, 2).join(' · ')}
+                  {info.event.extendedProps.eqList.length > 2 && ` +${info.event.extendedProps.eqList.length - 2}`}
+                </div>
               </div>
             )}
           />
@@ -316,6 +320,14 @@ export default function Equipment() {
           isOpen={modalOpen}
           onClose={() => { setModalOpen(false); setEditing(null); }}
           equipment={editing}
+        />
+      )}
+      {missionModalOpen && (
+        <MissionModal
+          isOpen={missionModalOpen}
+          onClose={() => setMissionModalOpen(false)}
+          missionId={selectedMissionId}
+          initialDates={null}
         />
       )}
       {printModalOpen && (
