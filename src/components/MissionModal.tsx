@@ -54,6 +54,17 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
 
   const [startDate, setStartDate] = useState(format(existingMission?.start || defaultStart, "yyyy-MM-dd'T'HH:mm"));
   const [endDate, setEndDate] = useState(format(existingMission?.end || defaultEnd, "yyyy-MM-dd'T'HH:mm"));
+  const [deliveryDate, setDeliveryDate] = useState(
+    existingMission?.deliveryDate ? format(existingMission.deliveryDate, "yyyy-MM-dd'T'HH:mm") : ''
+  );
+  const [pickupDate, setPickupDate] = useState(
+    existingMission?.pickupDate ? format(existingMission.pickupDate, "yyyy-MM-dd'T'HH:mm") : ''
+  );
+  const [setupDuration, setSetupDuration] = useState(
+    existingMission?.setupDuration !== undefined && existingMission?.setupDuration !== null 
+      ? String(existingMission.setupDuration) 
+      : ''
+  );
 
   const [selectedTechs, setSelectedTechs] = useState<string[]>(existingMission?.technicianIds || []);
   const [selectedTruck, setSelectedTruck] = useState<string>(existingMission?.truckId || '');
@@ -110,6 +121,10 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
       if (!ok) return;
     }
 
+    const delivery = deliveryDate ? new Date(deliveryDate) : null;
+    const pickup = pickupDate ? new Date(pickupDate) : null;
+    const setup = setupDuration ? parseInt(setupDuration, 10) : null;
+
     const missionData = {
       title,
       client: clientId ? (clients.find(c => c.id === clientId)?.name ?? client) : client,
@@ -123,7 +138,10 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
       truckId: selectedTruck || undefined,
       requiredSkills,
       equipments: selectedEquipments.filter(eq => eq.equipmentId !== ''),
-      color: typeColors[type]
+      color: typeColors[type],
+      deliveryDate: delivery,
+      pickupDate: pickup,
+      setupDuration: setup
     };
 
     if (existingMission) {
@@ -377,6 +395,41 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
                 onChange={e => setEndDate(e.target.value)} 
                 className={inputClass} 
               />
+            </div>
+
+            <div className="col-span-1 sm:col-span-2 border-t border-[#e2e8f0] pt-4 mt-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label htmlFor="mission-delivery" className={labelClass}>Livraison (Date & Heure)</label>
+                <input 
+                  id="mission-delivery" 
+                  type="datetime-local" 
+                  value={deliveryDate} 
+                  onChange={e => setDeliveryDate(e.target.value)} 
+                  className={inputClass} 
+                />
+              </div>
+              <div>
+                <label htmlFor="mission-pickup" className={labelClass}>Reprise (Date & Heure)</label>
+                <input 
+                  id="mission-pickup" 
+                  type="datetime-local" 
+                  value={pickupDate} 
+                  onChange={e => setPickupDate(e.target.value)} 
+                  className={inputClass} 
+                />
+              </div>
+              <div>
+                <label htmlFor="mission-setup" className={labelClass}>Temps installation</label>
+                <input 
+                  id="mission-setup" 
+                  type="number" 
+                  min="0"
+                  placeholder="Durée en minutes"
+                  value={setupDuration} 
+                  onChange={e => setSetupDuration(e.target.value)} 
+                  className={inputClass} 
+                />
+              </div>
             </div>
 
             {/* Status Stepper */}

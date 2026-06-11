@@ -133,6 +133,72 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
         </div>
       </InfoCard>
 
+      {/* ── Logistique (Livraison, Installation, Reprise) ── */}
+      {(mission.deliveryDate || mission.pickupDate || (mission.setupDuration !== undefined && mission.setupDuration !== null)) && (
+        <InfoCard>
+          <CardHeader
+            icon={<Clock className="w-3.5 h-3.5" style={{ color: mission.color }} />}
+            label="Logistique & Horaires"
+          />
+          <div className="p-4 space-y-3.5">
+            <div className="grid grid-cols-1 gap-3">
+              {/* Delivery */}
+              {mission.deliveryDate && (
+                <div className="flex justify-between items-center p-2.5 rounded-xl border border-white/[0.03] bg-white/[0.01]">
+                  <div>
+                    <div className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'var(--tech-text-muted)' }}>Livraison</div>
+                    <div className="text-xs font-semibold mt-0.5" style={{ color: 'var(--tech-text-secondary)' }}>
+                      {format(mission.deliveryDate, 'EEEE d MMMM', { locale: fr })}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-black text-white bg-white/[0.05] px-2.5 py-1 rounded-lg">
+                      {format(mission.deliveryDate, 'HH:mm')}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Setup Duration */}
+              {mission.setupDuration !== undefined && mission.setupDuration !== null && (
+                <div className="flex justify-between items-center p-2.5 rounded-xl border border-white/[0.03] bg-white/[0.01]">
+                  <div>
+                    <div className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'var(--tech-text-muted)' }}>Installation</div>
+                    <div className="text-xs font-semibold mt-0.5" style={{ color: 'var(--tech-text-secondary)' }}>
+                      Temps estimé de montage
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-black" style={{ color: mission.color }}>
+                      {mission.setupDuration >= 60 
+                        ? `${Math.floor(mission.setupDuration / 60)}h${String(mission.setupDuration % 60).padStart(2, '0')}` 
+                        : `${mission.setupDuration} min`}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Pickup */}
+              {mission.pickupDate && (
+                <div className="flex justify-between items-center p-2.5 rounded-xl border border-white/[0.03] bg-white/[0.01]">
+                  <div>
+                    <div className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'var(--tech-text-muted)' }}>Reprise</div>
+                    <div className="text-xs font-semibold mt-0.5" style={{ color: 'var(--tech-text-secondary)' }}>
+                      {format(mission.pickupDate, 'EEEE d MMMM', { locale: fr })}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-black text-white bg-white/[0.05] px-2.5 py-1 rounded-lg">
+                      {format(mission.pickupDate, 'HH:mm')}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </InfoCard>
+      )}
+
       {/* ── Location ── */}
       <InfoCard>
         <CardHeader

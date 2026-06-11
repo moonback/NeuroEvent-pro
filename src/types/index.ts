@@ -93,6 +93,9 @@ export interface Mission {
   status: MissionStatus;
   color: string;
   signatureUrl?: string | null;
+  deliveryDate?: Date | null;
+  pickupDate?: Date | null;
+  setupDuration?: number | null; // in minutes
 }
 
 export interface TimeLog {

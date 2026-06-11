@@ -76,6 +76,29 @@ function reportError(action: string, error: { message: string } | null | undefin
   return true;
 }
 
+function parseMissionSkills(rawSkills: string[] | null) {
+  const arr = rawSkills || [];
+  const skills = arr.filter(s => !s.startsWith('meta:'));
+  const dStr = arr.find(s => s.startsWith('meta:delivery:'))?.split('meta:delivery:')[1];
+  const pStr = arr.find(s => s.startsWith('meta:pickup:'))?.split('meta:pickup:')[1];
+  const sStr = arr.find(s => s.startsWith('meta:setup:'))?.split('meta:setup:')[1];
+  
+  return {
+    skills,
+    deliveryDate: dStr ? new Date(dStr) : null,
+    pickupDate: pStr ? new Date(pStr) : null,
+    setupDuration: sStr ? parseInt(sStr, 10) : null
+  };
+}
+
+function serializeMissionSkills(skills: string[] | undefined, delivery: Date | null | undefined, pickup: Date | null | undefined, setup: number | null | undefined) {
+  const result = [...(skills || [])];
+  if (delivery) result.push(`meta:delivery:${delivery.toISOString()}`);
+  if (pickup) result.push(`meta:pickup:${pickup.toISOString()}`);
+  if (setup !== undefined && setup !== null) result.push(`meta:setup:${setup}`);
+  return result;
+}
+
 let refetchTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useStore = create<AppState>()(
@@ -191,27 +214,33 @@ export const useStore = create<AppState>()(
         createdAt: new Date(u.created_at)
       })) || [];
 
-      const missions: Mission[] = missionsRes.data?.map((m) => ({
-        id: m.id,
-        title: m.title,
-        type: m.type as MissionType,
-        client: m.client,
-        clientId: m.client_id || undefined,
-        address: m.address,
-        start: new Date(m.start_date),
-        end: new Date(m.end_date),
-        technicianIds: m.mission_technicians?.map((mt) => mt.technician_id) || [],
-        truckId: m.truck_id || undefined,
-        requiredSkills: m.required_skills || [],
-        status: m.status as MissionStatus,
-        color: m.color,
-        signatureUrl: m.signature_url,
-        equipments: m.mission_equipments?.map((me) => ({
-          equipmentId: me.equipment_id,
-          quantity: me.quantity,
-          checked: !!me.checked
-        })) || []
-      })) || [];
+      const missions: Mission[] = missionsRes.data?.map((m) => {
+        const parsed = parseMissionSkills(m.required_skills);
+        return {
+          id: m.id,
+          title: m.title,
+          type: m.type as MissionType,
+          client: m.client,
+          clientId: m.client_id || undefined,
+          address: m.address,
+          start: new Date(m.start_date),
+          end: new Date(m.end_date),
+          technicianIds: m.mission_technicians?.map((mt) => mt.technician_id) || [],
+          truckId: m.truck_id || undefined,
+          requiredSkills: parsed.skills,
+          deliveryDate: parsed.deliveryDate,
+          pickupDate: parsed.pickupDate,
+          setupDuration: parsed.setupDuration,
+          status: m.status as MissionStatus,
+          color: m.color,
+          signatureUrl: m.signature_url,
+          equipments: m.mission_equipments?.map((me) => ({
+            equipmentId: me.equipment_id,
+            quantity: me.quantity,
+            checked: !!me.checked
+          })) || []
+        };
+      }) || [];
 
       set({ technicians, trucks, equipment, missions, clients, unavailabilities, loading: false });
 
@@ -236,6 +265,12 @@ export const useStore = create<AppState>()(
   },
 
   addMission: async (mission) => {
+    const serializedSkills = serializeMissionSkills(
+      mission.requiredSkills,
+      mission.deliveryDate,
+      mission.pickupDate,
+      mission.setupDuration
+    );
     const payload: TableInsert<'missions'> = {
       title: mission.title,
       type: mission.type,
@@ -244,7 +279,7 @@ export const useStore = create<AppState>()(
       start_date: mission.start.toISOString(),
       end_date: mission.end.toISOString(),
       truck_id: mission.truckId || null,
-      required_skills: mission.requiredSkills || [],
+      required_skills: serializedSkills,
       status: mission.status,
       color: mission.color,
       signature_url: mission.signatureUrl
@@ -282,7 +317,19 @@ export const useStore = create<AppState>()(
     if (updatedFields.start !== undefined) changes.start_date = updatedFields.start.toISOString();
     if (updatedFields.end !== undefined) changes.end_date = updatedFields.end.toISOString();
     if (updatedFields.truckId !== undefined) changes.truck_id = updatedFields.truckId || null;
-    if (updatedFields.requiredSkills !== undefined) changes.required_skills = updatedFields.requiredSkills;
+    if (updatedFields.requiredSkills !== undefined || 
+        updatedFields.deliveryDate !== undefined || 
+        updatedFields.pickupDate !== undefined || 
+        updatedFields.setupDuration !== undefined) {
+      
+      const existing = get().missions.find(m => m.id === id);
+      const skills = updatedFields.requiredSkills !== undefined ? updatedFields.requiredSkills : existing?.requiredSkills;
+      const delivery = updatedFields.deliveryDate !== undefined ? updatedFields.deliveryDate : existing?.deliveryDate;
+      const pickup = updatedFields.pickupDate !== undefined ? updatedFields.pickupDate : existing?.pickupDate;
+      const setup = updatedFields.setupDuration !== undefined ? updatedFields.setupDuration : existing?.setupDuration;
+      
+      changes.required_skills = serializeMissionSkills(skills, delivery, pickup, setup);
+    }
     if (updatedFields.status !== undefined) changes.status = updatedFields.status;
     if (updatedFields.color !== undefined) changes.color = updatedFields.color;
     if (updatedFields.signatureUrl !== undefined) changes.signature_url = updatedFields.signatureUrl;

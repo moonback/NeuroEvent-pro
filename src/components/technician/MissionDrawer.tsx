@@ -172,7 +172,7 @@ export default function MissionDrawer(props: MissionDrawerProps) {
               >
                 <PenTool className="w-3.5 h-3.5" style={{ color: mission.signatureUrl ? '#86efac' : '#fff' }} />
                 <span className="text-[9px] font-black" style={{ color: mission.signatureUrl ? '#86efac' : '#fff' }}>
-                  {mission.signatureUrl ? 'Signé ✓' : 'Signer'}
+                  {mission.signatureUrl ? 'Signé ✓' : 'Signature'}
                 </span>
               </button>
             </div>
