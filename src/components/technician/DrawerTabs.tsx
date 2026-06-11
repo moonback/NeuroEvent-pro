@@ -78,7 +78,7 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
     if (user?.id && mission.id) {
       const saved = localStorage.getItem(`eventflow_checklist_${user.id}_${mission.id}`);
       if (saved) {
-        try { setCheckedItems(JSON.parse(saved)); } catch {}
+        try { setCheckedItems(JSON.parse(saved)); } catch { }
       }
     }
   }, [user?.id, mission.id]);
@@ -103,7 +103,7 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
               className="p-3 rounded-xl space-y-1"
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--tech-border)' }}
             >
-              <div className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'var(--tech-text-muted)' }}>Début</div>
+              <div className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'var(--tech-text-muted)' }}>Début Event</div>
               <div className="font-bold text-xs capitalize" style={{ color: 'var(--tech-text)' }}>
                 {format(mission.start, 'EEE d MMM', { locale: fr })}
               </div>
@@ -120,7 +120,7 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
               className="p-3 rounded-xl space-y-1"
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--tech-border)' }}
             >
-              <div className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'var(--tech-text-muted)' }}>Fin</div>
+              <div className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'var(--tech-text-muted)' }}>Fin Event</div>
               <div className="font-bold text-xs capitalize" style={{ color: 'var(--tech-text)' }}>
                 {format(mission.end, 'EEE d MMM', { locale: fr })}
               </div>
@@ -173,8 +173,8 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
                   </div>
                   <div className="text-right">
                     <span className="text-sm font-black" style={{ color: mission.color }}>
-                      {mission.setupDuration >= 60 
-                        ? `${Math.floor(mission.setupDuration / 60)}h${String(mission.setupDuration % 60).padStart(2, '0')}` 
+                      {mission.setupDuration >= 60
+                        ? `${Math.floor(mission.setupDuration / 60)}h${String(mission.setupDuration % 60).padStart(2, '0')}`
                         : `${mission.setupDuration} min`}
                     </span>
                   </div>
@@ -692,10 +692,10 @@ function EquipmentTab({ mission, getEquipmentProgress, equipmentDefs, handleTogg
                       style={
                         isChecked
                           ? {
-                              background: 'var(--tech-accent)',
-                              borderColor: 'var(--tech-accent)',
-                              boxShadow: '0 0 8px rgba(0,229,160,0.4)',
-                            }
+                            background: 'var(--tech-accent)',
+                            borderColor: 'var(--tech-accent)',
+                            boxShadow: '0 0 8px rgba(0,229,160,0.4)',
+                          }
                           : { borderColor: 'var(--tech-border-strong)', background: 'transparent' }
                       }
                     >
@@ -737,10 +737,10 @@ function EquipmentTab({ mission, getEquipmentProgress, equipmentDefs, handleTogg
 /* ══════════════════════════════════════════════════════════════════════════
    REPORT TAB
    ══════════════════════════════════════════════════════════════════════════ */
-function ReportTab({ 
-  mission, 
-  localReports, 
-  savingStatus, 
+function ReportTab({
+  mission,
+  localReports,
+  savingStatus,
   handleReportChange,
   photoUploading,
   handlePhotoUpload,
@@ -919,8 +919,8 @@ function ReportTab({
           right={
             <span className="text-[9px] font-bold font-mono">
               {savingStatus === 'saving' && <span style={{ color: '#ffb700' }}>Enregistrement…</span>}
-              {savingStatus === 'saved'  && <span style={{ color: 'var(--tech-accent)' }}>Sauvegardé ✓</span>}
-              {savingStatus === 'idle'   && <span style={{ color: 'var(--tech-text-muted)' }}>Brouillon</span>}
+              {savingStatus === 'saved' && <span style={{ color: 'var(--tech-accent)' }}>Sauvegardé ✓</span>}
+              {savingStatus === 'idle' && <span style={{ color: 'var(--tech-text-muted)' }}>Brouillon</span>}
             </span>
           }
         />
@@ -1090,7 +1090,7 @@ function ChecklistTab({ mission }: { mission: any }) {
     if (user?.id && mission.id) {
       const saved = localStorage.getItem(`eventflow_checklist_${user.id}_${mission.id}`);
       if (saved) {
-        try { setCheckedItems(JSON.parse(saved)); } catch {}
+        try { setCheckedItems(JSON.parse(saved)); } catch { }
       }
     }
   }, [user?.id, mission.id]);
@@ -1249,10 +1249,10 @@ function ChecklistTab({ mission }: { mission: any }) {
                           style={
                             isChecked
                               ? {
-                                  background: 'var(--tech-accent)',
-                                  borderColor: 'var(--tech-accent)',
-                                  boxShadow: '0 0 6px rgba(0,229,160,0.3)',
-                                }
+                                background: 'var(--tech-accent)',
+                                borderColor: 'var(--tech-accent)',
+                                boxShadow: '0 0 6px rgba(0,229,160,0.3)',
+                              }
                               : { borderColor: 'var(--tech-border-strong)', background: 'transparent' }
                           }
                         >
