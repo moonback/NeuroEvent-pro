@@ -86,7 +86,9 @@ export const useStore = create<AppState>((set, get) => ({
         firstName: t.first_name,
         lastName: t.last_name,
         specialty: t.specialty,
-        color: t.color
+        color: t.color,
+        skills: t.skills || [],
+        driverLicense: t.driver_license || { hasLicense: false, since: '', categories: [] }
       })) || [];
 
       const trucks: Truck[] = trucksRes.data?.map(t => ({
@@ -275,6 +277,8 @@ export const useStore = create<AppState>((set, get) => ({
     if (updatedFields.lastName !== undefined) changes.last_name = updatedFields.lastName;
     if (updatedFields.specialty !== undefined) changes.specialty = updatedFields.specialty;
     if (updatedFields.color !== undefined) changes.color = updatedFields.color;
+    if (updatedFields.skills !== undefined) changes.skills = updatedFields.skills;
+    if (updatedFields.driverLicense !== undefined) changes.driver_license = updatedFields.driverLicense;
 
     if (Object.keys(changes).length > 0) {
       const { error } = await supabase.from('technicians').update(changes).eq('id', id);

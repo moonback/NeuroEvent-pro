@@ -55,6 +55,8 @@ export interface Database {
           last_name: string;
           specialty: string;
           color: string;
+          skills: string[] | null;
+          driver_license: any | null;
         };
         Insert: {
           id?: string;
@@ -62,6 +64,8 @@ export interface Database {
           last_name: string;
           specialty: string;
           color: string;
+          skills?: string[] | null;
+          driver_license?: any | null;
         };
         Update: {
           id?: string;
@@ -69,6 +73,8 @@ export interface Database {
           last_name?: string;
           specialty?: string;
           color?: string;
+          skills?: string[] | null;
+          driver_license?: any | null;
         };
         Relationships: [];
       };

@@ -15,12 +15,20 @@ export interface Profile {
   createdAt?: string;
 }
 
+export interface DriverLicense {
+  hasLicense: boolean;
+  since?: string; // ISO date string YYYY-MM-DD
+  categories?: string[]; // e.g. ['B', 'C', 'BE']
+}
+
 export interface Technician {
   id: string;
   firstName: string;
   lastName: string;
   specialty: string;
   color: string;
+  skills?: string[];
+  driverLicense?: DriverLicense;
 }
 
 export interface Truck {
