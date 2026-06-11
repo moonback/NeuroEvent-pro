@@ -240,35 +240,49 @@ export default function MissionDrawer(props: MissionDrawerProps) {
 
         {/* ── Tab Bar ── */}
         <div
-          className="px-3 py-2.5 flex gap-1 overflow-x-auto shrink-0 select-none no-scrollbar"
+          className="px-3 py-2 flex justify-between items-center shrink-0 select-none no-scrollbar w-full"
           style={{ background: '#0d1118', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
         >
           {TAB_CONFIG.map((tab) => {
             const TabIcon = tab.icon;
             const isActive = drawerTab === tab.id;
             return (
-              <button
-                key={tab.id}
-                onClick={() => { triggerVibrate('click'); setDrawerTab(tab.id); }}
-                className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-extrabold rounded-2xl whitespace-nowrap cursor-pointer transition-all active:scale-95 shrink-0"
-                style={
-                  isActive
-                    ? {
-                      background: `${mission.color}18`,
-                      border: `1px solid ${mission.color}35`,
-                      color: mission.color,
-                      boxShadow: `0 0 12px ${mission.color}20`,
-                    }
-                    : {
-                      background: 'transparent',
-                      border: '1px solid transparent',
-                      color: 'var(--tech-text-muted)',
-                    }
-                }
-              >
-                <TabIcon className="w-3.5 h-3.5" />
-                <span>{tab.label}</span>
-              </button>
+              <div key={tab.id} className="relative group flex-1 flex justify-center">
+                <button
+                  onClick={() => { triggerVibrate('click'); setDrawerTab(tab.id); }}
+                  className="flex items-center justify-center w-9 h-9 font-extrabold rounded-xl cursor-pointer transition-all active:scale-95 shrink-0"
+                  style={
+                    isActive
+                      ? {
+                        background: `${mission.color}18`,
+                        border: `1px solid ${mission.color}35`,
+                        color: mission.color,
+                        boxShadow: `0 0 12px ${mission.color}20`,
+                      }
+                      : {
+                        background: 'transparent',
+                        border: '1px solid transparent',
+                        color: 'var(--tech-text-muted)',
+                      }
+                  }
+                >
+                  <TabIcon className="w-4 h-4" />
+                </button>
+
+                {/* Tooltip */}
+                <div
+                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-50 scale-90 group-hover:scale-100"
+                  style={{
+                    background: 'rgba(19, 25, 38, 0.95)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    color: 'var(--tech-text)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
+                    backdropFilter: 'blur(4px)',
+                  }}
+                >
+                  {tab.label}
+                </div>
+              </div>
             );
           })}
         </div>
