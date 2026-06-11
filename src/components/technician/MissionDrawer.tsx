@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   X, Check, Clock, MapPin, Info, Phone, Users, QrCode, FileText, Timer, PenTool,
-  Sparkles, ClipboardCheck
+  Sparkles, ClipboardCheck, Truck, Wrench
 } from 'lucide-react';
 import { format, isSameDay, differenceInMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -126,81 +126,67 @@ export default function MissionDrawer(props: MissionDrawerProps) {
             <X className="w-3.5 h-3.5 text-white" />
           </button>
 
-          <div className="px-4 pt-3.5 pb-4 relative z-10">
-            {/* Tags */}
-            <div className="flex items-center gap-1.5 mb-2">
-              <span
-                className="text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider"
-                style={{ background: 'rgba(0,0,0,0.22)', color: '#fff' }}
-              >
-                {mission.type}
-              </span>
-              {isToday && (
-                <span
-                  className="text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider"
-                  style={{ background: 'rgba(255,255,255,0.9)', color: mission.color }}
-                >
-                  Aujourd'hui
-                </span>
-
-              )}
-              <span
-                className="text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider"
-                style={{ background: 'rgba(0,0,0,0.22)', color: '#fff' }}
-              >
-                {durationLabel}
-              </span>
-
-            </div>
-
-            {/* Title + signature */}
-            <div className="flex justify-between items-start gap-3 mb-2.5">
+          <div className="px-3.5 pt-3 pb-3 relative z-10 text-white">
+            {/* Top row: Tags & Title */}
+            <div className="flex justify-between items-start gap-2 mb-1.5">
               <div className="min-w-0 flex-1">
-                <h2 className="text-lg font-black text-white leading-tight truncate">{mission.title}</h2>
-                <p className="text-[11px] font-semibold mt-0.5" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                {/* Title */}
+                <h2 className="text-base font-black leading-tight truncate">{mission.title}</h2>
+                <p className="text-[10px] font-semibold opacity-90 truncate">
                   {mission.client}
                 </p>
               </div>
+
               {/* Signature pill */}
               <button
                 onClick={mission.signatureUrl ? undefined : onOpenSignature}
                 disabled={!!mission.signatureUrl}
-                className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-all ${mission.signatureUrl ? 'cursor-not-allowed' : 'active:scale-95 cursor-pointer'
+                className={`shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg transition-all ${mission.signatureUrl ? 'cursor-not-allowed' : 'active:scale-95 cursor-pointer'
                   }`}
                 style={{
-                  background: mission.signatureUrl ? 'rgba(0,229,160,0.25)' : 'rgba(0,0,0,0.22)',
+                  background: mission.signatureUrl ? 'rgba(0,229,160,0.25)' : 'rgba(0,0,0,0.25)',
                   border: mission.signatureUrl ? '1px solid rgba(0,229,160,0.35)' : '1px solid rgba(255,255,255,0.15)',
                 }}
                 title={mission.signatureUrl ? 'Signature enregistrée' : 'Gérer la signature'}
               >
-                <PenTool className="w-3.5 h-3.5" style={{ color: mission.signatureUrl ? '#86efac' : '#fff' }} />
-                <span className="text-[9px] font-black" style={{ color: mission.signatureUrl ? '#86efac' : '#fff' }}>
+                <PenTool className="w-2.5 h-2.5" style={{ color: mission.signatureUrl ? '#86efac' : '#fff' }} />
+                <span className="text-[8px] font-black" style={{ color: mission.signatureUrl ? '#86efac' : '#fff' }}>
                   {mission.signatureUrl ? 'Signé ✓' : 'Signature'}
                 </span>
               </button>
             </div>
 
-            {/* Date & location row */}
-            <div className="space-y-1 mb-3">
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
-                <Clock className="w-3 h-3 shrink-0" />
-                <span>{format(mission.start, 'EEEE d MMM · HH:mm', { locale: fr })} → {format(mission.end, 'HH:mm')}</span>
+            {/* Core Info Bar (Date, Address, Type) */}
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-2 bg-black/15 p-2 rounded-xl text-[10px] font-semibold">
+              <div className="flex items-center gap-1.5 truncate">
+                <Clock className="w-3 h-3 text-white/70 shrink-0" />
+                <span className="truncate">{format(mission.start, 'd MMM · HH:mm', { locale: fr })} → {format(mission.end, 'HH:mm')}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
-                <MapPin className="w-3 h-3 shrink-0" />
-                <span className="line-clamp-1">{mission.address}</span>
+              <div className="flex items-center gap-1.5 truncate">
+                <MapPin className="w-3 h-3 text-white/70 shrink-0" />
+                <span className="truncate">{mission.address}</span>
               </div>
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-white/80 shrink-0" />
+                <span className="truncate opacity-80">{mission.type} · {durationLabel}</span>
+              </div>
+              {isToday && (
+                <div className="flex items-center gap-1 justify-end">
+                  <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-white text-black uppercase tracking-wider scale-90 origin-right">
+                    Aujourd'hui
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* ── Status stepper ── */}
+
+            {/* Stepper Status Row */}
             <div
-              className="flex items-center p-2.5 rounded-xl gap-2"
-              style={{ background: 'rgba(0,0,0,0.22)' }}
+              className="flex items-center p-2 rounded-xl gap-2 bg-black/20"
             >
               {STATUS_STEPS.map((step, i) => {
                 const isDone = i < stepIndex;
                 const isActive = i === stepIndex;
-                const isFuture = i > stepIndex;
                 const locked = mission.status === 'Terminée';
 
                 return (
@@ -210,27 +196,31 @@ export default function MissionDrawer(props: MissionDrawerProps) {
                         if (locked) { triggerVibrate('error'); return; }
                         onStatusChange(step.key as any);
                       }}
-                      className={`flex flex-col items-center gap-1 flex-1 transition-all ${locked ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'
+                      className={`flex items-center justify-center gap-1.5 py-1 px-2.5 rounded-lg transition-all flex-1 ${locked ? 'cursor-not-allowed' : 'cursor-pointer active:scale-95'
                         }`}
+                      style={{
+                        background: isActive
+                          ? '#fff'
+                          : 'rgba(255,255,255,0.06)',
+                        border: isActive ? '1px solid #fff' : '1px solid transparent'
+                      }}
                     >
                       <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-black transition-all"
+                        className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black transition-all shrink-0"
                         style={{
                           background: isActive
-                            ? '#fff'
+                            ? mission.color
                             : isDone
-                              ? 'rgba(255,255,255,0.35)'
-                              : 'rgba(255,255,255,0.12)',
-                          color: isActive ? mission.color : isDone ? '#fff' : 'rgba(255,255,255,0.45)',
-                          boxShadow: isActive ? `0 0 16px rgba(255,255,255,0.4)` : 'none',
-                          transform: isActive ? 'scale(1.1)' : 'scale(1)',
+                              ? 'rgba(255,255,255,0.3)'
+                              : 'rgba(255,255,255,0.15)',
+                          color: isActive ? '#fff' : isDone ? '#fff' : 'rgba(255,255,255,0.4)',
                         }}
                       >
-                        {isDone ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : i + 1}
+                        {isDone ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : i + 1}
                       </div>
                       <span
-                        className="text-[9px] font-bold whitespace-nowrap"
-                        style={{ color: isActive || isDone ? '#fff' : 'rgba(255,255,255,0.45)' }}
+                        className="text-[8px] font-black uppercase tracking-wider whitespace-nowrap"
+                        style={{ color: isActive ? 'black' : isDone ? '#fff' : 'rgba(255,255,255,0.45)' }}
                       >
                         {step.short}
                       </span>
@@ -238,8 +228,8 @@ export default function MissionDrawer(props: MissionDrawerProps) {
 
                     {i < STATUS_STEPS.length - 1 && (
                       <div
-                        className="h-px flex-1 rounded"
-                        style={{ background: isDone ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.18)' }}
+                        className="w-1.5 h-px rounded shrink-0"
+                        style={{ background: isDone ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.12)' }}
                       />
                     )}
                   </React.Fragment>
