@@ -162,13 +162,14 @@ export default function MissionDrawer(props: MissionDrawerProps) {
                 <Clock className="w-3 h-3 text-white/70 shrink-0" />
                 <span className="truncate">{format(mission.start, 'd MMM · HH:mm', { locale: fr })} → {format(mission.end, 'HH:mm')}</span>
               </div>
-              <div className="flex items-center gap-1.5 truncate">
-                <MapPin className="w-3 h-3 text-white/70 shrink-0" />
-                <span className="truncate">{mission.address}</span>
-              </div>
+
               <div className="flex items-center gap-1.5 truncate">
                 <span className="w-1.5 h-1.5 rounded-full bg-white/80 shrink-0" />
                 <span className="truncate opacity-80">{mission.type} · {durationLabel}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <MapPin className="w-3 h-3 text-white/70 shrink-0" />
+                <span className="">{mission.address}</span>
               </div>
               {isToday && (
                 <div className="flex items-center gap-1 justify-end">
