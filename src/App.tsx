@@ -72,7 +72,7 @@ export default function App() {
     <Router>
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/login" element={<Auth />} />
+          <Route path="/login" element={session ? <Navigate to="/" replace /> : <Auth />} />
 
           {isAdmin ? (
             <>
