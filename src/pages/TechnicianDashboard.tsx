@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTechDashboard } from '../components/technician/useTechDashboard';
+import { useTechDashboard, triggerVibrate } from '../components/technician/useTechDashboard';
 import TechHeader from '../components/technician/TechHeader';
 import TechBottomNav from '../components/technician/TechBottomNav';
 import MissionCard from '../components/technician/MissionCard';
@@ -32,29 +32,59 @@ export default function TechnicianDashboard() {
         syncCount={tech.syncQueue.length}
         todayCount={tech.todayCount}
         activeCount={tech.activeCount}
+        onSettingsClick={() => tech.setActiveTab('profil')}
       />
 
       {/* Main Tab Routing */}
       {tech.activeTab === 'mes_heures' ? (
-        <div className="px-4 py-6 max-w-md mx-auto animate-fade-in">
-          <div className="tech-card p-4">
-            <h2 className="text-lg font-black mb-4">Mes Heures de Travail</h2>
-            <TechnicianMyHours />
-          </div>
+        <div className="max-w-md mx-auto animate-fade-in pt-4">
+          <h1 className="text-2xl font-black text-white px-4">Mes Heures de Travail</h1>
+          <p className="text-slate-400 text-xs px-4 mt-1">Consultez l'historique complet de vos missions.</p>
+          <TechnicianMyHours />
         </div>
       ) : tech.activeTab === 'disponibilites' ? (
-        <div className="px-4 py-6 max-w-md mx-auto animate-fade-in">
-          <div className="tech-card p-4">
-            <h2 className="text-lg font-black mb-4">Mes Indisponibilités</h2>
-            <TechnicianUnavailabilities />
-          </div>
+        <div className="max-w-md mx-auto animate-fade-in pt-4">
+          <h1 className="text-2xl font-black text-white px-4">Mes Indisponibilités</h1>
+          <p className="text-slate-400 text-xs px-4 mt-1">Déclarez vos absences et consultez votre historique.</p>
+          <TechnicianUnavailabilities />
         </div>
       ) : tech.activeTab === 'profil' ? (
         <div className="animate-fade-in">
           <Settings />
         </div>
       ) : (
-        <div className="max-w-md mx-auto space-y-4 pt-2 pb-6">
+        <div className="max-w-md mx-auto space-y-3 pt-3 pb-6">
+          {/* Segmented Picker: Active vs History */}
+          <div className="px-4">
+            <div className="flex p-0.5 bg-slate-950 rounded-xl border border-slate-800/80 max-w-[200px]">
+              <button
+                onClick={() => {
+                  triggerVibrate('click');
+                  tech.setActiveTab('active');
+                }}
+                className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${
+                  tech.activeTab === 'active'
+                    ? 'bg-slate-800 text-white shadow'
+                    : 'text-slate-400 hover:text-slate-350'
+                }`}
+              >
+                Missions
+              </button>
+              <button
+                onClick={() => {
+                  triggerVibrate('click');
+                  tech.setActiveTab('history');
+                }}
+                className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${
+                  tech.activeTab === 'history'
+                    ? 'bg-slate-800 text-white shadow'
+                    : 'text-slate-400 hover:text-slate-350'
+                }`}
+              >
+                Historique
+              </button>
+            </div>
+          </div>
           {/* Filters */}
           <MissionFilters
             activeTab={tech.activeTab}
@@ -67,7 +97,7 @@ export default function TechnicianDashboard() {
           />
 
           {/* Missions List */}
-          <div className="px-4 space-y-4">
+          <div className="px-4 space-y-3">
             {tech.displayedMissions.length === 0 ? (
               <div className="tech-card py-12 px-4 text-center">
                 <div className="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center mx-auto mb-3">

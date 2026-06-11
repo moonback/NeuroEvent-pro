@@ -31,7 +31,7 @@ export default function TechBottomNav({ activeTab, setActiveTab, hasSelectedMiss
       <div className="flex items-center h-16 max-w-md mx-auto px-2">
         {items.map(item => {
           const Icon = item.icon;
-          const isActive = activeTab === item.id && !hasSelectedMission;
+          const isActive = (activeTab === item.id || (item.id === 'active' && activeTab === 'history')) && !hasSelectedMission;
           return (
             <button
               key={item.id}
