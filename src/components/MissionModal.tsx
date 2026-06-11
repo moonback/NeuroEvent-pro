@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '../store';
 import { MissionType, MissionStatus } from '../types';
-import { X, AlertTriangle, Calendar, Package, Users, Truck as TruckIcon, Plus, Trash2, User, MapPin, CheckSquare, Settings, Check } from 'lucide-react';
+import { X, AlertTriangle, Calendar, Package, Users, Truck as TruckIcon, Plus, Trash2, User, MapPin, CheckSquare, Settings, Check, Camera, FileText, Image } from 'lucide-react';
 import { format } from 'date-fns';
 import Modal from './ui/Modal';
 import { toast } from '../store/toast';
@@ -40,7 +40,8 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
   const existingMission = missionId ? missions.find(m => m.id === missionId) : null;
 
   // Tabs state
-  const [activeTab, setActiveTab] = useState<'general' | 'resources'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'resources' | 'report'>('general');
+  const [adminLightbox, setAdminLightbox] = useState<string | null>(null);
 
   const [title, setTitle] = useState(existingMission?.title || '');
   const [client, setClient] = useState(existingMission?.client || '');
@@ -278,6 +279,21 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
             {selectedTechs.length} tech • {selectedEquipments.filter(e => e.equipmentId).length} mat.
           </span>
         </button>
+        {existingMission && (existingMission.report || existingMission.photoBeforeUrl || existingMission.photoAfterUrl || existingMission.signatureUrl || (existingMission.photos && existingMission.photos.length > 0)) && (
+          <button
+            type="button"
+            onClick={() => { triggerVibrate(); setActiveTab('report'); }}
+            className={`pb-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer active:scale-95 duration-100 ${
+              activeTab === 'report'
+                ? 'border-emerald-500 text-emerald-600'
+                : 'border-transparent text-[#64748b] hover:text-[#334155]'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>3. Rapport Tech.</span>
+            <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-extrabold">✓</span>
+          </button>
+        )}
       </div>
 
       <form id="mission-form" onSubmit={handleSubmit} className="space-y-4">
@@ -471,22 +487,7 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
               </div>
             </div>
 
-            {/* Signature View */}
-            {existingMission?.signatureUrl && (
-              <div className="sm:col-span-2">
-                <label className={labelClass}>Signature du client (Bon de Livraison)</label>
-                <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col items-center justify-center gap-2">
-                  <img 
-                    src={existingMission.signatureUrl} 
-                    alt="Signature" 
-                    className="max-h-[150px] object-contain"
-                  />
-                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Signé
-                  </span>
-                </div>
-              </div>
-            )}
+            {/* Signature View — moved to Report tab, kept here as fallback for non-tabbed view */}
           </div>
         )}
 
@@ -661,6 +662,125 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Tab 3: RAPPORT TECHNICIEN */}
+        {activeTab === 'report' && existingMission && (
+          <div className="space-y-5 animate-fade-in">
+
+
+            {/* Lightbox admin */}
+            {adminLightbox && (
+              <div
+                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90"
+                onClick={() => setAdminLightbox(null)}
+              >
+                <div className="relative max-w-[95vw] max-h-[90vh]">
+                  <img src={adminLightbox} alt="Photo" className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl" />
+                  <button
+                    onClick={() => setAdminLightbox(null)}
+                    className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center text-lg font-bold cursor-pointer"
+                  >×</button>
+                  <a
+                    href={adminLightbox} target="_blank" rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    className="absolute bottom-2 right-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/15 text-white"
+                  >Ouvrir l’original ↗</a>
+                </div>
+              </div>
+            )}
+
+            {/* — Galerie multi-photos — */}
+            {(() => {
+              const allPhotos = existingMission.photos || [];
+              const before = allPhotos.filter(p => p.type === 'before');
+              const after  = allPhotos.filter(p => p.type === 'after');
+              const hasPhotos = allPhotos.length > 0;
+
+              if (!hasPhotos && !existingMission.photoBeforeUrl && !existingMission.photoAfterUrl) return null;
+
+              const renderGrid = (photos: any[], legacyUrl: string | null | undefined, label: string, accent: string) => {
+                const items = [
+                  ...photos.map((p: any) => p.url),
+                  ...(legacyUrl && !photos.length ? [legacyUrl] : [])
+                ];
+                if (!items.length) return null;
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full" style={{ background: accent }} />
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: accent }}>
+                        {label} — {items.length} photo{items.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {items.map((url, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setAdminLightbox(url)}
+                          className="aspect-square rounded-xl overflow-hidden border border-slate-200 hover:border-blue-400 transition-all group relative"
+                        >
+                          <img src={url} alt={label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                            <Image className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              };
+
+              return (
+                <div>
+                  <label className={labelClass}><Camera className="w-3.5 h-3.5 inline mr-1" />Photos terrain</label>
+                  <div className="mt-2 space-y-4 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                    {renderGrid(before, existingMission.photoBeforeUrl, 'Avant Montage', '#2563eb')}
+                    {renderGrid(after,  existingMission.photoAfterUrl,  'Après Montage', '#059669')}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Rapport de fin de mission */}
+            {existingMission.report && (
+              <div>
+                <label className={labelClass}><FileText className="w-3.5 h-3.5 inline mr-1" />Rapport de fin de mission</label>
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap max-h-52 overflow-y-auto">
+                  {existingMission.report}
+                </div>
+              </div>
+            )}
+
+            {/* Signature client */}
+            {existingMission.signatureUrl && (
+              <div>
+                <label className={labelClass}>Signature du client (Bon de Livraison)</label>
+                <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col items-center justify-center gap-2">
+                  <img
+                    src={existingMission.signatureUrl}
+                    alt="Signature"
+                    className="max-h-[150px] object-contain"
+                  />
+                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Signé
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Empty state */}
+            {!existingMission.report && !(existingMission.photos?.length) && !existingMission.photoBeforeUrl && !existingMission.photoAfterUrl && !existingMission.signatureUrl && (
+              <div className="py-10 flex flex-col items-center justify-center text-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center">
+                  <Camera className="w-6 h-6 text-slate-300" />
+                </div>
+                <p className="text-sm font-semibold text-slate-400">Aucun rapport technicien disponible</p>
+                <p className="text-xs text-slate-300">Le rapport apparaîtra ici une fois la mission terminée par le technicien.</p>
+              </div>
+            )}
           </div>
         )}
       </form>

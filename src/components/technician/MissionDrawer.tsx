@@ -36,6 +36,9 @@ interface MissionDrawerProps {
   localReports: Record<string, string>;
   savingStatus: 'idle' | 'saving' | 'saved';
   handleReportChange: (missionId: string, value: string) => void;
+  photoUploading: { missionId: string; type: 'before' | 'after' } | null;
+  handlePhotoUpload: (missionId: string, type: 'before' | 'after', file: File) => Promise<void>;
+  handlePhotoDelete: (missionId: string, photoId: string) => Promise<void> | void;
 }
 
 const TAB_CONFIG: { id: DrawerTab; label: string; icon: React.ElementType }[] = [
@@ -319,6 +322,9 @@ export default function MissionDrawer(props: MissionDrawerProps) {
               localReports={props.localReports}
               savingStatus={props.savingStatus}
               handleReportChange={props.handleReportChange}
+              photoUploading={props.photoUploading}
+              handlePhotoUpload={props.handlePhotoUpload}
+              handlePhotoDelete={props.handlePhotoDelete}
             />
           </div>
         </div>

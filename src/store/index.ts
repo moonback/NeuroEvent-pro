@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Mission, Technician, Truck, Equipment, Client, MissionType, MissionStatus, EquipmentCategory, TimeLog, TechnicianUnavailability, UnavailabilityType } from '../types';
+import { Mission, Technician, Truck, Equipment, Client, MissionType, MissionStatus, EquipmentCategory, TimeLog, TechnicianUnavailability, UnavailabilityType, MissionPhoto } from '../types';
 import { TableRow, TableInsert, TableUpdate } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { toast } from './toast';
@@ -23,6 +23,7 @@ interface AppState {
   clients: Client[];
   timeLogs: TimeLog[];
   unavailabilities: TechnicianUnavailability[];
+  missionPhotos: MissionPhoto[];
 
   loading: boolean;
   
@@ -66,6 +67,11 @@ interface AppState {
   addTimeLog: (log: Omit<TimeLog, 'id' | 'createdAt' | 'updatedAt'>) => Promise<TimeLog | null>;
   updateTimeLog: (id: string, fields: Partial<Pick<TimeLog, 'startTime' | 'endTime' | 'note'>>) => Promise<void>;
   deleteTimeLog: (id: string) => Promise<void>;
+
+  // Mission Photos
+  fetchMissionPhotos: (missionId: string) => Promise<MissionPhoto[]>;
+  addMissionPhoto: (missionId: string, type: 'before' | 'after', file: File, uploadedBy?: string) => Promise<MissionPhoto | null>;
+  deleteMissionPhoto: (photo: MissionPhoto) => Promise<void>;
 }
 
 /** Aucun échec Supabase ne doit rester silencieux : on prévient l'utilisateur. */
@@ -82,20 +88,37 @@ function parseMissionSkills(rawSkills: string[] | null) {
   const dStr = arr.find(s => s.startsWith('meta:delivery:'))?.split('meta:delivery:')[1];
   const pStr = arr.find(s => s.startsWith('meta:pickup:'))?.split('meta:pickup:')[1];
   const sStr = arr.find(s => s.startsWith('meta:setup:'))?.split('meta:setup:')[1];
+  const reportStr = arr.find(s => s.startsWith('meta:report:'))?.split('meta:report:')[1];
+  const photoBeforeStr = arr.find(s => s.startsWith('meta:photo:before:'))?.split('meta:photo:before:')[1];
+  const photoAfterStr = arr.find(s => s.startsWith('meta:photo:after:'))?.split('meta:photo:after:')[1];
   
   return {
     skills,
     deliveryDate: dStr ? new Date(dStr) : null,
     pickupDate: pStr ? new Date(pStr) : null,
-    setupDuration: sStr ? parseInt(sStr, 10) : null
+    setupDuration: sStr ? parseInt(sStr, 10) : null,
+    report: reportStr ? decodeURIComponent(reportStr) : null,
+    photoBeforeUrl: photoBeforeStr || null,
+    photoAfterUrl: photoAfterStr || null
   };
 }
 
-function serializeMissionSkills(skills: string[] | undefined, delivery: Date | null | undefined, pickup: Date | null | undefined, setup: number | null | undefined) {
+function serializeMissionSkills(
+  skills: string[] | undefined, 
+  delivery: Date | null | undefined, 
+  pickup: Date | null | undefined, 
+  setup: number | null | undefined,
+  report?: string | null,
+  photoBeforeUrl?: string | null,
+  photoAfterUrl?: string | null
+) {
   const result = [...(skills || [])];
   if (delivery) result.push(`meta:delivery:${delivery.toISOString()}`);
   if (pickup) result.push(`meta:pickup:${pickup.toISOString()}`);
   if (setup !== undefined && setup !== null) result.push(`meta:setup:${setup}`);
+  if (report) result.push(`meta:report:${encodeURIComponent(report)}`);
+  if (photoBeforeUrl) result.push(`meta:photo:before:${photoBeforeUrl}`);
+  if (photoAfterUrl) result.push(`meta:photo:after:${photoAfterUrl}`);
   return result;
 }
 
@@ -111,6 +134,7 @@ export const useStore = create<AppState>()(
       clients: [],
       timeLogs: [],
       unavailabilities: [],
+      missionPhotos: [],
       loading: true,
       syncQueue: [],
 
@@ -231,6 +255,9 @@ export const useStore = create<AppState>()(
           deliveryDate: parsed.deliveryDate,
           pickupDate: parsed.pickupDate,
           setupDuration: parsed.setupDuration,
+          report: parsed.report || undefined,
+          photoBeforeUrl: parsed.photoBeforeUrl || undefined,
+          photoAfterUrl: parsed.photoAfterUrl || undefined,
           status: m.status as MissionStatus,
           color: m.color,
           signatureUrl: m.signature_url,
@@ -320,15 +347,21 @@ export const useStore = create<AppState>()(
     if (updatedFields.requiredSkills !== undefined || 
         updatedFields.deliveryDate !== undefined || 
         updatedFields.pickupDate !== undefined || 
-        updatedFields.setupDuration !== undefined) {
+        updatedFields.setupDuration !== undefined ||
+        updatedFields.report !== undefined ||
+        updatedFields.photoBeforeUrl !== undefined ||
+        updatedFields.photoAfterUrl !== undefined) {
       
       const existing = get().missions.find(m => m.id === id);
       const skills = updatedFields.requiredSkills !== undefined ? updatedFields.requiredSkills : existing?.requiredSkills;
       const delivery = updatedFields.deliveryDate !== undefined ? updatedFields.deliveryDate : existing?.deliveryDate;
       const pickup = updatedFields.pickupDate !== undefined ? updatedFields.pickupDate : existing?.pickupDate;
       const setup = updatedFields.setupDuration !== undefined ? updatedFields.setupDuration : existing?.setupDuration;
+      const report = updatedFields.report !== undefined ? updatedFields.report : existing?.report;
+      const photoBefore = updatedFields.photoBeforeUrl !== undefined ? updatedFields.photoBeforeUrl : existing?.photoBeforeUrl;
+      const photoAfter = updatedFields.photoAfterUrl !== undefined ? updatedFields.photoAfterUrl : existing?.photoAfterUrl;
       
-      changes.required_skills = serializeMissionSkills(skills, delivery, pickup, setup);
+      changes.required_skills = serializeMissionSkills(skills, delivery, pickup, setup, report, photoBefore, photoAfter);
     }
     if (updatedFields.status !== undefined) changes.status = updatedFields.status;
     if (updatedFields.color !== undefined) changes.color = updatedFields.color;
@@ -687,6 +720,130 @@ export const useStore = create<AppState>()(
     set((state) => ({ timeLogs: state.timeLogs.filter((l) => l.id !== id) }));
     toast.success('Créneau supprimé.');
   },
+
+  // ── MISSION PHOTOS ─────────────────────────────────────────
+  fetchMissionPhotos: async (missionId) => {
+    const { data, error } = await supabase
+      .from('mission_photos')
+      .select('*')
+      .eq('mission_id', missionId)
+      .order('created_at', { ascending: true });
+
+    if (reportError('Chargement des photos', error) || !data) return [];
+
+    const photos: MissionPhoto[] = data.map((r) => ({
+      id: r.id,
+      missionId: r.mission_id,
+      type: r.type as 'before' | 'after',
+      url: r.url,
+      filePath: r.file_path,
+      uploadedBy: r.uploaded_by,
+      createdAt: new Date(r.created_at),
+    }));
+
+    // Merge into the matching mission in state
+    set((state) => ({
+      missions: state.missions.map((m) =>
+        m.id === missionId ? { ...m, photos } : m
+      ),
+      missionPhotos: [
+        ...state.missionPhotos.filter((p) => p.missionId !== missionId),
+        ...photos,
+      ],
+    }));
+
+    return photos;
+  },
+
+  addMissionPhoto: async (missionId, type, file, uploadedBy) => {
+    // 1. Compress
+    const compressedBlob = await new Promise<Blob>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 1920;
+          let { width, height } = img;
+          if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
+          canvas.width = width; canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('canvas context')); return; }
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('toBlob')), 'image/jpeg', 0.82);
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+
+    // 2. Upload to storage bucket
+    const filePath = `${missionId}/${type}/${Date.now()}.jpg`;
+    const { data: storageData, error: storageErr } = await supabase.storage
+      .from('mission-photos')
+      .upload(filePath, compressedBlob, { contentType: 'image/jpeg', cacheControl: '3600', upsert: false });
+
+    if (storageErr) {
+      reportError('Upload photo', storageErr);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage.from('mission-photos').getPublicUrl(storageData.path);
+    const publicUrl = urlData.publicUrl;
+
+    // 3. Insert row in mission_photos table
+    const { data, error } = await supabase
+      .from('mission_photos')
+      .insert({ mission_id: missionId, type, url: publicUrl, file_path: filePath, uploaded_by: uploadedBy || null })
+      .select()
+      .single();
+
+    if (reportError('Enregistrement de la photo', error) || !data) return null;
+
+    const photo: MissionPhoto = {
+      id: data.id,
+      missionId: data.mission_id,
+      type: data.type as 'before' | 'after',
+      url: data.url,
+      filePath: data.file_path,
+      uploadedBy: data.uploaded_by,
+      createdAt: new Date(data.created_at),
+    };
+
+    set((state) => ({
+      missions: state.missions.map((m) =>
+        m.id === missionId
+          ? { ...m, photos: [...(m.photos || []), photo] }
+          : m
+      ),
+      missionPhotos: [...state.missionPhotos, photo],
+    }));
+
+    toast.success(`Photo ${type === 'before' ? 'avant' : 'après'} ajoutée.`);
+    return photo;
+  },
+
+  deleteMissionPhoto: async (photo) => {
+    // 1. Remove from storage
+    await supabase.storage.from('mission-photos').remove([photo.filePath]);
+
+    // 2. Remove row from table
+    const { error } = await supabase.from('mission_photos').delete().eq('id', photo.id);
+    if (reportError('Suppression de la photo', error)) return;
+
+    set((state) => ({
+      missions: state.missions.map((m) =>
+        m.id === photo.missionId
+          ? { ...m, photos: (m.photos || []).filter((p) => p.id !== photo.id) }
+          : m
+      ),
+      missionPhotos: state.missionPhotos.filter((p) => p.id !== photo.id),
+    }));
+
+    toast.success('Photo supprimée.');
+  },
   }),
   {
     name: 'eventplanner-storage',
@@ -699,6 +856,7 @@ export const useStore = create<AppState>()(
       syncQueue: state.syncQueue,
       timeLogs: state.timeLogs,
       unavailabilities: state.unavailabilities,
+      missionPhotos: state.missionPhotos,
     }),
   }
 ));

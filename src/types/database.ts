@@ -297,6 +297,36 @@ export interface Database {
         };
         Relationships: [];
       };
+      mission_photos: {
+        Row: {
+          id: string;
+          mission_id: string;
+          type: string; // 'before' | 'after'
+          url: string;
+          file_path: string;
+          uploaded_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          mission_id: string;
+          type: string;
+          url: string;
+          file_path: string;
+          uploaded_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          mission_id?: string;
+          type?: string;
+          url?: string;
+          file_path?: string;
+          uploaded_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: Record<never, never>;

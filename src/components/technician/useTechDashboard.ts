@@ -3,6 +3,7 @@ import { useStore } from '../../store';
 import { useAuthStore } from '../../store/auth';
 import { toast } from '../../store/toast';
 import { isSameDay, startOfWeek, endOfWeek } from 'date-fns';
+import { supabase } from '../../lib/supabase';
 
 export type MainTab = 'active' | 'history' | 'mes_heures' | 'disponibilites' | 'profil';
 export type DrawerTab = 'general' | 'client' | 'team' | 'equipment' | 'report' | 'hours' | 'checklist';
@@ -40,6 +41,9 @@ export function useTechDashboard() {
   const technicians = useStore(state => state.technicians);
   const equipmentDefs = useStore(state => state.equipment);
   const clients = useStore(state => state.clients);
+  const addMissionPhoto = useStore(state => state.addMissionPhoto);
+  const deleteMissionPhoto = useStore(state => state.deleteMissionPhoto);
+  const fetchMissionPhotos = useStore(state => state.fetchMissionPhotos);
   const addTimeLog = useStore(state => state.addTimeLog);
   const timeLogs = useStore(state => state.timeLogs);
   const updateTimeLog = useStore(state => state.updateTimeLog);
@@ -59,6 +63,7 @@ export function useTechDashboard() {
   const [scannedItemId, setScannedItemId] = React.useState<string | null>(null);
   const [signatureModalOpen, setSignatureModalOpen] = React.useState(false);
   const [localReports, setLocalReports] = React.useState<Record<string, string>>({});
+  const [photoUploading, setPhotoUploading] = React.useState<{ missionId: string; type: 'before' | 'after' } | null>(null);
   const [savingStatus, setSavingStatus] = React.useState<'idle' | 'saving' | 'saved'>('idle');
   const [timeModal, setTimeModal] = React.useState<TimeModalState | null>(null);
   const [isOnline, setIsOnline] = React.useState(navigator.onLine);
@@ -100,6 +105,33 @@ export function useTechDashboard() {
     setLocalReports(updated);
     if (user?.id) localStorage.setItem(`eventflow_reports_${user.id}`, JSON.stringify(updated));
     setTimeout(() => { setSavingStatus('saved'); setTimeout(() => setSavingStatus('idle'), 1000); }, 500);
+  };
+ 
+  // ── Photos Preuves – multi-photos via BDD ──
+  const handlePhotoUpload = async (missionId: string, type: 'before' | 'after', file: File) => {
+    setPhotoUploading({ missionId, type });
+    setSavingStatus('saving');
+    try {
+      await addMissionPhoto(missionId, type, file, user?.id);
+      setSavingStatus('saved');
+      setTimeout(() => setSavingStatus('idle'), 1500);
+    } catch (err) {
+      console.error(err);
+      setSavingStatus('idle');
+    } finally {
+      setPhotoUploading(null);
+    }
+  };
+
+  const handlePhotoDelete = async (missionId: string, photoId: string) => {
+    const missions_local = useStore.getState().missions;
+    const mission = missions_local.find(m => m.id === missionId);
+    const photo = mission?.photos?.find(p => p.id === photoId);
+    if (!photo) return;
+    setSavingStatus('saving');
+    await deleteMissionPhoto(photo);
+    setSavingStatus('saved');
+    setTimeout(() => setSavingStatus('idle'), 1500);
   };
 
   const handleScan = (decodedText: string): boolean => {
@@ -288,6 +320,8 @@ export function useTechDashboard() {
     triggerVibrate('click');
     setSelectedMission(mission);
     setDrawerTab('general');
+    // Charger les photos depuis la BDD
+    fetchMissionPhotos(mission.id).catch(console.error);
   };
 
   // ── Stats ──
@@ -311,6 +345,8 @@ export function useTechDashboard() {
     scannedItemId,
     signatureModalOpen, setSignatureModalOpen,
     localReports, savingStatus,
+    photoUploading,
+    handlePhotoUpload, handlePhotoDelete,
     timeModal, setTimeModal,
     isOnline, syncQueue,
     // Drag / Swipe

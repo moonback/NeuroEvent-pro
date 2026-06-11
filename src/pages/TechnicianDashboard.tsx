@@ -309,6 +309,9 @@ export default function TechnicianDashboard() {
           savingStatus={tech.savingStatus}
           localReports={tech.localReports}
           handleReportChange={tech.handleReportChange}
+          photoUploading={tech.photoUploading}
+          handlePhotoUpload={tech.handlePhotoUpload}
+          handlePhotoDelete={tech.handlePhotoDelete}
           openScanner={() => {
             tech.setActiveMissionIdForScanner(tech.selectedMission!.id);
             tech.setScannerOpen(true);

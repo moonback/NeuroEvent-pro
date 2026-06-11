@@ -3,7 +3,7 @@ import {
   Calendar, MapPin, Truck as TruckIcon, Users, Phone, Mail,
   MessageSquare, Navigation, QrCode, Check, FileText, Info,
   ChevronRight, AlertCircle, AlertTriangle, Clock, CheckCircle2,
-  Package, Wrench, ClipboardCheck
+  Package, Wrench, ClipboardCheck, Camera, Loader2, Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -28,6 +28,9 @@ interface DrawerTabsProps {
   localReports: Record<string, string>;
   savingStatus: 'idle' | 'saving' | 'saved';
   handleReportChange: (missionId: string, value: string) => void;
+  photoUploading: { missionId: string; type: 'before' | 'after' } | null;
+  handlePhotoUpload: (missionId: string, type: 'before' | 'after', file: File) => Promise<void>;
+  handlePhotoDelete: (missionId: string, photoId: string) => void;
 }
 
 /* ── Shared card wrapper ──────────────────────────────────────────────────── */
@@ -734,11 +737,153 @@ function EquipmentTab({ mission, getEquipmentProgress, equipmentDefs, handleTogg
 /* ══════════════════════════════════════════════════════════════════════════
    REPORT TAB
    ══════════════════════════════════════════════════════════════════════════ */
-function ReportTab({ mission, localReports, savingStatus, handleReportChange }: any) {
+function ReportTab({ 
+  mission, 
+  localReports, 
+  savingStatus, 
+  handleReportChange,
+  photoUploading,
+  handlePhotoUpload,
+  handlePhotoDelete
+}: any) {
   const [confirmClear, setConfirmClear] = React.useState(false);
+  const [lightbox, setLightbox] = React.useState<string | null>(null);
+
+  const photoBefore: any[] = (mission.photos || []).filter((p: any) => p.type === 'before');
+  const photoAfter: any[] = (mission.photos || []).filter((p: any) => p.type === 'after');
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'before' | 'after') => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    for (const file of files) {
+      await handlePhotoUpload(mission.id, type, file);
+    }
+    // Reset input so same file can be re-selected
+    e.target.value = '';
+  };
+
+  const renderPhotoSection = (type: 'before' | 'after', photos: any[]) => {
+    const label = type === 'before' ? 'Avant Montage' : 'Après Montage';
+    const accentColor = type === 'before' ? '#4d9fff' : '#00e5a0';
+    const isUploading = photoUploading?.missionId === mission.id && photoUploading?.type === type;
+
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span
+            className="text-[9px] font-black uppercase tracking-widest"
+            style={{ color: accentColor }}
+          >
+            {label}
+          </span>
+          <span
+            className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+            style={{ background: `${accentColor}18`, color: accentColor }}
+          >
+            {photos.length} photo{photos.length > 1 ? 's' : ''}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {/* Existing photos */}
+          {photos.map((photo: any) => (
+            <div key={photo.id} className="relative aspect-square rounded-xl overflow-hidden group">
+              <img
+                src={photo.url}
+                alt={label}
+                className="w-full h-full object-cover cursor-pointer"
+                onClick={() => setLightbox(photo.url)}
+              />
+              {/* Delete overlay */}
+              <div
+                className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100"
+              >
+                <button
+                  onClick={() => handlePhotoDelete(mission.id, photo.id)}
+                  className="p-1.5 rounded-full transition-all cursor-pointer"
+                  style={{ background: 'rgba(255,60,80,0.25)', color: '#ff8fa0' }}
+                  title="Supprimer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setLightbox(photo.url)}
+                  className="p-1.5 rounded-full transition-all cursor-pointer"
+                  style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}
+                  title="Agrandir"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {/* Add button */}
+          <label
+            className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all group"
+            style={{
+              borderColor: isUploading ? accentColor : 'var(--tech-border-strong)',
+              background: isUploading ? `${accentColor}08` : 'rgba(255,255,255,0.01)',
+            }}
+          >
+            {isUploading ? (
+              <Loader2 className="w-5 h-5 animate-spin" style={{ color: accentColor }} />
+            ) : (
+              <>
+                <Camera
+                  className="w-4 h-4 mb-0.5 transition-colors"
+                  style={{ color: 'var(--tech-text-muted)' }}
+                />
+                <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: 'var(--tech-text-muted)' }}>+</span>
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              multiple
+              onChange={(e) => handleFileChange(e, type)}
+              className="hidden"
+              disabled={isUploading}
+            />
+          </label>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-3 tech-stagger">
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90"
+          onClick={() => setLightbox(null)}
+        >
+          <div className="relative max-w-[95vw] max-h-[90vh]">
+            <img src={lightbox} alt="Photo" className="max-w-full max-h-[85vh] object-contain rounded-2xl" />
+            <button
+              onClick={() => setLightbox(null)}
+              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center text-lg font-bold cursor-pointer"
+            >
+              ×
+            </button>
+            <a
+              href={lightbox}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="absolute bottom-2 right-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider text-white cursor-pointer"
+              style={{ background: 'rgba(255,255,255,0.15)' }}
+            >
+              Ouvrir l'original ↗
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* ── Rapport de fin de mission ── */}
       <InfoCard>
         <CardHeader
           icon={<FileText className="w-3.5 h-3.5" style={{ color: mission.color }} />}
@@ -752,14 +897,11 @@ function ReportTab({ mission, localReports, savingStatus, handleReportChange }: 
           }
         />
         <div className="p-4 space-y-3">
-          <p className="text-xs leading-relaxed" style={{ color: 'var(--tech-text-muted)' }}>
-            Saisissez vos observations, retours, anomalies ou matériels endommagés.
-          </p>
           <textarea
             placeholder="Ex: Le projecteur LED #4 ne s'allume pas..."
             value={localReports[mission.id] || ''}
             onChange={(e) => handleReportChange(mission.id, e.target.value)}
-            rows={7}
+            rows={6}
             className="w-full text-sm rounded-2xl p-4 outline-none transition-all resize-none font-medium no-scrollbar"
             style={{
               background: 'rgba(255,255,255,0.03)',
@@ -779,7 +921,7 @@ function ReportTab({ mission, localReports, savingStatus, handleReportChange }: 
           <div className="flex justify-between items-center">
             <span className="text-[9px] font-bold flex items-center gap-1" style={{ color: 'var(--tech-text-muted)' }}>
               <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
-              Enregistré sur cet appareil
+              Auto-sauvegardé localement
             </span>
             {localReports[mission.id] && (
               confirmClear ? (
@@ -813,18 +955,45 @@ function ReportTab({ mission, localReports, savingStatus, handleReportChange }: 
         </div>
       </InfoCard>
 
-      <div
-        className="p-3.5 rounded-2xl flex items-start gap-2.5"
-        style={{ background: 'rgba(77,159,255,0.06)', border: '1px solid rgba(77,159,255,0.12)' }}
-      >
-        <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: 'var(--tech-blue)' }} />
-        <span className="text-[10px] leading-relaxed font-semibold" style={{ color: 'var(--tech-blue)', opacity: 0.8 }}>
-          Les rapports sont enregistrés sur votre terminal. L'administrateur les consultera lors de l'archivage ou du débriefing technique.
-        </span>
-      </div>
+      {/* ── Photos Preuves Card ── */}
+      <InfoCard>
+        <CardHeader
+          icon={<Camera className="w-3.5 h-3.5" style={{ color: mission.color }} />}
+          label="Photos Preuves — Galerie Terrain"
+          right={
+            <span
+              className="text-[9px] font-black px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(0,229,160,0.1)', color: 'var(--tech-accent)' }}
+            >
+              {(mission.photos || []).length} total
+            </span>
+          }
+        />
+        <div className="p-4 space-y-5">
+          <p className="text-[10px] leading-relaxed" style={{ color: 'var(--tech-text-muted)' }}>
+            Ajoutez autant de photos que nécessaire pour chaque étape. Elles sont envoyées instantanément dans votre bucket privé et consultables par l'administrateur.
+          </p>
+
+          {renderPhotoSection('before', photoBefore)}
+
+          <div style={{ borderTop: '1px solid var(--tech-border)', paddingTop: '1rem' }}>
+            {renderPhotoSection('after', photoAfter)}
+          </div>
+
+          {(mission.photos || []).length === 0 && (
+            <div className="py-4 text-center">
+              <Camera className="w-7 h-7 mx-auto mb-2 tech-animate-float" style={{ color: 'var(--tech-text-muted)' }} />
+              <p className="text-[11px] italic" style={{ color: 'var(--tech-text-muted)' }}>
+                Aucune photo. Appuyez sur + pour photographier l'état des lieux.
+              </p>
+            </div>
+          )}
+        </div>
+      </InfoCard>
     </div>
   );
 }
+
 
 /* ══════════════════════════════════════════════════════════════════════════
    HOURS TAB
@@ -1098,7 +1267,17 @@ export default function DrawerTabs(props: DrawerTabsProps) {
     case 'checklist':
       return <ChecklistTab mission={mission} />;
     case 'report':
-      return <ReportTab mission={mission} localReports={props.localReports} savingStatus={props.savingStatus} handleReportChange={props.handleReportChange} />;
+      return (
+        <ReportTab
+          mission={mission}
+          localReports={props.localReports}
+          savingStatus={props.savingStatus}
+          handleReportChange={props.handleReportChange}
+          photoUploading={props.photoUploading}
+          handlePhotoUpload={props.handlePhotoUpload}
+          handlePhotoDelete={props.handlePhotoDelete}
+        />
+      );
     default:
       return null;
   }

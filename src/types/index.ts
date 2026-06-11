@@ -75,6 +75,16 @@ export interface MissionEquipment {
   checked?: boolean;
 }
 
+export interface MissionPhoto {
+  id: string;
+  missionId: string;
+  type: 'before' | 'after';
+  url: string;
+  filePath: string;
+  uploadedBy?: string | null;
+  createdAt: Date;
+}
+
 export interface Mission {
   id: string;
   title: string;
@@ -96,6 +106,12 @@ export interface Mission {
   deliveryDate?: Date | null;
   pickupDate?: Date | null;
   setupDuration?: number | null; // in minutes
+  report?: string | null;
+  /** Legacy – conservé pour compatibilité ascendante. Préférer photos[] */
+  photoBeforeUrl?: string | null;
+  photoAfterUrl?: string | null;
+  /** Photos preuves (plusieurs par type), chargées depuis la table mission_photos */
+  photos?: MissionPhoto[];
 }
 
 export interface TimeLog {
