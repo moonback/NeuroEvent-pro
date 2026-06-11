@@ -3,6 +3,7 @@ import { Clock, MapPin, Truck as TruckIcon, Users, ChevronRight, CheckCircle2 } 
 import { format, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { triggerVibrate } from './useTechDashboard';
+import { useAuthStore } from '../../store/auth';
 
 interface MissionCardProps {
   mission: {
@@ -26,7 +27,25 @@ interface MissionCardProps {
 }
 
 export default function MissionCard({ mission, truckName, colleagueCount, onClick }: MissionCardProps) {
+  const [isHovered, setIsHovered] = React.useState(false);
   const isToday = isSameDay(mission.start, new Date());
+  const user = useAuthStore(state => state.user);
+  const [checkedChecklist, setCheckedChecklist] = React.useState(0);
+  const totalChecklist = 15;
+
+  React.useEffect(() => {
+    if (user?.id && mission.id) {
+      const saved = localStorage.getItem(`eventflow_checklist_${user.id}_${mission.id}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setCheckedChecklist(Object.values(parsed).filter(Boolean).length);
+        } catch {}
+      }
+    }
+  }, [user?.id, mission.id]);
+
+  const checklistPercent = totalChecklist > 0 ? Math.round((checkedChecklist / totalChecklist) * 100) : 0;
 
   const getEquipmentProgress = () => {
     if (!mission.equipments || mission.equipments.length === 0) return null;
@@ -41,32 +60,40 @@ export default function MissionCard({ mission, truckName, colleagueCount, onClic
     switch (mission.status) {
       case 'Planifiée':
         return {
-          badgeClass: 'tech-badge tech-badge-planned',
+          badgeBg: 'rgba(77, 159, 255, 0.08)',
+          badgeBorder: '1px solid rgba(77, 159, 255, 0.18)',
+          textColor: 'var(--tech-blue)',
           dotColor: 'var(--tech-blue)',
           ping: true,
         };
       case 'En cours':
         return {
-          badgeClass: 'tech-badge tech-badge-active',
+          badgeBg: 'rgba(255, 183, 0, 0.08)',
+          badgeBorder: '1px solid rgba(255, 183, 0, 0.18)',
+          textColor: '#ffb700',
           dotColor: '#ffb700',
           ping: true,
         };
       case 'Terminée':
         return {
-          badgeClass: 'tech-badge tech-badge-done',
+          badgeBg: 'rgba(0, 229, 160, 0.08)',
+          badgeBorder: '1px solid rgba(0, 229, 160, 0.18)',
+          textColor: 'var(--tech-accent)',
           dotColor: 'var(--tech-accent)',
           ping: false,
         };
       default:
         return {
-          badgeClass: 'tech-badge',
+          badgeBg: 'rgba(255, 255, 255, 0.04)',
+          badgeBorder: '1px solid rgba(255, 255, 255, 0.08)',
+          textColor: 'var(--tech-text-muted)',
           dotColor: 'var(--tech-text-muted)',
           ping: false,
         };
     }
   };
 
-  const { badgeClass, dotColor, ping } = getStatusConfig();
+  const badgeConfig = getStatusConfig();
 
   return (
     <div
@@ -74,23 +101,34 @@ export default function MissionCard({ mission, truckName, colleagueCount, onClic
         triggerVibrate('click');
         onClick();
       }}
-      className="tech-card overflow-hidden cursor-pointer relative group"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="tech-card overflow-hidden cursor-pointer relative transition-all duration-300 active:scale-[0.99] rounded-2xl"
+      style={{
+        transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
+        borderColor: isHovered ? `${mission.color}45` : 'var(--tech-border)',
+        boxShadow: isHovered
+          ? `0 12px 30px rgba(0, 0, 0, 0.55), 0 0 14px ${mission.color}15`
+          : '0 4px 20px rgba(0,0,0,0.3)',
+      }}
     >
       {/* Left accent gradient bar */}
       <div
         className="absolute left-0 top-0 bottom-0 w-[3px] z-10 transition-all duration-300"
         style={{
-          background: `linear-gradient(180deg, ${mission.color}ff 0%, ${mission.color}44 100%)`,
-          boxShadow: `2px 0 12px ${mission.color}30`,
+          background: isHovered 
+            ? `linear-gradient(180deg, ${mission.color}ff 0%, ${mission.color}88 100%)`
+            : `linear-gradient(180deg, ${mission.color}bb 0%, ${mission.color}33 100%)`,
+          boxShadow: isHovered ? `2px 0 12px ${mission.color}50` : `2px 0 6px ${mission.color}20`,
         }}
       />
 
-      {/* Top right glow when active */}
-      {mission.status === 'En cours' && (
+      {/* Top right glow when active or hovered */}
+      {(mission.status === 'En cours' || isHovered) && (
         <div
-          className="absolute top-0 right-0 w-32 h-16 pointer-events-none"
+          className="absolute top-0 right-0 w-32 h-16 pointer-events-none transition-opacity duration-300"
           style={{
-            background: 'radial-gradient(ellipse at top right, rgba(255,183,0,0.06) 0%, transparent 70%)',
+            background: `radial-gradient(ellipse at top right, ${mission.color}08 0%, transparent 70%)`,
           }}
         />
       )}
@@ -128,8 +166,8 @@ export default function MissionCard({ mission, truckName, colleagueCount, onClic
 
             {/* Title */}
             <h3
-              className="font-extrabold text-sm leading-snug tracking-tight"
-              style={{ color: 'var(--tech-text)' }}
+              className="font-extrabold text-sm leading-snug tracking-tight transition-colors duration-200"
+              style={{ color: isHovered ? mission.color : 'var(--tech-text)' }}
             >
               {mission.title}
             </h3>
@@ -143,16 +181,23 @@ export default function MissionCard({ mission, truckName, colleagueCount, onClic
           </div>
 
           {/* Status badge */}
-          <span className={badgeClass}>
+          <span
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black tracking-wide shrink-0 transition-all duration-200"
+            style={{
+              background: badgeConfig.badgeBg,
+              border: badgeConfig.badgeBorder,
+              color: badgeConfig.textColor,
+            }}
+          >
             <span
               className="relative w-1.5 h-1.5 rounded-full inline-block shrink-0"
-              style={{ background: dotColor }}
+              style={{ background: badgeConfig.dotColor }}
             >
-              {ping && (
+              {badgeConfig.ping && (
                 <span
                   className="absolute inset-0 rounded-full"
                   style={{
-                    background: dotColor,
+                    background: badgeConfig.dotColor,
                     animation: 'tech-dot-ping 2s cubic-bezier(0,0,0.2,1) infinite',
                   }}
                 />
@@ -163,7 +208,7 @@ export default function MissionCard({ mission, truckName, colleagueCount, onClic
         </div>
 
         {/* Info rows */}
-        <div className="space-y-1.5 mb-3">
+        <div className="space-y-1.5 mb-3.5">
           <div
             className="flex items-center gap-2 text-[11px]"
             style={{ color: 'var(--tech-text-secondary)' }}
@@ -172,7 +217,7 @@ export default function MissionCard({ mission, truckName, colleagueCount, onClic
               className="w-3.5 h-3.5 shrink-0"
               style={{ color: isToday ? '#ffb700' : 'var(--tech-text-muted)' }}
             />
-            <span className={isToday ? 'font-bold' : 'font-medium'} style={{ color: isToday ? '#ffb700' : undefined }}>
+            <span className={isToday ? 'font-bold text-amber-400' : 'font-medium'}>
               {format(mission.start, 'EEEE d MMM HH:mm', { locale: fr })} — {format(mission.end, 'HH:mm')}
             </span>
           </div>
@@ -185,45 +230,59 @@ export default function MissionCard({ mission, truckName, colleagueCount, onClic
           </div>
         </div>
 
-        {/* Progress bar */}
-        {progress && (
-          <div
-            className="mb-3 p-2.5 rounded-2xl"
-            style={{
-              background: 'rgba(255,255,255,0.025)',
-              border: '1px solid var(--tech-border)',
-            }}
-          >
-            <div className="flex justify-between text-[10px] font-bold mb-1.5">
-              <span style={{ color: 'var(--tech-text-muted)' }}>Matériel pointé</span>
-              <span
+        {/* Progress Grid */}
+        {(progress || checkedChecklist > 0) && (
+          <div className="grid grid-cols-2 gap-3 mb-3.5">
+            {progress && (
+              <div
+                className="p-2 rounded-xl transition-all duration-200"
                 style={{
-                  color: progress.percent === 100 ? 'var(--tech-accent)' : 'var(--tech-text-secondary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
+                  background: 'rgba(255,255,255,0.015)',
+                  border: isHovered ? `1px solid ${mission.color}15` : '1px solid var(--tech-border)',
                 }}
               >
-                {progress.percent === 100 && (
-                  <CheckCircle2 className="w-3 h-3" style={{ color: 'var(--tech-accent)' }} />
-                )}
-                {progress.pointed}/{progress.total}
-              </span>
-            </div>
-            <div className="tech-progress-track">
-              <div
-                className="tech-progress-fill"
-                style={{
-                  width: `${progress.percent}%`,
-                  background:
-                    progress.percent === 100
-                      ? 'linear-gradient(90deg, var(--tech-accent), var(--tech-accent-dim))'
-                      : `linear-gradient(90deg, ${mission.color}, ${mission.color}bb)`,
-                  boxShadow: progress.percent === 100
-                    ? '0 0 8px rgba(0,229,160,0.3)'
-                    : 'none',
-                }}
-              />
+                <div className="flex justify-between text-[8px] font-black uppercase tracking-widest mb-1.5">
+                  <span style={{ color: 'var(--tech-text-muted)' }}>Matériel</span>
+                  <span style={{ color: progress.percent === 100 ? 'var(--tech-accent)' : 'var(--tech-text-secondary)' }}>
+                    {progress.pointed}/{progress.total}
+                  </span>
+                </div>
+                <div className="tech-progress-track h-[3px]">
+                  <div
+                    className="tech-progress-fill"
+                    style={{
+                      width: `${progress.percent}%`,
+                      background: progress.percent === 100 ? 'var(--tech-accent)' : mission.color,
+                      boxShadow: progress.percent === 100 ? '0 0 6px rgba(0,229,160,0.3)' : 'none',
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div
+              className={`p-2 rounded-xl transition-all duration-200 ${!progress ? 'col-span-2' : ''}`}
+              style={{
+                background: 'rgba(255,255,255,0.015)',
+                border: isHovered ? `1px solid ${mission.color}15` : '1px solid var(--tech-border)',
+              }}
+            >
+              <div className="flex justify-between text-[8px] font-black uppercase tracking-widest mb-1.5">
+                <span style={{ color: 'var(--tech-text-muted)' }}>Checklist</span>
+                <span style={{ color: checklistPercent === 100 ? 'var(--tech-accent)' : 'var(--tech-text-secondary)' }}>
+                  {checkedChecklist}/{totalChecklist}
+                </span>
+              </div>
+              <div className="tech-progress-track h-[3px]">
+                <div
+                  className="tech-progress-fill"
+                  style={{
+                    width: `${checklistPercent}%`,
+                    background: checklistPercent === 100 ? 'var(--tech-accent)' : mission.color,
+                    boxShadow: checklistPercent === 100 ? '0 0 6px rgba(0,229,160,0.3)' : 'none',
+                  }}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -257,12 +316,15 @@ export default function MissionCard({ mission, truckName, colleagueCount, onClic
           </div>
 
           <div
-            className="flex items-center gap-0.5 text-[11px] font-black transition-all duration-200 group-hover:gap-1"
-            style={{ color: 'var(--tech-accent)' }}
+            className="flex items-center gap-0.5 text-[11px] font-black transition-all duration-200"
+            style={{ color: isHovered ? mission.color : 'var(--tech-accent)' }}
           >
-            <span>Voir</span>
+            <span>Détails</span>
             <ChevronRight
-              className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5"
+              className="w-3.5 h-3.5 transition-transform duration-200"
+              style={{
+                transform: isHovered ? 'translateX(2px)' : 'translateX(0)',
+              }}
             />
           </div>
         </div>
