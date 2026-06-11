@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   X, Check, Clock, MapPin, Info, Phone, Users, QrCode, FileText, Timer, PenTool,
-  Sparkles
+  Sparkles, ClipboardCheck
 } from 'lucide-react';
 import { format, isSameDay, differenceInMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -37,12 +37,13 @@ interface MissionDrawerProps {
 }
 
 const TAB_CONFIG: { id: DrawerTab; label: string; icon: React.ElementType }[] = [
-  { id: 'general', label: 'Infos', icon: Info },
-  { id: 'client', label: 'Client', icon: Phone },
-  { id: 'team', label: 'Équipe', icon: Users },
-  { id: 'equipment', label: 'Matériel', icon: QrCode },
-  { id: 'hours', label: 'Heures', icon: Timer },
-  { id: 'report', label: 'Rapport', icon: FileText },
+  { id: 'general',   label: 'Infos',     icon: Info },
+  { id: 'client',    label: 'Client',    icon: Phone },
+  { id: 'team',      label: 'Équipe',    icon: Users },
+  { id: 'equipment', label: 'Matériel',  icon: QrCode },
+  { id: 'hours',     label: 'Heures',    icon: Timer },
+  { id: 'checklist', label: 'Checklist', icon: ClipboardCheck },
+  { id: 'report',    label: 'Rapport',   icon: FileText },
 ];
 
 const STATUS_STEPS = [
