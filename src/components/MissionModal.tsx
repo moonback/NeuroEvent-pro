@@ -382,7 +382,7 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
             </div>
 
             <div className="sm:col-span-2">
-              <label htmlFor="mission-address" className={labelClass}>Adresse du lieu</label>
+              <label htmlFor="mission-address" className={labelClass}>Adresse de livraison</label>
               <div className="relative">
                 <MapPin className="w-4 h-4 absolute left-3 top-3.5 text-[#94a3b8]" />
                 <input 
@@ -398,7 +398,7 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
             </div>
 
             <div>
-              <label htmlFor="mission-start" className={labelClass}>Date de début</label>
+              <label htmlFor="mission-start" className={labelClass}>Date de début évent</label>
               <input 
                 id="mission-start" 
                 required 
@@ -410,7 +410,7 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
             </div>
 
             <div>
-              <label htmlFor="mission-end" className={labelClass}>Date de fin</label>
+              <label htmlFor="mission-end" className={labelClass}>Date de fin évent</label>
               <input 
                 id="mission-end" 
                 required 

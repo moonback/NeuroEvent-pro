@@ -157,11 +157,11 @@ export default function MissionDrawer(props: MissionDrawerProps) {
             </div>
 
             {/* Core Info Bar (Date, Address, Type) */}
-            <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-2 bg-black/15 p-2 rounded-xl text-[10px] font-semibold">
-              <div className="flex items-center gap-1.5 truncate">
+            <div className="grid grid-cols-1 gap-x-2 gap-y-1 mb-2 bg-black/15 p-2 rounded-xl text-[10px] font-semibold">
+              {/* <div className="flex items-center gap-1.5 truncate">
                 <Clock className="w-3 h-3 text-white/70 shrink-0" />
                 <span className="truncate">{format(mission.start, 'd MMM · HH:mm', { locale: fr })} → {format(mission.end, 'HH:mm')}</span>
-              </div>
+              </div> */}
 
               <div className="flex items-center gap-1.5 truncate">
                 <span className="w-1.5 h-1.5 rounded-full bg-white/80 shrink-0" />
