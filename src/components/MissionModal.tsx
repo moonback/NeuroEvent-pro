@@ -417,6 +417,23 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
                 ))}
               </div>
             </div>
+
+            {/* Signature View */}
+            {existingMission?.signatureUrl && (
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Signature du client (Bon de Livraison)</label>
+                <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col items-center justify-center gap-2">
+                  <img 
+                    src={existingMission.signatureUrl} 
+                    alt="Signature" 
+                    className="max-h-[150px] object-contain"
+                  />
+                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Signé
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

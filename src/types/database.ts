@@ -194,6 +194,7 @@ export interface Database {
           required_skills: string[] | null;
           status: string;
           color: string;
+          signature_url: string | null;
         };
         Insert: {
           id?: string;
@@ -208,6 +209,7 @@ export interface Database {
           required_skills?: string[] | null;
           status: string;
           color: string;
+          signature_url?: string | null;
         };
         Update: {
           id?: string;
@@ -222,6 +224,8 @@ export interface Database {
           required_skills?: string[] | null;
           status?: string;
           color?: string;
+          signature_url?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };

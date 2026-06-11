@@ -91,6 +91,7 @@ export interface Mission {
   equipments: MissionEquipment[];
   status: MissionStatus;
   color: string;
+  signatureUrl?: string | null;
 }
 
 export interface TimeLog {

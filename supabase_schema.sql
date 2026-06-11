@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS missions (
     required_skills TEXT[],
     status mission_status NOT NULL DEFAULT 'Planifiée',
     color TEXT NOT NULL DEFAULT '#3b82f6',
+    signature_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -175,5 +176,14 @@ CREATE POLICY "Allow PUBLIC DELETE on mission_equipments" ON mission_equipments 
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated;
+
+-- Create Storage bucket for signatures
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('signatures', 'signatures', true) 
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage policies for public read/write
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'signatures');
+CREATE POLICY "Public Uploads" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'signatures');
 
 

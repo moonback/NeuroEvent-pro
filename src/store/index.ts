@@ -204,6 +204,7 @@ export const useStore = create<AppState>()(
         requiredSkills: m.required_skills || [],
         status: m.status as MissionStatus,
         color: m.color,
+        signatureUrl: m.signature_url,
         equipments: m.mission_equipments?.map((me) => ({
           equipmentId: me.equipment_id,
           quantity: me.quantity,
@@ -244,7 +245,8 @@ export const useStore = create<AppState>()(
       truck_id: mission.truckId || null,
       required_skills: mission.requiredSkills || [],
       status: mission.status,
-      color: mission.color
+      color: mission.color,
+      signature_url: mission.signatureUrl
     };
     // client_id seulement si renseigné : reste compatible avec une base non migrée.
     if (mission.clientId) payload.client_id = mission.clientId;
@@ -282,6 +284,7 @@ export const useStore = create<AppState>()(
     if (updatedFields.requiredSkills !== undefined) changes.required_skills = updatedFields.requiredSkills;
     if (updatedFields.status !== undefined) changes.status = updatedFields.status;
     if (updatedFields.color !== undefined) changes.color = updatedFields.color;
+    if (updatedFields.signatureUrl !== undefined) changes.signature_url = updatedFields.signatureUrl;
 
     if (Object.keys(changes).length > 0) {
       const { error } = await supabase.from('missions').update(changes).eq('id', id);

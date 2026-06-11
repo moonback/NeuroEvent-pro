@@ -1,0 +1,132 @@
+import React, { useRef, useState } from 'react';
+import SignatureCanvas from 'react-signature-canvas';
+import { X, Check, Trash2, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { toast } from '../store/toast';
+
+interface SignaturePadProps {
+  missionId: string;
+  onSave: (url: string) => void;
+  onClose: () => void;
+}
+
+export default function SignaturePad({ missionId, onSave, onClose }: SignaturePadProps) {
+  const sigCanvas = useRef<SignatureCanvas>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const clear = () => {
+    if (sigCanvas.current) {
+      sigCanvas.current.clear();
+    }
+  };
+
+  const save = async () => {
+    if (!sigCanvas.current || sigCanvas.current.isEmpty()) {
+      toast.error('Veuillez signer avant de valider.');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      // Get base64 Data URL (PNG)
+      const dataUrl = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
+      
+      // Convert base64 to Blob
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      
+      // Generate a unique filename
+      const fileName = `signature_${missionId}_${Date.now()}.png`;
+      
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('signatures')
+        .upload(fileName, blob, {
+          contentType: 'image/png',
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) throw error;
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('signatures')
+        .getPublicUrl(data.path);
+
+      onSave(publicUrlData.publicUrl);
+    } catch (error) {
+      console.error('Erreur lors de l\'enregistrement de la signature', error);
+      toast.error('Erreur lors de l\'enregistrement de la signature.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+      <div 
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
+        onClick={onClose}
+      />
+      
+      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-slide-up sm:animate-fade-in">
+        <div className="p-4 border-b border-[#e2e8f0]/60 flex justify-between items-center bg-[#f8fafc]">
+          <h3 className="text-sm font-black text-[#0f172a] uppercase tracking-wider">
+            Signature du Client
+          </h3>
+          <button 
+            onClick={onClose}
+            className="p-2 text-[#64748b] hover:bg-[#e2e8f0] rounded-xl transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-4 bg-slate-50 flex-1 min-h-[300px] flex items-center justify-center relative">
+          <div className="w-full bg-white rounded-2xl border-2 border-dashed border-[#cbd5e1] overflow-hidden">
+            <SignatureCanvas 
+              ref={sigCanvas}
+              penColor="black"
+              canvasProps={{
+                className: 'signature-canvas w-full h-64 touch-none cursor-crosshair'
+              }}
+            />
+          </div>
+          <div className="absolute bottom-6 text-[10px] font-bold text-[#94a3b8] pointer-events-none uppercase tracking-widest text-center w-full">
+            Signez dans le cadre ci-dessus
+          </div>
+        </div>
+
+        <div className="p-4 bg-white border-t border-[#e2e8f0]/60 grid grid-cols-2 gap-3">
+          <button
+            onClick={clear}
+            disabled={isUploading}
+            className="px-4 py-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold hover:bg-red-100 flex items-center justify-center gap-2 transition-all active:scale-95"
+          >
+            <Trash2 className="w-4 h-4" />
+            Effacer
+          </button>
+          
+          <button
+            onClick={save}
+            disabled={isUploading}
+            className="px-4 py-3 bg-[#0f172a] text-white rounded-xl text-xs font-bold hover:bg-[#1e293b] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Sauvegarde...
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                Valider
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -35,6 +35,8 @@ import { toast } from '../store/toast';
 import TimeLogPanel from '../components/TimeLogPanel';
 import TechnicianMyHours from '../components/TechnicianMyHours';
 import TechnicianUnavailabilities from '../components/TechnicianUnavailabilities';
+import SignaturePad from '../components/SignaturePad';
+import { PenTool } from 'lucide-react';
 
 export default function TechnicianDashboard() {
   const user = useAuthStore(state => state.user);
@@ -62,8 +64,11 @@ export default function TechnicianDashboard() {
   
   // Detail Drawer state
   const [selectedMission, setSelectedMission] = React.useState<typeof missions[0] | null>(null);
-  const [drawerTab, setDrawerTab] = React.useState<'general' | 'client' | 'team' | 'equipment' | 'report' | 'hours'>('general');
+  const [drawerTab, setDrawerTab] = React.useState<'general' | 'client' | 'team' | 'equipment' | 'report' | 'hours' | 'signature'>('general');
   const [scannedItemId, setScannedItemId] = React.useState<string | null>(null);
+
+  // Signature Modal state
+  const [signatureModalOpen, setSignatureModalOpen] = React.useState(false);
 
   // Local reports (saved to localStorage by mission and user id)
   const [localReports, setLocalReports] = React.useState<Record<string, string>>({});
@@ -82,8 +87,8 @@ export default function TechnicianDashboard() {
   const processSyncQueue = useStore(state => state.processSyncQueue);
   const [isOnline, setIsOnline] = React.useState(navigator.onLine);
 
-  const tabsList: Array<'general' | 'client' | 'team' | 'equipment' | 'report' | 'hours'> = [
-    'general', 'client', 'team', 'equipment', 'report', 'hours'
+  const tabsList: Array<'general' | 'client' | 'team' | 'equipment' | 'report' | 'hours' | 'signature'> = [
+    'general', 'client', 'team', 'equipment', 'report', 'hours', 'signature'
   ];
 
   React.useEffect(() => {
@@ -1002,7 +1007,8 @@ className="flex flex-col items-center justify-center w-full h-full text-[#64748b
                 { id: 'team',      label: 'Équipe',   icon: Users },
                 { id: 'equipment', label: 'Matériel', icon: QrCode },
                 { id: 'hours',     label: 'Heures',   icon: Timer },
-                { id: 'report',    label: 'Rapport',  icon: FileText }
+                { id: 'report',    label: 'Rapport',  icon: FileText },
+                { id: 'signature', label: 'Signature', icon: PenTool }
               ] as const).map(tab => {
                 const TabIcon = tab.icon;
                 const isActive = drawerTab === tab.id;
@@ -1383,6 +1389,59 @@ className="flex flex-col items-center justify-center w-full h-full text-[#64748b
                 </div>
               )}
 
+              {/* ══ SIGNATURE ══ */}
+              {drawerTab === 'signature' && (
+                <div className="space-y-3">
+                  <div className="bg-white border border-[#e2e8f0]/60 rounded-2xl p-4 shadow-xs">
+                    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#f1f5f9]">
+                      <PenTool className="w-4 h-4 shrink-0" style={{ color: selectedMission.color }} />
+                      <span className="text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider">Bon de Livraison</span>
+                    </div>
+                    
+                    {!selectedMission.signatureUrl ? (
+                      <div className="text-center py-6">
+                        <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <PenTool className="w-6 h-6 text-slate-400" />
+                        </div>
+                        <p className="text-sm font-bold text-slate-800 mb-1">Aucune signature</p>
+                        <p className="text-xs text-slate-500 mb-4">Le client n'a pas encore signé le bon de livraison pour cette mission.</p>
+                        <button
+                          onClick={() => setSignatureModalOpen(true)}
+                          className="px-4 py-2 bg-[#0f172a] text-white rounded-xl text-xs font-bold hover:bg-[#1e293b] active:scale-95 transition-all shadow-sm"
+                        >
+                          Faire signer maintenant
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-center justify-center min-h-[150px]">
+                          <img 
+                            src={selectedMission.signatureUrl} 
+                            alt="Signature du client" 
+                            className="max-w-full max-h-[200px] object-contain"
+                          />
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-emerald-600 font-bold flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" /> Signé
+                          </span>
+                          <button
+                            onClick={() => {
+                              if(window.confirm("Êtes-vous sûr de vouloir remplacer la signature actuelle ?")) {
+                                setSignatureModalOpen(true);
+                              }
+                            }}
+                            className="text-slate-500 hover:text-slate-800 font-semibold"
+                          >
+                            Refaire signer
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               </div>
             </div>
 
@@ -1402,6 +1461,21 @@ className="flex flex-col items-center justify-center w-full h-full text-[#64748b
             setActiveMissionIdForScanner(null);
           }}
           onScan={handleScan}
+        />
+      )}
+
+      {/* Signature Modal */}
+      {signatureModalOpen && selectedMission && (
+        <SignaturePad 
+          missionId={selectedMission.id}
+          onSave={async (url) => {
+            await updateMission(selectedMission.id, { signatureUrl: url });
+            // Optimistic update of selectedMission
+            setSelectedMission({ ...selectedMission, signatureUrl: url });
+            setSignatureModalOpen(false);
+            toast.success("Signature enregistrée avec succès");
+          }}
+          onClose={() => setSignatureModalOpen(false)}
         />
       )}
 
