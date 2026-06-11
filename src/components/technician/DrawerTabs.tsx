@@ -3,7 +3,7 @@ import {
   Calendar, MapPin, Truck as TruckIcon, Users, Phone, Mail,
   MessageSquare, Navigation, QrCode, Check, FileText, Info,
   ChevronRight, AlertCircle, AlertTriangle, Clock, CheckCircle2,
-  Package, Wrench, ClipboardCheck, Camera, Loader2, Trash2
+  Package, Wrench, ClipboardCheck, Camera, Loader2, Trash2, Image as ImageIcon, Plus
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -818,7 +818,7 @@ function ReportTab({
             </div>
           ))}
 
-          {/* Add button */}
+          {/* Add camera button */}
           <label
             className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all group"
             style={{
@@ -831,16 +831,44 @@ function ReportTab({
             ) : (
               <>
                 <Camera
-                  className="w-4 h-4 mb-0.5 transition-colors"
+                  className="w-4 h-4 mb-0.5 transition-colors group-hover:scale-110"
                   style={{ color: 'var(--tech-text-muted)' }}
                 />
-                <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: 'var(--tech-text-muted)' }}>+</span>
+                <span className="text-[7px] font-black uppercase tracking-wider text-center" style={{ color: 'var(--tech-text-muted)' }}>Appareil</span>
               </>
             )}
             <input
               type="file"
               accept="image/*"
               capture="environment"
+              onChange={(e) => handleFileChange(e, type)}
+              className="hidden"
+              disabled={isUploading}
+            />
+          </label>
+
+          {/* Add gallery button */}
+          <label
+            className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all group"
+            style={{
+              borderColor: isUploading ? accentColor : 'var(--tech-border-strong)',
+              background: isUploading ? `${accentColor}08` : 'rgba(255,255,255,0.01)',
+            }}
+          >
+            {isUploading ? (
+              <Loader2 className="w-5 h-5 animate-spin" style={{ color: accentColor }} />
+            ) : (
+              <>
+                <ImageIcon
+                  className="w-4 h-4 mb-0.5 transition-colors group-hover:scale-110"
+                  style={{ color: 'var(--tech-text-muted)' }}
+                />
+                <span className="text-[7px] font-black uppercase tracking-wider text-center" style={{ color: 'var(--tech-text-muted)' }}>Galerie</span>
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/*"
               multiple
               onChange={(e) => handleFileChange(e, type)}
               className="hidden"

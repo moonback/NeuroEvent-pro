@@ -98,6 +98,16 @@ export function useTechDashboard() {
     }
   }, [user?.id]);
 
+  // ── Sync selectedMission when global store list is updated ──
+  React.useEffect(() => {
+    if (selectedMission) {
+      const updated = missions.find(m => m.id === selectedMission.id);
+      if (updated && updated !== selectedMission) {
+        setSelectedMission(updated);
+      }
+    }
+  }, [missions, selectedMission]);
+
   // ── Handlers ──
   const handleReportChange = (missionId: string, value: string) => {
     setSavingStatus('saving');

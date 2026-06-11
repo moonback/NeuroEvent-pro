@@ -36,12 +36,20 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
   const updateMission = useStore(state => state.updateMission);
   const deleteMission = useStore(state => state.deleteMission);
   const unavailabilities = useStore(state => state.unavailabilities);
+  const fetchMissionPhotos = useStore(state => state.fetchMissionPhotos);
 
   const existingMission = missionId ? missions.find(m => m.id === missionId) : null;
 
   // Tabs state
   const [activeTab, setActiveTab] = useState<'general' | 'resources' | 'report'>('general');
   const [adminLightbox, setAdminLightbox] = useState<string | null>(null);
+
+  // Fetch photos on open
+  React.useEffect(() => {
+    if (isOpen && missionId) {
+      fetchMissionPhotos(missionId).catch(console.error);
+    }
+  }, [isOpen, missionId, fetchMissionPhotos]);
 
   const [title, setTitle] = useState(existingMission?.title || '');
   const [client, setClient] = useState(existingMission?.client || '');
