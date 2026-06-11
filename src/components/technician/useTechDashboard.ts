@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/auth';
 import { toast } from '../../store/toast';
 import { isSameDay, startOfWeek, endOfWeek } from 'date-fns';
 
-export type MainTab = 'active' | 'history' | 'mes_heures' | 'disponibilites';
+export type MainTab = 'active' | 'history' | 'mes_heures' | 'disponibilites' | 'profil';
 export type DrawerTab = 'general' | 'client' | 'team' | 'equipment' | 'report' | 'hours';
 export type DateFilter = 'all' | 'today' | 'week';
 export type StatusFilter = 'all' | 'Planifiée' | 'En cours';

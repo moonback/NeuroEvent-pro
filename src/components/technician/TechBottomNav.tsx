@@ -60,14 +60,26 @@ export default function TechBottomNav({ activeTab, setActiveTab, hasSelectedMiss
         {/* Separator */}
         <div className="w-px h-8 mx-1" style={{ background: 'var(--tech-border)' }} />
 
-        <Link
-          to="/settings"
-          onClick={() => triggerVibrate('click')}
+        <button
+          onClick={() => {
+            triggerVibrate('click');
+            clearSelection();
+            setActiveTab('profil');
+          }}
           className="flex flex-col items-center justify-center flex-1 h-full transition-all active:scale-90"
         >
-          <SettingsIcon className="w-5 h-5 mb-1" style={{ color: 'var(--tech-text-muted)' }} />
-          <span className="text-[10px] font-extrabold" style={{ color: 'var(--tech-text-muted)' }}>Profil</span>
-        </Link>
+          <SettingsIcon
+            className="w-5 h-5 mb-1 transition-colors"
+            style={{ color: activeTab === 'profil' && !hasSelectedMission ? 'var(--tech-accent)' : 'var(--tech-text-muted)' }}
+          />
+          <span
+            className="text-[10px] font-extrabold transition-colors"
+            style={{ color: activeTab === 'profil' && !hasSelectedMission ? 'var(--tech-accent)' : 'var(--tech-text-muted)' }}
+          >
+            Profil
+          </span>
+          {activeTab === 'profil' && !hasSelectedMission && <div className="tech-nav-dot mt-1" />}
+        </button>
 
         <button
           onClick={() => { triggerVibrate('click'); onSignOut(); }}

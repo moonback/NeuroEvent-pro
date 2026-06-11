@@ -12,6 +12,7 @@ import { QRScannerModal } from '../components/QRScannerModal';
 import SignaturePad from '../components/SignaturePad';
 import TechnicianMyHours from '../components/TechnicianMyHours';
 import TechnicianUnavailabilities from '../components/TechnicianUnavailabilities';
+import Settings from './Settings';
 
 import { toast } from '../store/toast';
 import { Calendar } from 'lucide-react';
@@ -47,6 +48,10 @@ export default function TechnicianDashboard() {
             <h2 className="text-lg font-black mb-4">Mes Indisponibilités</h2>
             <TechnicianUnavailabilities />
           </div>
+        </div>
+      ) : tech.activeTab === 'profil' ? (
+        <div className="animate-fade-in">
+          <Settings />
         </div>
       ) : (
         <div className="max-w-md mx-auto space-y-4 pt-2 pb-6">
