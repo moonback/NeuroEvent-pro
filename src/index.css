@@ -79,3 +79,60 @@ body {
     height: 2.25rem;
   }
 }
+
+/* ── Planning Matériel — Resource Timeline ─────────────────────────────── */
+/* En-têtes de groupe (catégories) */
+.fc .fc-resource-group .fc-datagrid-cell-main {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #475569;
+  padding: 0.35rem 0.5rem;
+  background: linear-gradient(to right, #f8fafc, #ffffff);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Zone ressources plus large et aérée */
+.fc-resource-timeline .fc-datagrid-cell-cushion {
+  padding: 0.25rem 0.5rem;
+}
+
+/* Lignes de ressources alternées (zébrage doux) */
+.fc-resource-timeline tr:nth-child(even) .fc-datagrid-cell {
+  background-color: #fafafa;
+}
+
+/* Hauteur de ligne confortable */
+.fc .fc-resource-timeline .fc-datagrid-cell {
+  vertical-align: middle;
+}
+
+/* ── Cartes équipement (vue grille) ────────────────────────────────────── */
+.eq-card {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+}
+.eq-card:hover {
+  box-shadow: 0 4px 12px 0 rgb(0 0 0 / 0.08);
+}
+
+/* Animation d'entrée des cartes */
+@keyframes eq-card-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.eq-card {
+  animation: eq-card-in 0.2s ease both;
+}
+
+/* ── Plein écran natif ─────────────────────────────────────────────────── */
+/* Garantit que l'élément en fullscreen a un fond blanc et du scroll */
+:fullscreen {
+  background-color: #ffffff;
+  overflow: auto;
+}
+/* Préfixe webkit (Safari) */
+:-webkit-full-screen {
+  background-color: #ffffff;
+  overflow: auto;
+}

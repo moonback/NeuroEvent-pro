@@ -3,11 +3,12 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Maximize2, Minimize2 } from 'lucide-react';
 import { useStore } from '../store';
 import MissionModal from '../components/MissionModal';
 import { getGlobalConflicts } from '../lib/conflicts';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import { useFullscreen } from '../hooks/useFullscreen';
 
 export default function Planning() {
   const isMobile = useIsMobile();
@@ -21,6 +22,7 @@ export default function Planning() {
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [initialDates, setInitialDates] = useState<{start: Date, end: Date} | null>(null);
   const [conflictsExpanded, setConflictsExpanded] = useState(false);
+  const { ref: fsRef, isFullscreen, toggle: toggleFullscreen } = useFullscreen();
 
   const conflicts = useMemo(
     () => getGlobalConflicts(missions, technicians, trucks, equipment),
@@ -69,10 +71,20 @@ export default function Planning() {
   const displayedConflicts = conflictsExpanded ? conflicts : conflicts.slice(0, 3);
 
   return (
-    <div className="h-full bg-white border border-[#e2e8f0] p-3 sm:p-6 flex flex-col relative z-0">
-      <div className="mb-4 flex flex-col gap-1">
-        <h2 className="text-lg sm:text-xl font-bold text-[#0f172a] uppercase tracking-tight">Calendrier Global</h2>
-        <p className="text-xs text-[#64748b] font-medium">Visualisation et gestion des missions événementielles</p>
+    <div ref={fsRef} className={`bg-white border border-[#e2e8f0] p-3 sm:p-6 flex flex-col relative z-0 ${isFullscreen ? 'h-screen' : 'h-full'}`}>
+      <div className="mb-4 flex items-start justify-between gap-2">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg sm:text-xl font-bold text-[#0f172a] uppercase tracking-tight">Calendrier Global</h2>
+          <p className="text-xs text-[#64748b] font-medium">Visualisation et gestion des missions événementielles</p>
+        </div>
+        <button
+          onClick={toggleFullscreen}
+          title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+          className="shrink-0 p-2 rounded-md text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9] border border-[#e2e8f0] transition-colors"
+          aria-label={isFullscreen ? 'Quitter le plein écran' : 'Passer en plein écran'}
+        >
+          {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+        </button>
       </div>
 
       {conflicts.length > 0 && (
