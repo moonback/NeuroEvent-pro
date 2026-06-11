@@ -241,14 +241,17 @@ export function useTechDashboard() {
   const handleDragEnd = () => { setIsDragging(false); if (dragOffsetY > 140) { triggerVibrate('click'); setSelectedMission(null); } setDragOffsetY(0); };
 
   // ── Swipe horizontal ──
+  const currentTech = technicians.find(t => t.id === user?.id);
+  const activeDrawerTabs = DRAWER_TABS.filter(t => t !== 'checklist' || currentTech?.checklistEnabled);
+
   const handleContentTouchStart = (e: React.TouchEvent) => { swipeStartX.current = e.touches[0].clientX; swipeStartY.current = e.touches[0].clientY; };
   const handleContentTouchEnd = (e: React.TouchEvent) => {
     const deltaX = e.changedTouches[0].clientX - swipeStartX.current;
     const deltaY = e.changedTouches[0].clientY - swipeStartY.current;
     if (Math.abs(deltaX) > 70 && Math.abs(deltaY) < 50) {
-      const currentIndex = DRAWER_TABS.indexOf(drawerTab);
-      if (deltaX > 0 && currentIndex > 0) { setDrawerTab(DRAWER_TABS[currentIndex - 1]); triggerVibrate('click'); }
-      else if (deltaX < 0 && currentIndex < DRAWER_TABS.length - 1) { setDrawerTab(DRAWER_TABS[currentIndex + 1]); triggerVibrate('click'); }
+      const currentIndex = activeDrawerTabs.indexOf(drawerTab);
+      if (deltaX > 0 && currentIndex > 0) { setDrawerTab(activeDrawerTabs[currentIndex - 1]); triggerVibrate('click'); }
+      else if (deltaX < 0 && currentIndex < activeDrawerTabs.length - 1) { setDrawerTab(activeDrawerTabs[currentIndex + 1]); triggerVibrate('click'); }
     }
   };
 

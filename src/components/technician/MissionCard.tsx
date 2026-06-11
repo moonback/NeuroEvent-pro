@@ -4,6 +4,7 @@ import { format, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { triggerVibrate } from './useTechDashboard';
 import { useAuthStore } from '../../store/auth';
+import { useStore } from '../../store';
 
 interface MissionCardProps {
   mission: {
@@ -30,6 +31,10 @@ export default function MissionCard({ mission, truckName, colleagueCount, onClic
   const [isHovered, setIsHovered] = React.useState(false);
   const isToday = isSameDay(mission.start, new Date());
   const user = useAuthStore(state => state.user);
+  const technicians = useStore(state => state.technicians);
+  const currentTech = technicians.find(t => t.id === user?.id);
+  const isChecklistEnabled = currentTech?.checklistEnabled ?? false;
+
   const [checkedChecklist, setCheckedChecklist] = React.useState(0);
   const totalChecklist = 15;
 
@@ -231,7 +236,7 @@ export default function MissionCard({ mission, truckName, colleagueCount, onClic
         </div>
 
         {/* Progress Grid */}
-        {(progress || checkedChecklist > 0) && (
+        {(progress || (isChecklistEnabled && checkedChecklist > 0)) && (
           <div className="grid grid-cols-2 gap-3 mb-3.5">
             {progress && (
               <div
@@ -260,30 +265,32 @@ export default function MissionCard({ mission, truckName, colleagueCount, onClic
               </div>
             )}
 
-            <div
-              className={`p-2 rounded-xl transition-all duration-200 ${!progress ? 'col-span-2' : ''}`}
-              style={{
-                background: 'rgba(255,255,255,0.015)',
-                border: isHovered ? `1px solid ${mission.color}15` : '1px solid var(--tech-border)',
-              }}
-            >
-              <div className="flex justify-between text-[8px] font-black uppercase tracking-widest mb-1.5">
-                <span style={{ color: 'var(--tech-text-muted)' }}>Checklist</span>
-                <span style={{ color: checklistPercent === 100 ? 'var(--tech-accent)' : 'var(--tech-text-secondary)' }}>
-                  {checkedChecklist}/{totalChecklist}
-                </span>
+            {isChecklistEnabled && (
+              <div
+                className={`p-2 rounded-xl transition-all duration-200 ${!progress ? 'col-span-2' : ''}`}
+                style={{
+                  background: 'rgba(255,255,255,0.015)',
+                  border: isHovered ? `1px solid ${mission.color}15` : '1px solid var(--tech-border)',
+                }}
+              >
+                <div className="flex justify-between text-[8px] font-black uppercase tracking-widest mb-1.5">
+                  <span style={{ color: 'var(--tech-text-muted)' }}>Checklist</span>
+                  <span style={{ color: checklistPercent === 100 ? 'var(--tech-accent)' : 'var(--tech-text-secondary)' }}>
+                    {checkedChecklist}/{totalChecklist}
+                  </span>
+                </div>
+                <div className="tech-progress-track h-[3px]">
+                  <div
+                    className="tech-progress-fill"
+                    style={{
+                      width: `${checklistPercent}%`,
+                      background: checklistPercent === 100 ? 'var(--tech-accent)' : mission.color,
+                      boxShadow: checklistPercent === 100 ? '0 0 6px rgba(0,229,160,0.3)' : 'none',
+                    }}
+                  />
+                </div>
               </div>
-              <div className="tech-progress-track h-[3px]">
-                <div
-                  className="tech-progress-fill"
-                  style={{
-                    width: `${checklistPercent}%`,
-                    background: checklistPercent === 100 ? 'var(--tech-accent)' : mission.color,
-                    boxShadow: checklistPercent === 100 ? '0 0 6px rgba(0,229,160,0.3)' : 'none',
-                  }}
-                />
-              </div>
-            </div>
+            )}
           </div>
         )}
 

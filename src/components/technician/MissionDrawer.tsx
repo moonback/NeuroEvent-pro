@@ -7,6 +7,8 @@ import { format, isSameDay, differenceInMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { triggerVibrate, DRAWER_TABS, type DrawerTab } from './useTechDashboard';
 import DrawerTabs from './DrawerTabs';
+import { useStore } from '../../store';
+import { useAuthStore } from '../../store/auth';
 
 interface MissionDrawerProps {
   mission: any;
@@ -60,7 +62,13 @@ export default function MissionDrawer(props: MissionDrawerProps) {
     ? `${Math.floor(durationMins / 60)}h${String(durationMins % 60).padStart(2, '0')}`
     : `${durationMins}min`;
 
+  const user = useAuthStore(state => state.user);
+  const technicians = useStore(state => state.technicians);
+  const currentTech = technicians.find(t => t.id === user?.id);
+  const isChecklistEnabled = currentTech?.checklistEnabled ?? false;
+
   const stepIndex = STATUS_STEPS.findIndex(s => s.key === mission.status);
+  const activeTabs = TAB_CONFIG.filter(t => t.id !== 'checklist' || isChecklistEnabled);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
@@ -243,7 +251,7 @@ export default function MissionDrawer(props: MissionDrawerProps) {
           className="px-2 py-2 flex justify-between items-center shrink-0 select-none no-scrollbar w-full"
           style={{ background: '#0d1118', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
         >
-          {TAB_CONFIG.map((tab) => {
+          {activeTabs.map((tab) => {
             const TabIcon = tab.icon;
             const isActive = drawerTab === tab.id;
             return (

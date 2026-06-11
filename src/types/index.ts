@@ -31,6 +31,7 @@ export interface Technician {
   color: string;
   skills?: string[];
   driverLicense?: DriverLicense;
+  checklistEnabled?: boolean;
 }
 
 export interface TechnicianUnavailability {

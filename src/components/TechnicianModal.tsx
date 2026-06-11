@@ -32,6 +32,7 @@ export default function TechnicianModal({ isOpen, onClose, technician = null }: 
   const [lastName, setLastName] = useState(technician?.lastName || '');
   const [specialty, setSpecialty] = useState(technician?.specialty || '');
   const [color, setColor] = useState(technician?.color || '#3b82f6');
+  const [checklistEnabled, setChecklistEnabled] = useState(technician?.checklistEnabled || false);
 
   // Nouveaux états pour l'ajout d'indisponibilité
   const [unavailStart, setUnavailStart] = useState('');
@@ -48,9 +49,9 @@ export default function TechnicianModal({ isOpen, onClose, technician = null }: 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (technician) {
-      updateTechnician(technician.id, { firstName, lastName, specialty, color });
+      updateTechnician(technician.id, { firstName, lastName, specialty, color, checklistEnabled });
     } else {
-      addTechnician({ firstName, lastName, specialty, color });
+      addTechnician({ firstName, lastName, specialty, color, checklistEnabled });
     }
     onClose();
   };
@@ -141,6 +142,18 @@ export default function TechnicianModal({ isOpen, onClose, technician = null }: 
             <div>
               <label htmlFor="tech-color" className={labelClass}>Couleur d'affichage</label>
               <input id="tech-color" required type="color" value={color} onChange={e => setColor(e.target.value)} className="h-10 w-full rounded-md border border-[#e2e8f0] cursor-pointer" />
+            </div>
+            <div className="flex items-center gap-2 pt-2">
+              <input
+                id="tech-checklist"
+                type="checkbox"
+                checked={checklistEnabled}
+                onChange={e => setChecklistEnabled(e.target.checked)}
+                className="w-4 h-4 text-[#2563eb] rounded border-[#e2e8f0] focus:ring-[#2563eb] cursor-pointer"
+              />
+              <label htmlFor="tech-checklist" className="text-xs font-bold text-[#334155] cursor-pointer select-none">
+                Activer l'accès à la Checklist de mission
+              </label>
             </div>
 
             {/* Read-only skills & license display for planning team */}

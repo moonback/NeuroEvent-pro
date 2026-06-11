@@ -10,6 +10,7 @@ import { fr } from 'date-fns/locale';
 import { triggerVibrate, type DrawerTab } from './useTechDashboard';
 import TimeLogPanel from '../TimeLogPanel';
 import { useAuthStore } from '../../store/auth';
+import { useStore } from '../../store';
 
 interface DrawerTabsProps {
   mission: any;
@@ -64,6 +65,10 @@ function CardHeader({ icon, label, right }: { icon: React.ReactNode; label: stri
 function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab, handleTimeChange }: any) {
   const prog = getEquipmentProgress(mission.equipments);
   const user = useAuthStore(state => state.user);
+  const technicians = useStore(state => state.technicians);
+  const currentTech = technicians.find(t => t.id === user?.id);
+  const isChecklistEnabled = currentTech?.checklistEnabled ?? false;
+
   const [checkedItems, setCheckedItems] = React.useState<Record<string, boolean>>({});
 
   React.useEffect(() => {
@@ -223,49 +228,51 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
       )}
 
       {/* ── Checklist shortcut ── */}
-      <button
-        onClick={() => { triggerVibrate('click'); setDrawerTab('checklist'); }}
-        className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-[0.97] text-left"
-        style={{
-          border: `1px solid ${mission.color}28`,
-          background: `${mission.color}0a`,
-        }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = `${mission.color}14`; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = `${mission.color}0a`; }}
-      >
-        {/* Circular progress */}
-        <div className="relative w-12 h-12 shrink-0">
-          <svg viewBox="0 0 36 36" className="w-12 h-12 -rotate-90">
-            <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="3" />
-            <circle
-              cx="18" cy="18" r="15" fill="none"
-              stroke={checklistPercent === 100 ? 'var(--tech-accent)' : mission.color}
-              strokeWidth="3"
-              strokeDasharray={`${checklistPercent * 0.942} 100`}
-              strokeLinecap="round"
-              style={{ transition: 'stroke-dasharray 0.6s cubic-bezier(0.16,1,0.3,1)' }}
-            />
-          </svg>
-          <span
-            className="absolute inset-0 flex items-center justify-center text-[10px] font-black"
-            style={{ color: checklistPercent === 100 ? 'var(--tech-accent)' : mission.color }}
-          >
-            {checklistPercent}%
-          </span>
-        </div>
-        <div className="flex-1">
-          <div className="font-extrabold text-sm" style={{ color: 'var(--tech-text)' }}>Checklist de mission</div>
-          <div className="text-xs font-semibold mt-0.5" style={{ color: 'var(--tech-text-muted)' }}>
-            {checkedChecklist} / {totalChecklist} étapes validées
+      {isChecklistEnabled && (
+        <button
+          onClick={() => { triggerVibrate('click'); setDrawerTab('checklist'); }}
+          className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-[0.97] text-left"
+          style={{
+            border: `1px solid ${mission.color}28`,
+            background: `${mission.color}0a`,
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = `${mission.color}14`; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = `${mission.color}0a`; }}
+        >
+          {/* Circular progress */}
+          <div className="relative w-12 h-12 shrink-0">
+            <svg viewBox="0 0 36 36" className="w-12 h-12 -rotate-90">
+              <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="3" />
+              <circle
+                cx="18" cy="18" r="15" fill="none"
+                stroke={checklistPercent === 100 ? 'var(--tech-accent)' : mission.color}
+                strokeWidth="3"
+                strokeDasharray={`${checklistPercent * 0.942} 100`}
+                strokeLinecap="round"
+                style={{ transition: 'stroke-dasharray 0.6s cubic-bezier(0.16,1,0.3,1)' }}
+              />
+            </svg>
+            <span
+              className="absolute inset-0 flex items-center justify-center text-[10px] font-black"
+              style={{ color: checklistPercent === 100 ? 'var(--tech-accent)' : mission.color }}
+            >
+              {checklistPercent}%
+            </span>
           </div>
-          {checklistPercent === 100 && (
-            <div className="flex items-center gap-1 mt-1 text-[9px] font-black" style={{ color: 'var(--tech-accent)' }}>
-              <CheckCircle2 className="w-3 h-3" /> Complet
+          <div className="flex-1">
+            <div className="font-extrabold text-sm" style={{ color: 'var(--tech-text)' }}>Checklist de mission</div>
+            <div className="text-xs font-semibold mt-0.5" style={{ color: 'var(--tech-text-muted)' }}>
+              {checkedChecklist} / {totalChecklist} étapes validées
             </div>
-          )}
-        </div>
-        <ChevronRight className="w-4 h-4 shrink-0" style={{ color: 'var(--tech-text-muted)' }} />
-      </button>
+            {checklistPercent === 100 && (
+              <div className="flex items-center gap-1 mt-1 text-[9px] font-black" style={{ color: 'var(--tech-accent)' }}>
+                <CheckCircle2 className="w-3 h-3" /> Complet
+              </div>
+            )}
+          </div>
+          <ChevronRight className="w-4 h-4 shrink-0" style={{ color: 'var(--tech-text-muted)' }} />
+        </button>
+      )}
     </div>
   );
 }

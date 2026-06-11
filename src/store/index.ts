@@ -153,7 +153,8 @@ export const useStore = create<AppState>()(
         specialty: t.specialty,
         color: t.color,
         skills: t.skills || [],
-        driverLicense: t.driver_license || { hasLicense: false, since: '', categories: [] }
+        driverLicense: t.driver_license || { hasLicense: false, since: '', categories: [] },
+        checklistEnabled: !!t.driver_license?.checklistEnabled
       })) || [];
 
       const trucks: Truck[] = trucksRes.data?.map(t => ({
@@ -362,7 +363,8 @@ export const useStore = create<AppState>()(
       first_name: tech.firstName,
       last_name: tech.lastName,
       specialty: tech.specialty,
-      color: tech.color
+      color: tech.color,
+      driver_license: { checklistEnabled: tech.checklistEnabled || false }
     });
     if (reportError('Création du technicien', error)) return;
     toast.success('Technicien ajouté.');
@@ -377,6 +379,23 @@ export const useStore = create<AppState>()(
     if (updatedFields.color !== undefined) changes.color = updatedFields.color;
     if (updatedFields.skills !== undefined) changes.skills = updatedFields.skills;
     if (updatedFields.driverLicense !== undefined) changes.driver_license = updatedFields.driverLicense;
+    if (updatedFields.checklistEnabled !== undefined) {
+      const tech = get().technicians.find(t => t.id === id);
+      const baseLicense = updatedFields.driverLicense !== undefined 
+        ? updatedFields.driverLicense 
+        : (tech?.driverLicense || { hasLicense: false });
+      changes.driver_license = {
+        ...baseLicense,
+        checklistEnabled: updatedFields.checklistEnabled
+      };
+    } else if (updatedFields.driverLicense !== undefined) {
+      const tech = get().technicians.find(t => t.id === id);
+      const currentChecklist = tech?.checklistEnabled ?? false;
+      changes.driver_license = {
+        ...updatedFields.driverLicense,
+        checklistEnabled: currentChecklist
+      };
+    }
 
     if (Object.keys(changes).length > 0) {
       const { error } = await supabase.from('technicians').update(changes).eq('id', id);
