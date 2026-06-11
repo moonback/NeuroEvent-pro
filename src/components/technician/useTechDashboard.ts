@@ -45,6 +45,7 @@ export function useTechDashboard() {
   const updateTimeLog = useStore(state => state.updateTimeLog);
   const syncQueue = useStore(state => state.syncQueue);
   const processSyncQueue = useStore(state => state.processSyncQueue);
+  const initializeStore = useStore(state => state.initialize);
 
   // ── UI State ──
   const [activeTab, setActiveTab] = React.useState<MainTab>('active');
@@ -101,15 +102,15 @@ export function useTechDashboard() {
     setTimeout(() => { setSavingStatus('saved'); setTimeout(() => setSavingStatus('idle'), 1000); }, 500);
   };
 
-  const handleScan = (decodedText: string) => {
+  const handleScan = (decodedText: string): boolean => {
     const missionId = activeMissionIdForScanner || selectedMission?.id;
-    if (!missionId) return;
+    if (!missionId) return false;
     const mission = missions.find(m => m.id === missionId);
     const item = mission?.equipments.find(e => e.equipmentId === decodedText);
     if (!item) {
       triggerVibrate('error');
       toast.error('Ce QR code ne correspond à aucun matériel de cette mission.');
-      return;
+      return false;
     }
     toggleEquipmentCheck(missionId, decodedText, true);
     triggerVibrate('double');
@@ -123,6 +124,7 @@ export function useTechDashboard() {
         equipments: prev.equipments.map(e => e.equipmentId === decodedText ? { ...e, checked: true } : e)
       } : null);
     }
+    return true;
   };
 
   const handleToggle = (missionId: string, equipmentId: string) => {
@@ -320,6 +322,7 @@ export function useTechDashboard() {
     handleReportChange,
     openMissionDetails,
     updateMission,
+    initialize: initializeStore,
     // Helpers
     getTruckName, getColleagues, getColleaguesDetailed, getClientInfo, getEquipmentProgress,
     // Computed

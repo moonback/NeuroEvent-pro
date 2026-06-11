@@ -15,10 +15,98 @@ import TechnicianUnavailabilities from '../components/TechnicianUnavailabilities
 import Settings from './Settings';
 
 import { toast } from '../store/toast';
-import { Calendar } from 'lucide-react';
+import { Calendar, Sparkles } from 'lucide-react';
 
 export default function TechnicianDashboard() {
   const tech = useTechDashboard();
+
+  // Gestes & Micro-interactions
+  const [pullDistance, setPullDistance] = React.useState(0);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const touchStartRef = React.useRef({ x: 0, y: 0 });
+  const isAtTopRef = React.useRef(true);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    isAtTopRef.current = window.scrollY === 0;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (isRefreshing) return;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+
+    if (isAtTopRef.current && deltaY > 0 && Math.abs(deltaY) > Math.abs(deltaX)) {
+      const distance = Math.min(80, Math.pow(deltaY, 0.85));
+      setPullDistance(distance);
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+    }
+  };
+
+  const handleTouchEnd = async (e: React.TouchEvent) => {
+    if (isRefreshing) return;
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+
+    if (pullDistance > 55) {
+      setIsRefreshing(true);
+      setPullDistance(60);
+      triggerVibrate('success');
+      try {
+        await tech.initialize();
+        toast.success('Données actualisées');
+      } catch (err) {
+        console.error(err);
+        toast.error("Erreur lors de l'actualisation");
+      } finally {
+        setIsRefreshing(false);
+        setPullDistance(0);
+      }
+    } else {
+      setPullDistance(0);
+    }
+
+    if (Math.abs(deltaY) < 50 && Math.abs(deltaX) > 100) {
+      const filters: ('all' | 'today' | 'week')[] = ['all', 'today', 'week'];
+      const currentIndex = filters.indexOf(tech.dateFilter);
+      if (deltaX < -100) {
+        if (currentIndex < filters.length - 1) {
+          const nextFilter = filters[currentIndex + 1];
+          tech.setDateFilter(nextFilter);
+          triggerVibrate('click');
+          toast.success(
+            `Filtre : ${
+              nextFilter === 'today'
+                ? "Aujourd'hui"
+                : nextFilter === 'week'
+                ? 'Cette semaine'
+                : 'Tous les jours'
+            }`
+          );
+        }
+      } else if (deltaX > 100) {
+        if (currentIndex > 0) {
+          const nextFilter = filters[currentIndex - 1];
+          tech.setDateFilter(nextFilter);
+          triggerVibrate('click');
+          toast.success(
+            `Filtre : ${
+              nextFilter === 'today'
+                ? "Aujourd'hui"
+                : nextFilter === 'week'
+                ? 'Cette semaine'
+                : 'Tous les jours'
+            }`
+          );
+        }
+      }
+    }
+  };
 
   const currentTech = tech.technicians.find((t) => t.id === tech.user?.id);
   const userName = currentTech
@@ -26,7 +114,7 @@ export default function TechnicianDashboard() {
     : tech.user?.user_metadata?.first_name || '';
 
   return (
-    <div className="tech-dark min-h-screen bg-[#080b12] text-[#f0f4ff] font-sans pb-24 overflow-x-hidden">
+    <div className="tech-dark min-h-screen bg-black text-[#f0f4ff] font-sans pb-24 overflow-x-hidden">
       {/* Header */}
       <TechHeader
         userName={userName}
@@ -67,7 +155,32 @@ export default function TechnicianDashboard() {
           <Settings />
         </div>
       ) : (
-        <div className="max-w-md mx-auto space-y-3 pt-3 pb-6">
+        <div 
+          className="max-w-md mx-auto space-y-3 pt-3 pb-6"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Pull-to-refresh indicator */}
+          <div 
+            style={{ 
+              height: `${pullDistance}px`, 
+              opacity: pullDistance > 0 ? 1 : 0,
+              transition: isRefreshing ? 'height 0.2s, opacity 0.2s' : 'none'
+            }}
+            className="w-full flex items-center justify-center overflow-hidden bg-black/20 border-b border-[rgba(0,229,160,0.05)] rounded-2xl relative"
+          >
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--tech-accent)]">
+              <Sparkles 
+                className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} 
+                style={{ 
+                  transform: isRefreshing ? 'none' : `rotate(${pullDistance * 4.5}deg)`,
+                  transition: isRefreshing ? 'none' : 'transform 0.05s' 
+                }}
+              />
+              <span>{isRefreshing ? 'Synchronisation...' : pullDistance > 55 ? 'Relâchez' : 'Tirer pour actualiser'}</span>
+            </div>
+          </div>
           {/* Segmented picker */}
           <div className="px-4">
             <div
@@ -229,6 +342,7 @@ export default function TechnicianDashboard() {
             tech.setActiveMissionIdForScanner(null);
           }}
           onScan={tech.handleScan}
+          equipmentDefs={tech.equipmentDefs}
         />
       )}
 

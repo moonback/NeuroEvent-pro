@@ -22,7 +22,7 @@ L'objectif est d'optimiser l'ergonomie mobile et le confort visuel sur le terrai
 Simplifier le travail administratif des techniciens et sécuriser les processus de livraison et de restitution.
 
 ### 📦 Logistique et Livraison
-- **Photos Preuves & États des lieux** : Intégration de la prise de photo (avant/après montage) avec compression automatique en local et stockage hors ligne.
+- **Photos Preuves & États des lieux** : Intégration de la prise de photo (avant/après montage) 
 - **Signature Électronique Sécurisée** : Horodatage certifié et géolocalisation GPS intégrée au moment de la signature du client sur le terminal mobile pour certifier la conformité de la livraison.
 - **Mode Offline Résistant (IndexDB)** : Mise en cache complète de l'ensemble des données (itinéraires, équipements, checklists, pièces jointes) via IndexDB et synchronisation transparente en arrière-plan dès la détection de réseau.
 - **Guidage GPS Contextuel** : Navigation en un clic vers Google Maps ou Waze avec notification automatique du temps de trajet restant et prévisualisation de la zone de déchargement sur place.

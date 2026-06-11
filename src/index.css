@@ -161,12 +161,12 @@ body {
    ══════════════════════════════════════════════════════════════════════════ */
 
 .tech-dark {
-  --tech-bg: #080b12;
-  --tech-surface: #0f1420;
-  --tech-card: #131926;
-  --tech-card-hover: #1a2133;
-  --tech-border: rgba(255,255,255,0.05);
-  --tech-border-strong: rgba(255,255,255,0.10);
+  --tech-bg: #000000;
+  --tech-surface: #070a0f;
+  --tech-card: #0a0d14;
+  --tech-card-hover: #111622;
+  --tech-border: rgba(0, 229, 160, 0.05);
+  --tech-border-strong: rgba(0, 229, 160, 0.15);
   --tech-text: #f0f4ff;
   --tech-text-secondary: #8892a4;
   --tech-text-muted: #4d5a72;
@@ -239,7 +239,7 @@ body {
 .tech-card:hover {
   background: var(--tech-card-hover);
   border-color: var(--tech-border-strong);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,229,160,0.05);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 0 12px var(--tech-accent-glow);
 }
 .tech-card:active {
   transform: scale(0.975);
@@ -247,7 +247,7 @@ body {
 
 /* ── Glass surfaces ────────────────────────────────────────────────────── */
 .tech-glass {
-  background: rgba(8,11,18,0.82);
+  background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-bottom: 1px solid var(--tech-border);
@@ -629,6 +629,7 @@ body {
 .tech-card:hover {
   background: var(--tech-card-hover);
   border-color: var(--tech-border-strong);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.7), 0 0 10px var(--tech-accent-glow);
 }
 .tech-card:active {
   transform: scale(0.98);
@@ -636,7 +637,7 @@ body {
 
 /* ── Glass surfaces ────────────────────────────────────────────────────── */
 .tech-glass {
-  background: rgba(22,22,22,0.85);
+  background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid var(--tech-border);
@@ -925,6 +926,80 @@ body {
 }
 .tech-dark div.border-b.border-\[\#f1f5f9\] {
   border-color: var(--tech-border) !important;
+}
+
+/* ── Scanner laser scanner scan line animation ── */
+@keyframes tech-laser-scan {
+  0% { top: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+.tech-laser-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--tech-accent) 15%, var(--tech-accent) 85%, transparent);
+  box-shadow: 0 0 10px var(--tech-accent-glow), 0 0 20px var(--tech-accent-glow);
+  animation: tech-laser-scan 2.5s linear infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ── HTML5 QR Code Scanner UI Premium Overrides ── */
+#reader {
+  border: none !important;
+  font-family: inherit !important;
+}
+#reader__dashboard_section {
+  background: transparent !important;
+  border: none !important;
+  padding: 10px 0 !important;
+}
+#reader button {
+  background: var(--tech-accent) !important;
+  color: #000000 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 8px 16px !important;
+  border-radius: 12px !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  box-shadow: 0 4px 12px var(--tech-accent-glow) !important;
+}
+#reader button:hover {
+  background: var(--tech-accent-dim) !important;
+  transform: translateY(-1px) !important;
+}
+#reader button:active {
+  transform: scale(0.97) !important;
+}
+#reader select {
+  background: #070a0f !important;
+  color: var(--tech-text) !important;
+  font-size: 11px !important;
+  padding: 6px 12px !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--tech-border-strong) !important;
+  outline: none !important;
+}
+#reader__scan_region {
+  background: #000000 !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+#reader__scan_region img {
+  display: none !important;
+}
+#reader__dashboard_section_csr button {
+  margin: 5px !important;
+}
+#reader__dashboard_section_swaplink {
+  display: none !important;
 }
 
 

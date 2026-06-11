@@ -84,7 +84,7 @@ export default function MissionDrawer(props: MissionDrawerProps) {
         className="w-full max-w-md flex flex-col z-10 overflow-hidden tech-animate-slide-up"
         style={{
           height: '92dvh',
-          background: '#0d1118',
+          background: '#000000',
           borderRadius: '1.75rem 1.75rem 0 0',
           boxShadow: '0 -12px 60px rgba(0,0,0,0.7), 0 -1px 0 rgba(255,255,255,0.06)',
           transform: `translateY(${props.dragOffsetY}px)`,
@@ -249,7 +249,7 @@ export default function MissionDrawer(props: MissionDrawerProps) {
         {/* ── Tab Bar ── */}
         <div
           className="px-2 py-2 flex justify-between items-center shrink-0 select-none no-scrollbar w-full"
-          style={{ background: '#0d1118', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+          style={{ background: '#000000', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
         >
           {activeTabs.map((tab) => {
             const TabIcon = tab.icon;
