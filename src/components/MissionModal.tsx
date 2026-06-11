@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '../store';
 import { MissionType, MissionStatus } from '../types';
-import { X, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle, Calendar, Package, Users, Truck as TruckIcon, Plus, Trash2, User, MapPin, CheckSquare, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import Modal from './ui/Modal';
 import { toast } from '../store/toast';
@@ -14,8 +14,8 @@ interface MissionModalProps {
   initialDates?: { start: Date; end: Date } | null;
 }
 
-const inputClass = 'w-full rounded-md border border-[#e2e8f0] px-3 py-2 focus:ring-2 focus:ring-[#2563eb] focus:border-transparent outline-none bg-[#f8fafc] text-sm';
-const labelClass = 'block text-[10px] font-bold text-[#64748b] tracking-wider uppercase mb-1';
+const inputClass = 'w-full rounded-xl border border-[#e2e8f0] px-3.5 py-2.5 focus:ring-2 focus:ring-[#2563eb]/20 focus:border-[#2563eb] outline-none bg-[#f8fafc] text-sm transition-all text-[#0f172a] placeholder-[#cbd5e1]';
+const labelClass = 'block text-[10px] font-extrabold text-[#64748b] tracking-wider uppercase mb-1.5';
 
 // Couleur d'affichage dérivée du type de mission.
 const typeColors: Record<MissionType, string> = {
@@ -36,6 +36,9 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
   const deleteMission = useStore(state => state.deleteMission);
 
   const existingMission = missionId ? missions.find(m => m.id === missionId) : null;
+
+  // Tabs state
+  const [activeTab, setActiveTab] = useState<'general' | 'resources'>('general');
 
   const [title, setTitle] = useState(existingMission?.title || '');
   const [client, setClient] = useState(existingMission?.client || '');
@@ -73,12 +76,20 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
   if (!isOpen) return null;
 
   const addEquipmentSelection = () => setSelectedEquipments([...selectedEquipments, { equipmentId: '', quantity: 1 }]);
+  
   const updateEquipmentSelection = (index: number, id: string, qty: number) => {
     const updated = [...selectedEquipments];
     updated[index] = { equipmentId: id, quantity: qty || 1 };
     setSelectedEquipments(updated);
   };
+  
   const removeEquipmentSelection = (index: number) => setSelectedEquipments(selectedEquipments.filter((_, i) => i !== index));
+
+  const triggerVibrate = () => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(10);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,177 +147,350 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
       title={existingMission ? 'Modifier la mission' : 'Nouvelle mission'}
       maxWidth="max-w-2xl"
       footer={
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center w-full">
           {existingMission ? (
-            <button type="button" onClick={handleDelete} className="text-red-600 hover:text-red-700 font-medium text-sm">
+            <button 
+              type="button" 
+              onClick={handleDelete} 
+              className="text-red-500 hover:text-red-700 font-bold text-xs hover:bg-red-50 px-3 py-2 rounded-xl transition-all cursor-pointer active:scale-95 duration-100"
+            >
               Supprimer la mission
             </button>
           ) : <div></div>}
-          <div className="flex space-x-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 border border-[#e2e8f0] rounded-md text-[#1e293b] font-medium hover:bg-[#f1f5f9] transition-colors text-sm">Annuler</button>
-            <button type="submit" form="mission-form" className="px-4 py-2 bg-[#2563eb] text-white rounded-md font-medium hover:bg-blue-700 transition-colors text-sm">Enregistrer</button>
+          <div className="flex space-x-2">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="px-4 py-2.5 border border-[#e2e8f0] rounded-xl text-slate-700 font-bold hover:bg-[#f1f5f9] transition-all text-xs cursor-pointer active:scale-95 duration-100"
+            >
+              Annuler
+            </button>
+            <button 
+              type="submit" 
+              form="mission-form" 
+              className="px-5 py-2.5 bg-[#2563eb] text-white rounded-xl font-bold hover:bg-blue-700 transition-all text-xs shadow-xs cursor-pointer active:scale-95 duration-100"
+            >
+              Enregistrer
+            </button>
           </div>
         </div>
       }
     >
-      <form id="mission-form" onSubmit={handleSubmit} className="space-y-6">
-        {conflicts.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3" role="alert">
-            <div className="flex items-center gap-2 text-amber-800 font-bold text-sm mb-1">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              Conflits détectés
+      {/* Conflicts Alert Box */}
+      {conflicts.length > 0 && (
+        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-2xs animate-pulse duration-1000" role="alert">
+          <div className="flex items-center gap-2 text-amber-800 font-bold text-sm mb-1.5">
+            <AlertTriangle className="w-4.5 h-4.5 text-amber-600 shrink-0" />
+            <span>Attention: {conflicts.length} conflit{conflicts.length > 1 ? 's' : ''} planning détecté{conflicts.length > 1 ? 's' : ''}</span>
+          </div>
+          <ul className="text-xs text-amber-700 list-disc pl-5 space-y-1">
+            {conflicts.map((c, i) => <li key={i} className="font-semibold">{c}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {/* Tabs switches */}
+      <div className="flex border-b border-[#e2e8f0] mb-5 select-none">
+        <button
+          type="button"
+          onClick={() => { triggerVibrate(); setActiveTab('general'); }}
+          className={`pb-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer active:scale-95 duration-100 ${
+            activeTab === 'general'
+              ? 'border-[#2563eb] text-[#2563eb]'
+              : 'border-transparent text-[#64748b] hover:text-[#334155]'
+          }`}
+        >
+          <Calendar className="w-4 h-4" />
+          <span>1. Général</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => { triggerVibrate(); setActiveTab('resources'); }}
+          className={`pb-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer active:scale-95 duration-100 ${
+            activeTab === 'resources'
+              ? 'border-[#2563eb] text-[#2563eb]'
+              : 'border-transparent text-[#64748b] hover:text-[#334155]'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>2. Ressources & Matériel</span>
+          <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+            {selectedTechs.length} tech • {selectedEquipments.filter(e => e.equipmentId).length} mat.
+          </span>
+        </button>
+      </div>
+
+      <form id="mission-form" onSubmit={handleSubmit} className="space-y-4">
+        
+        {/* Tab 1: GENERAL */}
+        {activeTab === 'general' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
+            <div className="sm:col-span-2">
+              <label htmlFor="mission-title" className={labelClass}>Titre de la mission</label>
+              <input 
+                id="mission-title" 
+                required 
+                type="text" 
+                value={title} 
+                onChange={e => setTitle(e.target.value)} 
+                placeholder="ex: Soirée annuelle Acme Corp" 
+                className={inputClass} 
+              />
             </div>
-            <ul className="text-xs text-amber-700 list-disc pl-5 space-y-0.5">
-              {conflicts.map((c, i) => <li key={i}>{c}</li>)}
-            </ul>
+
+            <div>
+              <label htmlFor="mission-client-select" className={labelClass}>Client</label>
+              {clients.length > 0 ? (
+                <div className="space-y-2">
+                  <select
+                    id="mission-client-select"
+                    value={clientId}
+                    onChange={e => {
+                      const id = e.target.value;
+                      setClientId(id);
+                      const c = clients.find(cl => cl.id === id);
+                      if (c) setClient(c.name);
+                    }}
+                    className={inputClass}
+                  >
+                    <option value="">— Saisie libre —</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  {!clientId && (
+                    <input
+                      id="mission-client"
+                      required
+                      type="text"
+                      value={client}
+                      onChange={e => setClient(e.target.value)}
+                      placeholder="Nom du client"
+                      aria-label="Nom du client (saisie libre)"
+                      className={inputClass}
+                    />
+                  )}
+                </div>
+              ) : (
+                <input 
+                  id="mission-client" 
+                  required 
+                  type="text" 
+                  value={client} 
+                  onChange={e => setClient(e.target.value)} 
+                  placeholder="Nom du client" 
+                  className={inputClass} 
+                />
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="mission-type" className={labelClass}>Type</label>
+              <select 
+                id="mission-type" 
+                value={type} 
+                onChange={e => setType(e.target.value as MissionType)} 
+                className={inputClass}
+              >
+                <option value="Livraison">Livraison</option>
+                <option value="Montage">Montage</option>
+                <option value="Démontage">Démontage</option>
+                <option value="Événement complet">Événement complet</option>
+              </select>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label htmlFor="mission-address" className={labelClass}>Adresse du lieu</label>
+              <div className="relative">
+                <MapPin className="w-4 h-4 absolute left-3 top-3.5 text-[#94a3b8]" />
+                <input 
+                  id="mission-address" 
+                  required 
+                  type="text" 
+                  value={address} 
+                  onChange={e => setAddress(e.target.value)} 
+                  placeholder="ex: 12 rue des Fêtes, 75019 Paris" 
+                  className={`${inputClass} pl-9`} 
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="mission-start" className={labelClass}>Date de début</label>
+              <input 
+                id="mission-start" 
+                required 
+                type="datetime-local" 
+                value={startDate} 
+                onChange={e => setStartDate(e.target.value)} 
+                className={inputClass} 
+              />
+            </div>
+
+            <div>
+              <label htmlFor="mission-end" className={labelClass}>Date de fin</label>
+              <input 
+                id="mission-end" 
+                required 
+                type="datetime-local" 
+                value={endDate} 
+                onChange={e => setEndDate(e.target.value)} 
+                className={inputClass} 
+              />
+            </div>
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="sm:col-span-2">
-            <label htmlFor="mission-title" className={labelClass}>Titre de la mission</label>
-            <input id="mission-title" required type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="ex: Soirée annuelle Acme Corp" className={inputClass} />
-          </div>
-
-          <div>
-            <label htmlFor="mission-client-select" className={labelClass}>Client</label>
-            {clients.length > 0 ? (
-              <>
-                <select
-                  id="mission-client-select"
-                  value={clientId}
-                  onChange={e => {
-                    const id = e.target.value;
-                    setClientId(id);
-                    const c = clients.find(cl => cl.id === id);
-                    if (c) setClient(c.name);
-                  }}
+        {/* Tab 2: RESOURCES */}
+        {activeTab === 'resources' && (
+          <div className="space-y-5 animate-fade-in">
+            {/* Sub-grid for Truck and Status */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="mission-truck" className={labelClass}>Camion assigné</label>
+                <select 
+                  id="mission-truck" 
+                  value={selectedTruck} 
+                  onChange={e => setSelectedTruck(e.target.value)} 
                   className={inputClass}
                 >
-                  <option value="">— Saisie libre —</option>
-                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  <option value="">Aucun camion</option>
+                  {trucks.map(truck => (
+                    <option key={truck.id} value={truck.id}>{truck.name} ({truck.volume}m³)</option>
+                  ))}
                 </select>
-                {!clientId && (
-                  <input
-                    id="mission-client"
-                    required
-                    type="text"
-                    value={client}
-                    onChange={e => setClient(e.target.value)}
-                    placeholder="Nom du client"
-                    aria-label="Nom du client (saisie libre)"
-                    className={`${inputClass} mt-2`}
-                  />
-                )}
-              </>
-            ) : (
-              <input id="mission-client" required type="text" value={client} onChange={e => setClient(e.target.value)} placeholder="Nom du client" className={inputClass} />
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="mission-type" className={labelClass}>Type</label>
-            <select id="mission-type" value={type} onChange={e => setType(e.target.value as MissionType)} className={inputClass}>
-              <option value="Livraison">Livraison</option>
-              <option value="Montage">Montage</option>
-              <option value="Démontage">Démontage</option>
-              <option value="Événement complet">Événement complet</option>
-            </select>
-          </div>
-
-          <div className="sm:col-span-2">
-            <label htmlFor="mission-address" className={labelClass}>Adresse</label>
-            <input id="mission-address" required type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder="ex: 12 rue des Fêtes, 75019 Paris" className={inputClass} />
-          </div>
-
-          <div>
-            <label htmlFor="mission-start" className={labelClass}>Date de début</label>
-            <input id="mission-start" required type="datetime-local" value={startDate} onChange={e => setStartDate(e.target.value)} className={inputClass} />
-          </div>
-
-          <div>
-            <label htmlFor="mission-end" className={labelClass}>Date de fin</label>
-            <input id="mission-end" required type="datetime-local" value={endDate} onChange={e => setEndDate(e.target.value)} className={inputClass} />
-          </div>
-
-          <fieldset className="sm:col-span-2">
-            <legend className="block text-[10px] font-bold text-[#64748b] tracking-wider uppercase mb-2">Techniciens assignés</legend>
-            {technicians.length === 0 ? (
-              <p className="text-xs text-[#64748b] italic">Aucun technicien enregistré pour le moment.</p>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {technicians.map(tech => (
-                  <label key={tech.id} className="flex items-center p-3 border border-[#e2e8f0] rounded-lg cursor-pointer hover:bg-[#f1f5f9] transition-colors bg-[#fdfdfd]">
-                    <input
-                      type="checkbox"
-                      checked={selectedTechs.includes(tech.id)}
-                      onChange={() => toggleTech(tech.id)}
-                      className="mr-3 h-4 w-4 text-[#2563eb] focus:ring-[#2563eb] border-[#e2e8f0] rounded"
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-[#0f172a]">{tech.firstName} {tech.lastName}</span>
-                      <span className="text-[10px] text-[#64748b]">{tech.specialty}</span>
-                    </div>
-                  </label>
-                ))}
               </div>
-            )}
-          </fieldset>
 
-          <div className="col-span-2 sm:col-span-1">
-            <label htmlFor="mission-truck" className={labelClass}>Camion assigné</label>
-            <select id="mission-truck" value={selectedTruck} onChange={e => setSelectedTruck(e.target.value)} className={inputClass}>
-              <option value="">Aucun camion</option>
-              {trucks.map(truck => (
-                <option key={truck.id} value={truck.id}>{truck.name} ({truck.volume}m³)</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="col-span-2 sm:col-span-1">
-            <label htmlFor="mission-status" className={labelClass}>Statut</label>
-            <select id="mission-status" value={status} onChange={e => setStatus(e.target.value as MissionStatus)} className={inputClass}>
-              <option value="Planifiée">Planifiée</option>
-              <option value="En cours">En cours</option>
-              <option value="Terminée">Terminée</option>
-            </select>
-          </div>
-
-          <fieldset className="sm:col-span-2">
-            <legend className="block text-[10px] font-bold text-[#64748b] tracking-wider uppercase mb-2">Matériel requis</legend>
-            <div className="space-y-3">
-              {selectedEquipments.map((eq, index) => (
-                <div key={index} className="flex items-center space-x-3">
-                  <select
-                    value={eq.equipmentId}
-                    onChange={(e) => updateEquipmentSelection(index, e.target.value, eq.quantity)}
-                    aria-label="Matériel"
-                    className="flex-1 rounded-md border border-[#e2e8f0] px-3 py-2 focus:ring-[#2563eb] focus:border-[#2563eb] outline-none text-sm"
-                  >
-                    <option value="">Sélectionner du matériel</option>
-                    {equipment.map(e => (
-                      <option key={e.id} value={e.id}>{e.name} (Max: {e.totalQuantity})</option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min="1"
-                    value={eq.quantity}
-                    onChange={(e) => updateEquipmentSelection(index, eq.equipmentId, parseInt(e.target.value))}
-                    aria-label="Quantité"
-                    className="w-24 rounded-md border border-[#e2e8f0] px-3 py-2 focus:ring-[#2563eb] focus:border-[#2563eb] outline-none text-sm"
-                  />
-                  <button type="button" onClick={() => removeEquipmentSelection(index)} aria-label="Retirer ce matériel" className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded">
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              <button type="button" onClick={addEquipmentSelection} className="text-sm text-[#2563eb] font-medium hover:text-blue-700">
-                + Ajouter du matériel
-              </button>
+              <div>
+                <label htmlFor="mission-status" className={labelClass}>Statut actuel</label>
+                <select 
+                  id="mission-status" 
+                  value={status} 
+                  onChange={e => setStatus(e.target.value as MissionStatus)} 
+                  className={inputClass}
+                >
+                  <option value="Planifiée">Planifiée</option>
+                  <option value="En cours">En cours</option>
+                  <option value="Terminée">Terminée</option>
+                </select>
+              </div>
             </div>
-          </fieldset>
-        </div>
+
+            {/* Technicians assignment panel */}
+            <div>
+              <label className={labelClass}>Techniciens requis</label>
+              {technicians.length === 0 ? (
+                <p className="text-xs text-[#64748b] italic">Aucun technicien enregistré.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {technicians.map(tech => {
+                    const isChecked = selectedTechs.includes(tech.id);
+                    return (
+                      <label 
+                        key={tech.id} 
+                        onClick={triggerVibrate}
+                        className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all select-none hover:bg-slate-50 active:scale-95 duration-100 ${
+                          isChecked 
+                            ? 'border-[#2563eb]/30 bg-blue-50/20' 
+                            : 'border-[#e2e8f0] bg-white'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleTech(tech.id)}
+                          className="mr-2.5 h-4.5 w-4.5 text-[#2563eb] focus:ring-[#2563eb]/20 border-[#cbd5e1] rounded-lg transition-all"
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-[#0f172a]">{tech.firstName} {tech.lastName}</span>
+                          <span className="text-[9px] font-semibold text-[#94a3b8]">{tech.specialty}</span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Equipment requirements panel */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className={labelClass}>Matériel requis</label>
+                <button
+                  type="button"
+                  onClick={() => { triggerVibrate(); addEquipmentSelection(); }}
+                  className="flex items-center gap-1 text-[11px] font-extrabold text-[#2563eb] hover:text-blue-700 transition-colors active:scale-95 duration-100"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Ajouter une ligne</span>
+                </button>
+              </div>
+
+              {selectedEquipments.length === 0 ? (
+                <div className="p-6 border border-dashed border-[#e2e8f0] rounded-2xl text-center text-xs text-[#94a3b8] italic">
+                  Aucun matériel sélectionné. Cliquez sur "Ajouter une ligne" ci-dessus.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1 no-scrollbar">
+                  {selectedEquipments.map((eq, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <select
+                        value={eq.equipmentId}
+                        onChange={(e) => updateEquipmentSelection(index, e.target.value, eq.quantity)}
+                        aria-label="Matériel"
+                        className="flex-1 rounded-xl border border-[#e2e8f0] px-3.5 py-2.5 focus:ring-2 focus:ring-[#2563eb]/20 focus:border-[#2563eb] outline-none text-xs bg-[#f8fafc] text-slate-700 transition-all"
+                      >
+                        <option value="">Sélectionner un équipement...</option>
+                        {equipment.map(e => (
+                          <option key={e.id} value={e.id}>{e.name} (Max: {e.totalQuantity})</option>
+                        ))}
+                      </select>
+                      
+                      <div className="flex items-center border border-[#e2e8f0] bg-white rounded-xl overflow-hidden shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            triggerVibrate();
+                            const val = Math.max(1, eq.quantity - 1);
+                            updateEquipmentSelection(index, eq.equipmentId, val);
+                          }}
+                          className="px-2.5 py-2 hover:bg-slate-50 text-slate-500 font-bold active:scale-95 duration-100"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min="1"
+                          value={eq.quantity}
+                          onChange={(e) => updateEquipmentSelection(index, eq.equipmentId, parseInt(e.target.value) || 1)}
+                          aria-label="Quantité"
+                          className="w-12 text-center text-xs font-bold border-none outline-none focus:ring-0 select-all p-0 text-slate-800"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            triggerVibrate();
+                            updateEquipmentSelection(index, eq.equipmentId, eq.quantity + 1);
+                          }}
+                          className="px-2.5 py-2 hover:bg-slate-50 text-slate-500 font-bold active:scale-95 duration-100"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      <button 
+                        type="button" 
+                        onClick={() => { triggerVibrate(); removeEquipmentSelection(index); }} 
+                        aria-label="Retirer ce matériel" 
+                        className="p-2.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all cursor-pointer active:scale-90"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </form>
     </Modal>
   );
