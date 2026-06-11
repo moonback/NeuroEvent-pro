@@ -11,37 +11,69 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: 'auto',
         devOptions: {
-          enabled: true, // Pour tester en local
+          enabled: true,
           type: 'module',
         },
         workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webp,jpg,jpeg}'],
           maximumFileSizeToCacheInBytes: 5000000,
+          // Cache les appels réseau (ex: Supabase) avec Network-First
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'supabase-api-cache',
+                expiration: {
+                  maxEntries: 200,
+                  maxAgeSeconds: 60 * 60 * 24, // 24h
+                },
+                networkTimeoutSeconds: 10,
+              },
+            },
+          ],
         },
         manifest: {
           name: 'EventPlanner Pro',
-          short_name: 'EventPlanner',
+          short_name: 'EventPro',
           description: "Application de gestion pour techniciens d'événements",
           theme_color: '#0f172a',
-          background_color: '#ffffff',
+          background_color: '#0f172a',
           display: 'standalone',
+          orientation: 'portrait',
+          start_url: '/',
+          scope: '/',
+          lang: 'fr',
+          categories: ['productivity', 'utilities'],
           icons: [
             {
               src: 'pwa-192x192.png',
               sizes: '192x192',
-              type: 'image/png'
-            },
-            {
-              src: 'pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png'
+              type: 'image/png',
+              purpose: 'any'
             },
             {
               src: 'pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any maskable'
+              purpose: 'any'
+            },
+            {
+              src: 'pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable'
+            }
+          ],
+          screenshots: [
+            {
+              src: 'pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              form_factor: 'narrow',
+              label: 'Dashboard Technicien'
             }
           ]
         }
