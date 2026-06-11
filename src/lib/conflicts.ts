@@ -1,4 +1,4 @@
-import { Mission, Technician, Truck, Equipment } from '../types';
+import { Mission, Technician, Truck, Equipment, TechnicianUnavailability } from '../types';
 
 export interface MissionDraft {
   id?: string | null;
@@ -6,6 +6,7 @@ export interface MissionDraft {
   end: Date;
   technicianIds: string[];
   truckId?: string;
+  requiredSkills?: string[];
   equipments: { equipmentId: string; quantity: number }[];
 }
 
@@ -23,7 +24,8 @@ export function getDraftConflicts(
   missions: Mission[],
   technicians: Technician[],
   trucks: Truck[],
-  equipment: Equipment[]
+  equipment: Equipment[],
+  unavailabilities: TechnicianUnavailability[]
 ): string[] {
   const messages: string[] = [];
   if (isNaN(draft.start.getTime()) || isNaN(draft.end.getTime())) return messages;
@@ -47,6 +49,33 @@ export function getDraftConflicts(
     if (draft.truckId && m.truckId === draft.truckId) {
       const truck = trucks.find(t => t.id === draft.truckId);
       messages.push(`Le camion ${truck ? truck.name : ''} est déjà affecté à « ${m.title} » sur ce créneau.`.replace('  ', ' '));
+    }
+  }
+
+  // Check unavailabilities
+  const overlappingUnavailabilities = unavailabilities.filter(
+    u => rangesOverlap(draft.start, draft.end, u.start, u.end)
+  );
+
+  for (const techId of draft.technicianIds) {
+    const unavail = overlappingUnavailabilities.find(u => u.technicianId === techId);
+    if (unavail) {
+      const tech = technicians.find(t => t.id === techId);
+      const name = tech ? `${tech.firstName} ${tech.lastName}` : 'Un technicien';
+      const reason = unavail.reason ? ` (${unavail.reason})` : '';
+      messages.push(`${name} est en ${unavail.type.toLowerCase()}${reason} sur ce créneau.`);
+    }
+
+    // Check skills
+    if (draft.requiredSkills && draft.requiredSkills.length > 0) {
+      const tech = technicians.find(t => t.id === techId);
+      if (tech) {
+        const missingSkills = draft.requiredSkills.filter(s => !(tech.skills || []).includes(s));
+        if (missingSkills.length > 0) {
+          const name = `${tech.firstName} ${tech.lastName}`;
+          messages.push(`${name} ne possède pas toutes les compétences requises pour cette mission.`);
+        }
+      }
     }
   }
 
@@ -77,7 +106,8 @@ export function getGlobalConflicts(
   missions: Mission[],
   technicians: Technician[],
   trucks: Truck[],
-  equipment: Equipment[]
+  equipment: Equipment[],
+  unavailabilities: TechnicianUnavailability[]
 ): string[] {
   const seen = new Set<string>();
   const messages: string[] = [];
@@ -91,11 +121,13 @@ export function getGlobalConflicts(
         technicianIds: m.technicianIds,
         truckId: m.truckId,
         equipments: m.equipments,
+        requiredSkills: m.requiredSkills,
       },
       missions,
       technicians,
       trucks,
-      equipment
+      equipment,
+      unavailabilities
     );
     for (const msg of conflicts) {
       const full = `« ${m.title} » : ${msg}`;

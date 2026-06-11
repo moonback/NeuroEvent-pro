@@ -16,6 +16,7 @@ export default function Planning() {
   const technicians = useStore(state => state.technicians);
   const trucks = useStore(state => state.trucks);
   const equipment = useStore(state => state.equipment);
+  const unavailabilities = useStore(state => state.unavailabilities);
   const updateMission = useStore(state => state.updateMission);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -25,8 +26,8 @@ export default function Planning() {
   const { ref: fsRef, isFullscreen, toggle: toggleFullscreen } = useFullscreen();
 
   const conflicts = useMemo(
-    () => getGlobalConflicts(missions, technicians, trucks, equipment),
-    [missions, technicians, trucks, equipment]
+    () => getGlobalConflicts(missions, technicians, trucks, equipment, unavailabilities),
+    [missions, technicians, trucks, equipment, unavailabilities]
   );
 
   const events = missions.map(m => ({

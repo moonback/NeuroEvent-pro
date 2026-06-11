@@ -6,6 +6,8 @@ export type MissionType = 'Livraison' | 'Montage' | 'Démontage' | 'Événement 
 
 export type UserRole = 'Admin' | 'Technicien';
 
+export type UnavailabilityType = 'Congé' | 'Indisponibilité';
+
 export interface Profile {
   id: string;
   email: string;
@@ -29,6 +31,16 @@ export interface Technician {
   color: string;
   skills?: string[];
   driverLicense?: DriverLicense;
+}
+
+export interface TechnicianUnavailability {
+  id: string;
+  technicianId: string;
+  start: Date;
+  end: Date;
+  type: UnavailabilityType;
+  reason?: string;
+  createdAt: Date;
 }
 
 export interface Truck {
@@ -75,6 +87,7 @@ export interface Mission {
   end: Date;
   technicianIds: string[];
   truckId?: string;
+  requiredSkills?: string[];
   equipments: MissionEquipment[];
   status: MissionStatus;
   color: string;

@@ -78,6 +78,36 @@ export interface Database {
         };
         Relationships: [];
       };
+      technician_unavailabilities: {
+        Row: {
+          id: string;
+          technician_id: string;
+          start_date: string;
+          end_date: string;
+          type: string;
+          reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          technician_id: string;
+          start_date: string;
+          end_date: string;
+          type?: string;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          technician_id?: string;
+          start_date?: string;
+          end_date?: string;
+          type?: string;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       trucks: {
         Row: {
           id: string;
@@ -161,6 +191,7 @@ export interface Database {
           start_date: string;
           end_date: string;
           truck_id: string | null;
+          required_skills: string[] | null;
           status: string;
           color: string;
         };
@@ -174,6 +205,7 @@ export interface Database {
           start_date: string;
           end_date: string;
           truck_id?: string | null;
+          required_skills?: string[] | null;
           status: string;
           color: string;
         };
@@ -187,6 +219,7 @@ export interface Database {
           start_date?: string;
           end_date?: string;
           truck_id?: string | null;
+          required_skills?: string[] | null;
           status?: string;
           color?: string;
         };

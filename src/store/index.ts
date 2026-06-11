@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Mission, Technician, Truck, Equipment, Client, MissionType, MissionStatus, EquipmentCategory, TimeLog } from '../types';
+import { Mission, Technician, Truck, Equipment, Client, MissionType, MissionStatus, EquipmentCategory, TimeLog, TechnicianUnavailability, UnavailabilityType } from '../types';
 import { TableRow, TableInsert, TableUpdate } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { toast } from './toast';
@@ -22,6 +22,7 @@ interface AppState {
   equipment: Equipment[];
   clients: Client[];
   timeLogs: TimeLog[];
+  unavailabilities: TechnicianUnavailability[];
 
   loading: boolean;
   
@@ -43,6 +44,9 @@ interface AppState {
   addTechnician: (tech: Omit<Technician, 'id'>) => Promise<void>;
   updateTechnician: (id: string, tech: Partial<Technician>) => Promise<void>;
   deleteTechnician: (id: string) => Promise<void>;
+
+  addUnavailability: (u: Omit<TechnicianUnavailability, 'id' | 'createdAt'>) => Promise<void>;
+  deleteUnavailability: (id: string) => Promise<void>;
 
   addTruck: (truck: Omit<Truck, 'id'>) => Promise<void>;
   updateTruck: (id: string, truck: Partial<Truck>) => Promise<void>;
@@ -83,6 +87,7 @@ export const useStore = create<AppState>()(
       equipment: [],
       clients: [],
       timeLogs: [],
+      unavailabilities: [],
       loading: true,
       syncQueue: [],
 
@@ -127,7 +132,7 @@ export const useStore = create<AppState>()(
         }
         
         try {
-      const [techsRes, trucksRes, equipRes, missionsRes, clientsRes] = await Promise.all([
+      const [techsRes, trucksRes, equipRes, missionsRes, clientsRes, unavailRes] = await Promise.all([
         supabase.from('technicians').select('*'),
         supabase.from('trucks').select('*'),
         supabase.from('equipments').select('*'),
@@ -138,6 +143,7 @@ export const useStore = create<AppState>()(
           .select('*, mission_technicians(technician_id), mission_equipments(*)')
           .returns<MissionRowWithRelations[]>(),
         supabase.from('clients').select('*').order('name'),
+        supabase.from('technician_unavailabilities').select('*')
       ]);
 
       const technicians: Technician[] = techsRes.data?.map(t => ({
@@ -174,6 +180,16 @@ export const useStore = create<AppState>()(
         notes: c.notes || undefined
       })) || [];
 
+      const unavailabilities: TechnicianUnavailability[] = unavailRes.data?.map(u => ({
+        id: u.id,
+        technicianId: u.technician_id,
+        start: new Date(u.start_date),
+        end: new Date(u.end_date),
+        type: u.type as UnavailabilityType,
+        reason: u.reason || undefined,
+        createdAt: new Date(u.created_at)
+      })) || [];
+
       const missions: Mission[] = missionsRes.data?.map((m) => ({
         id: m.id,
         title: m.title,
@@ -185,6 +201,7 @@ export const useStore = create<AppState>()(
         end: new Date(m.end_date),
         technicianIds: m.mission_technicians?.map((mt) => mt.technician_id) || [],
         truckId: m.truck_id || undefined,
+        requiredSkills: m.required_skills || [],
         status: m.status as MissionStatus,
         color: m.color,
         equipments: m.mission_equipments?.map((me) => ({
@@ -194,7 +211,7 @@ export const useStore = create<AppState>()(
         })) || []
       })) || [];
 
-      set({ technicians, trucks, equipment, missions, clients, loading: false });
+      set({ technicians, trucks, equipment, missions, clients, unavailabilities, loading: false });
 
       // Realtime : un seul canal, et les rafales d'événements sont
       // regroupées en un unique re-fetch (debounce 400 ms).
@@ -225,6 +242,7 @@ export const useStore = create<AppState>()(
       start_date: mission.start.toISOString(),
       end_date: mission.end.toISOString(),
       truck_id: mission.truckId || null,
+      required_skills: mission.requiredSkills || [],
       status: mission.status,
       color: mission.color
     };
@@ -261,6 +279,7 @@ export const useStore = create<AppState>()(
     if (updatedFields.start !== undefined) changes.start_date = updatedFields.start.toISOString();
     if (updatedFields.end !== undefined) changes.end_date = updatedFields.end.toISOString();
     if (updatedFields.truckId !== undefined) changes.truck_id = updatedFields.truckId || null;
+    if (updatedFields.requiredSkills !== undefined) changes.required_skills = updatedFields.requiredSkills;
     if (updatedFields.status !== undefined) changes.status = updatedFields.status;
     if (updatedFields.color !== undefined) changes.color = updatedFields.color;
 
@@ -368,6 +387,26 @@ export const useStore = create<AppState>()(
     const { error } = await supabase.from('technicians').delete().eq('id', id);
     if (reportError('Suppression du technicien', error)) return;
     toast.success('Technicien supprimé.');
+    get().initialize();
+  },
+
+  addUnavailability: async (u) => {
+    const { error } = await supabase.from('technician_unavailabilities').insert({
+      technician_id: u.technicianId,
+      start_date: u.start.toISOString(),
+      end_date: u.end.toISOString(),
+      type: u.type,
+      reason: u.reason || null
+    });
+    if (reportError('Ajout de l\'indisponibilité', error)) return;
+    toast.success('Indisponibilité ajoutée.');
+    get().initialize();
+  },
+
+  deleteUnavailability: async (id) => {
+    const { error } = await supabase.from('technician_unavailabilities').delete().eq('id', id);
+    if (reportError('Suppression de l\'indisponibilité', error)) return;
+    toast.success('Indisponibilité supprimée.');
     get().initialize();
   },
 
@@ -550,7 +589,7 @@ export const useStore = create<AppState>()(
   },
 
   updateTimeLog: async (id, fields) => {
-    const changes: Record<string, unknown> = {};
+    const changes: TableUpdate<'mission_time_logs'> = {};
     if (fields.startTime !== undefined) changes.start_time = fields.startTime.toISOString();
     if (fields.endTime !== undefined) changes.end_time = fields.endTime ? fields.endTime.toISOString() : null;
     if (fields.note !== undefined) changes.note = fields.note || null;
@@ -590,6 +629,7 @@ export const useStore = create<AppState>()(
       clients: state.clients,
       syncQueue: state.syncQueue,
       timeLogs: state.timeLogs,
+      unavailabilities: state.unavailabilities,
     }),
   }
 ));

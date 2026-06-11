@@ -1,0 +1,16 @@
+export const SKILL_CATALOG = [
+  { id: 'montage_scene',     label: 'Montage scène',     emoji: '🎭' },
+  { id: 'sono',              label: 'Sonorisation',       emoji: '🔊' },
+  { id: 'eclairage',         label: 'Éclairage',          emoji: '💡' },
+  { id: 'video',             label: 'Vidéo / Mapping',    emoji: '📽️' },
+  { id: 'rigging',           label: 'Rigging',            emoji: '⛓️' },
+  { id: 'electricite',       label: 'Électricité',        emoji: '⚡' },
+  { id: 'decoration',        label: 'Décoration',         emoji: '🎀' },
+  { id: 'securite',          label: 'Sécurité événement', emoji: '🦺' },
+  { id: 'logistique',        label: 'Logistique',         emoji: '📦' },
+  { id: 'conduite_poids',    label: 'Conduite poids lourd', emoji: '🚛' },
+  { id: 'nacelle',           label: 'Nacelle / PEMP',    emoji: '🏗️' },
+  { id: 'coordination',      label: 'Coordination équipe', emoji: '📋' },
+  { id: 'manutention',       label: 'Manutention',        emoji: '🪝' },
+  { id: 'froid',             label: 'Froid / Clim.',      emoji: '❄️' },
+];

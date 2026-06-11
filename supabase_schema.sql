@@ -23,6 +23,12 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
+DO $$ BEGIN
+    CREATE TYPE unavailability_type AS ENUM ('Congé', 'Indisponibilité');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
 -- Create Profiles table
 CREATE TABLE IF NOT EXISTS profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -39,6 +45,19 @@ CREATE TABLE IF NOT EXISTS technicians (
     last_name TEXT NOT NULL,
     specialty TEXT NOT NULL,
     color TEXT NOT NULL DEFAULT '#3b82f6',
+    skills TEXT[],
+    driver_license JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Create Technician Unavailabilities table
+CREATE TABLE IF NOT EXISTS technician_unavailabilities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    technician_id UUID REFERENCES technicians(id) ON DELETE CASCADE,
+    start_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    type unavailability_type NOT NULL DEFAULT 'Congé',
+    reason TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -66,10 +85,12 @@ CREATE TABLE IF NOT EXISTS missions (
     title TEXT NOT NULL,
     type mission_type NOT NULL,
     client TEXT NOT NULL,
+    client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
     address TEXT NOT NULL,
     start_date TIMESTAMP WITH TIME ZONE NOT NULL,
     end_date TIMESTAMP WITH TIME ZONE NOT NULL,
     truck_id UUID REFERENCES trucks(id) ON DELETE SET NULL,
+    required_skills TEXT[],
     status mission_status NOT NULL DEFAULT 'Planifiée',
     color TEXT NOT NULL DEFAULT '#3b82f6',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -98,6 +119,7 @@ ALTER TABLE equipments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE missions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mission_technicians ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mission_equipments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE technician_unavailabilities ENABLE ROW LEVEL SECURITY;
 
 -- Allow everything for authenticated and anon users (Phase 1 permissive policies)
 -- Profiles
@@ -111,6 +133,12 @@ CREATE POLICY "Allow PUBLIC SELECT on technicians" ON technicians FOR SELECT USI
 CREATE POLICY "Allow PUBLIC INSERT on technicians" ON technicians FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow PUBLIC UPDATE on technicians" ON technicians FOR UPDATE USING (true);
 CREATE POLICY "Allow PUBLIC DELETE on technicians" ON technicians FOR DELETE USING (true);
+
+-- Technician Unavailabilities
+CREATE POLICY "Allow PUBLIC SELECT on technician_unavailabilities" ON technician_unavailabilities FOR SELECT USING (true);
+CREATE POLICY "Allow PUBLIC INSERT on technician_unavailabilities" ON technician_unavailabilities FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow PUBLIC UPDATE on technician_unavailabilities" ON technician_unavailabilities FOR UPDATE USING (true);
+CREATE POLICY "Allow PUBLIC DELETE on technician_unavailabilities" ON technician_unavailabilities FOR DELETE USING (true);
 
 -- Trucks
 CREATE POLICY "Allow PUBLIC SELECT on trucks" ON trucks FOR SELECT USING (true);

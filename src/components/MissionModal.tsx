@@ -5,7 +5,8 @@ import { X, AlertTriangle, Calendar, Package, Users, Truck as TruckIcon, Plus, T
 import { format } from 'date-fns';
 import Modal from './ui/Modal';
 import { toast } from '../store/toast';
-import { getDraftConflicts } from '../lib/conflicts';
+import { getDraftConflicts, rangesOverlap } from '../lib/conflicts';
+import { SKILL_CATALOG } from '../lib/constants';
 
 interface MissionModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
   const addMission = useStore(state => state.addMission);
   const updateMission = useStore(state => state.updateMission);
   const deleteMission = useStore(state => state.deleteMission);
+  const unavailabilities = useStore(state => state.unavailabilities);
 
   const existingMission = missionId ? missions.find(m => m.id === missionId) : null;
 
@@ -55,6 +57,7 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
 
   const [selectedTechs, setSelectedTechs] = useState<string[]>(existingMission?.technicianIds || []);
   const [selectedTruck, setSelectedTruck] = useState<string>(existingMission?.truckId || '');
+  const [requiredSkills, setRequiredSkills] = useState<string[]>(existingMission?.requiredSkills || []);
   const [selectedEquipments, setSelectedEquipments] = useState<{ equipmentId: string, quantity: number }[]>(
     existingMission?.equipments.map(e => ({ equipmentId: e.equipmentId, quantity: e.quantity })) || []
   );
@@ -68,10 +71,11 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
       end: new Date(endDate),
       technicianIds: selectedTechs,
       truckId: selectedTruck || undefined,
+      requiredSkills,
       equipments: selectedEquipments.filter(e => e.equipmentId !== '')
     },
-    missions, technicians, trucks, equipment
-  ), [missionId, startDate, endDate, selectedTechs, selectedTruck, selectedEquipments, missions, technicians, trucks, equipment]);
+    missions, technicians, trucks, equipment, unavailabilities
+  ), [missionId, startDate, endDate, selectedTechs, selectedTruck, requiredSkills, selectedEquipments, missions, technicians, trucks, equipment, unavailabilities]);
 
   if (!isOpen) return null;
 
@@ -117,6 +121,7 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
       end,
       technicianIds: selectedTechs,
       truckId: selectedTruck || undefined,
+      requiredSkills,
       equipments: selectedEquipments.filter(eq => eq.equipmentId !== ''),
       color: typeColors[type]
     };
@@ -139,6 +144,43 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
   const toggleTech = (id: string) => {
     setSelectedTechs(prev => prev.includes(id) ? prev.filter(tId => tId !== id) : [...prev, id]);
   };
+
+  const toggleRequiredSkill = (id: string) => {
+    setRequiredSkills(prev => prev.includes(id) ? prev.filter(sId => sId !== id) : [...prev, id]);
+  };
+
+  // Computing Technician categories based on availability and skills
+  const categorizedTechs = useMemo(() => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return { recommended: [], available: [], unavailable: [] };
+
+    const recommended: typeof technicians = [];
+    const available: typeof technicians = [];
+    const unavailable: typeof technicians = [];
+
+    const overlappingMissions = missions.filter(m => m.id !== missionId && rangesOverlap(start, end, m.start, m.end));
+    const overlappingUnavailabilities = unavailabilities.filter(u => rangesOverlap(start, end, u.start, u.end));
+
+    technicians.forEach(tech => {
+      const isUnavailable = 
+        overlappingMissions.some(m => m.technicianIds.includes(tech.id)) ||
+        overlappingUnavailabilities.some(u => u.technicianId === tech.id);
+      
+      if (isUnavailable) {
+        unavailable.push(tech);
+      } else {
+        const missingSkills = requiredSkills.filter(s => !(tech.skills || []).includes(s));
+        if (missingSkills.length === 0) {
+          recommended.push(tech);
+        } else {
+          available.push(tech);
+        }
+      }
+    });
+
+    return { recommended, available, unavailable };
+  }, [startDate, endDate, technicians, missions, unavailabilities, requiredSkills, missionId]);
 
   return (
     <Modal
@@ -400,38 +442,72 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
 
             </div>
 
+            {/* Required Skills selection */}
+            <div>
+              <label className={labelClass}>Compétences requises</label>
+              <div className="flex flex-wrap gap-2">
+                {SKILL_CATALOG.map(skill => {
+                  const isSelected = requiredSkills.includes(skill.id);
+                  return (
+                    <button
+                      key={skill.id}
+                      type="button"
+                      onClick={() => { triggerVibrate(); toggleRequiredSkill(skill.id); }}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors border active:scale-95 duration-100 ${
+                        isSelected 
+                          ? 'bg-violet-100 text-violet-800 border-violet-200' 
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      {skill.emoji} {skill.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Technicians assignment panel */}
             <div>
-              <label className={labelClass}>Techniciens requis</label>
+              <label className={labelClass}>Techniciens assignés</label>
               {technicians.length === 0 ? (
                 <p className="text-xs text-[#64748b] italic">Aucun technicien enregistré.</p>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {technicians.map(tech => {
-                    const isChecked = selectedTechs.includes(tech.id);
-                    return (
-                      <label 
-                        key={tech.id} 
-                        onClick={triggerVibrate}
-                        className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all select-none hover:bg-slate-50 active:scale-95 duration-100 ${
-                          isChecked 
-                            ? 'border-[#2563eb]/30 bg-blue-50/20' 
-                            : 'border-[#e2e8f0] bg-white'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => toggleTech(tech.id)}
-                          className="mr-2.5 h-4.5 w-4.5 text-[#2563eb] focus:ring-[#2563eb]/20 border-[#cbd5e1] rounded-lg transition-all"
-                        />
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-[#0f172a]">{tech.firstName} {tech.lastName}</span>
-                          <span className="text-[9px] font-semibold text-[#94a3b8]">{tech.specialty}</span>
-                        </div>
-                      </label>
-                    );
-                  })}
+                <div className="space-y-4">
+                  {/* Recommandés */}
+                  {categorizedTechs.recommended.length > 0 && (
+                    <div>
+                      <h5 className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5" /> Disponibles & Qualifiés
+                      </h5>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                        {categorizedTechs.recommended.map(tech => renderTechCard(tech, selectedTechs.includes(tech.id), toggleTech, triggerVibrate))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Disponibles mais compétences manquantes */}
+                  {categorizedTechs.available.length > 0 && (
+                    <div>
+                      <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        {requiredSkills.length > 0 ? 'Disponibles (Compétences manquantes)' : 'Disponibles'}
+                      </h5>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                        {categorizedTechs.available.map(tech => renderTechCard(tech, selectedTechs.includes(tech.id), toggleTech, triggerVibrate))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Indisponibles */}
+                  {categorizedTechs.unavailable.length > 0 && (
+                    <div>
+                      <h5 className="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5" /> Indisponibles / Déjà pris
+                      </h5>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 opacity-60 hover:opacity-100 transition-opacity">
+                        {categorizedTechs.unavailable.map(tech => renderTechCard(tech, selectedTechs.includes(tech.id), toggleTech, triggerVibrate))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -519,5 +595,30 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
         )}
       </form>
     </Modal>
+  );
+}
+
+function renderTechCard(tech: any, isChecked: boolean, toggleTech: (id: string) => void, triggerVibrate: () => void) {
+  return (
+    <label 
+      key={tech.id} 
+      onClick={triggerVibrate}
+      className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all select-none hover:bg-slate-50 active:scale-95 duration-100 ${
+        isChecked 
+          ? 'border-[#2563eb]/30 bg-blue-50/20' 
+          : 'border-[#e2e8f0] bg-white'
+      }`}
+    >
+      <input
+        type="checkbox"
+        checked={isChecked}
+        onChange={() => toggleTech(tech.id)}
+        className="mr-2.5 h-4.5 w-4.5 text-[#2563eb] focus:ring-[#2563eb]/20 border-[#cbd5e1] rounded-lg transition-all"
+      />
+      <div className="flex flex-col">
+        <span className="text-xs font-bold text-[#0f172a]">{tech.firstName} {tech.lastName}</span>
+        <span className="text-[9px] font-semibold text-[#94a3b8]">{tech.specialty}</span>
+      </div>
+    </label>
   );
 }
