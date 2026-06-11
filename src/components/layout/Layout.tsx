@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   Calendar, Users, Truck, Package, Settings, Menu, Printer, LogOut,
-  Building2, UserCog, FileText, BarChart3, Plus
+  Building2, UserCog, FileText, BarChart3, Plus, Timer
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import MissionModal from '../MissionModal';
@@ -29,6 +29,7 @@ const managementNavigation: NavItem[] = [
 
 const toolsNavigation: NavItem[] = [
   { name: 'Fiches Mission', to: '/fiches', icon: FileText },
+  { name: 'Heures Techniciens', to: '/heures', icon: Timer },
   { name: 'Statistiques', to: '/stats', icon: BarChart3 },
   { name: 'Paramètres', to: '/settings', icon: Settings },
 ];

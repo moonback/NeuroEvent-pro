@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Mission, Technician, Truck, Equipment, Client, MissionType, MissionStatus, EquipmentCategory } from '../types';
+import { Mission, Technician, Truck, Equipment, Client, MissionType, MissionStatus, EquipmentCategory, TimeLog } from '../types';
 import { TableRow, TableInsert, TableUpdate } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { toast } from './toast';
@@ -21,6 +21,7 @@ interface AppState {
   trucks: Truck[];
   equipment: Equipment[];
   clients: Client[];
+  timeLogs: TimeLog[];
 
   loading: boolean;
   
@@ -55,6 +56,12 @@ interface AppState {
   addClient: (client: Omit<Client, 'id'>) => Promise<void>;
   updateClient: (id: string, client: Partial<Client>) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
+
+  // Time Logs
+  fetchTimeLogs: (missionId?: string) => Promise<void>;
+  addTimeLog: (log: Omit<TimeLog, 'id' | 'createdAt' | 'updatedAt'>) => Promise<TimeLog | null>;
+  updateTimeLog: (id: string, fields: Partial<Pick<TimeLog, 'startTime' | 'endTime' | 'note'>>) => Promise<void>;
+  deleteTimeLog: (id: string) => Promise<void>;
 }
 
 /** Aucun échec Supabase ne doit rester silencieux : on prévient l'utilisateur. */
@@ -75,6 +82,7 @@ export const useStore = create<AppState>()(
       trucks: [],
       equipment: [],
       clients: [],
+      timeLogs: [],
       loading: true,
       syncQueue: [],
 
@@ -482,7 +490,95 @@ export const useStore = create<AppState>()(
     if (reportError('Suppression du client', error)) return;
     toast.success('Client supprimé.');
     get().initialize();
-  }
+  },
+
+  // ── TIME LOGS ──────────────────────────────────────────────
+  fetchTimeLogs: async (missionId?: string) => {
+    let query = supabase
+      .from('mission_time_logs')
+      .select('*')
+      .order('start_time', { ascending: false });
+
+    if (missionId) query = query.eq('mission_id', missionId) as typeof query;
+
+    const { data, error } = await query;
+    if (reportError('Chargement des heures', error) || !data) return;
+
+    const logs: TimeLog[] = data.map((r) => ({
+      id: r.id,
+      missionId: r.mission_id,
+      technicianId: r.technician_id,
+      startTime: new Date(r.start_time),
+      endTime: r.end_time ? new Date(r.end_time) : null,
+      note: r.note || undefined,
+      createdAt: new Date(r.created_at),
+      updatedAt: new Date(r.updated_at),
+    }));
+
+    set({ timeLogs: logs });
+  },
+
+  addTimeLog: async (log) => {
+    const { data, error } = await supabase
+      .from('mission_time_logs')
+      .insert({
+        mission_id: log.missionId,
+        technician_id: log.technicianId,
+        start_time: log.startTime.toISOString(),
+        end_time: log.endTime ? log.endTime.toISOString() : null,
+        note: log.note || null,
+      })
+      .select()
+      .single();
+
+    if (reportError('Enregistrement des heures', error) || !data) return null;
+
+    const newLog: TimeLog = {
+      id: data.id,
+      missionId: data.mission_id,
+      technicianId: data.technician_id,
+      startTime: new Date(data.start_time),
+      endTime: data.end_time ? new Date(data.end_time) : null,
+      note: data.note || undefined,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+    };
+
+    set((state) => ({ timeLogs: [newLog, ...state.timeLogs] }));
+    toast.success('Heures enregistrées.');
+    return newLog;
+  },
+
+  updateTimeLog: async (id, fields) => {
+    const changes: Record<string, unknown> = {};
+    if (fields.startTime !== undefined) changes.start_time = fields.startTime.toISOString();
+    if (fields.endTime !== undefined) changes.end_time = fields.endTime ? fields.endTime.toISOString() : null;
+    if (fields.note !== undefined) changes.note = fields.note || null;
+
+    const { error } = await supabase.from('mission_time_logs').update(changes).eq('id', id);
+    if (reportError('Mise à jour des heures', error)) return;
+
+    set((state) => ({
+      timeLogs: state.timeLogs.map((l) =>
+        l.id === id
+          ? {
+              ...l,
+              ...(fields.startTime !== undefined && { startTime: fields.startTime }),
+              ...(fields.endTime !== undefined && { endTime: fields.endTime }),
+              ...(fields.note !== undefined && { note: fields.note }),
+            }
+          : l
+      ),
+    }));
+    toast.success('Heures mises à jour.');
+  },
+
+  deleteTimeLog: async (id) => {
+    const { error } = await supabase.from('mission_time_logs').delete().eq('id', id);
+    if (reportError('Suppression du créneau', error)) return;
+    set((state) => ({ timeLogs: state.timeLogs.filter((l) => l.id !== id) }));
+    toast.success('Créneau supprimé.');
+  },
   }),
   {
     name: 'eventplanner-storage',
@@ -493,6 +589,7 @@ export const useStore = create<AppState>()(
       equipment: state.equipment,
       clients: state.clients,
       syncQueue: state.syncQueue,
+      timeLogs: state.timeLogs,
     }),
   }
 ));

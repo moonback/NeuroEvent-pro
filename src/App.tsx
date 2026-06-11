@@ -23,6 +23,7 @@ const TechnicianDashboard = lazy(() => import('./pages/TechnicianDashboard'));
 const Settings = lazy(() => import('./pages/Settings'));
 const MissionBriefs = lazy(() => import('./pages/MissionBriefs'));
 const Stats = lazy(() => import('./pages/Stats'));
+const TechnicianHours = lazy(() => import('./pages/TechnicianHours'));
 
 function FullScreenLoader() {
   return <div className="h-screen w-screen flex items-center justify-center bg-[#fdfdfd] text-sm text-[#64748b]">Chargement...</div>;
@@ -85,6 +86,7 @@ export default function App() {
                 <Route path="users" element={<Users />} />
                 <Route path="fiches" element={<MissionBriefs />} />
                 <Route path="stats" element={<Stats />} />
+                <Route path="heures" element={<TechnicianHours />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
               {/* Catch-all : aucune URL ne doit aboutir à une page blanche */}

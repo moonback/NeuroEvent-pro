@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
-import { FileText, Printer, Search, Calendar as CalendarIcon, MapPin, Truck as TruckIcon, Users, Package, ArrowLeft, Clock, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
+import { FileText, Printer, Search, Calendar as CalendarIcon, MapPin, Truck as TruckIcon, Users, Package, ArrowLeft, Clock, CheckCircle2, Circle, AlertCircle, Timer } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import TechnicianHoursAdmin from '../components/TechnicianHoursAdmin';
 
 export default function MissionBriefs() {
   const missions = useStore(state => state.missions);
@@ -14,6 +15,7 @@ export default function MissionBriefs() {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<'all' | 'Planifi\u00e9e' | 'En cours' | 'Termin\u00e9e'>('all');
   const [selectedMissionId, setSelectedMissionId] = React.useState<string | null>(null);
+  const [detailTab, setDetailTab] = React.useState<'fiche' | 'heures'>('fiche');
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -136,16 +138,45 @@ export default function MissionBriefs() {
                 </button>
                 <h3 className="font-bold text-[#0f172a] truncate">Aperçu de la Fiche</h3>
               </div>
-              <button
-                onClick={handlePrint}
-                className="flex items-center gap-2 bg-[#2563eb] text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm shrink-0"
-              >
-                <Printer className="w-4 h-4" />
-                <span className="hidden sm:inline">Imprimer</span>
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Tab switcher */}
+                <div className="flex border border-[#e2e8f0] rounded-lg overflow-hidden print:hidden">
+                  <button
+                    onClick={() => setDetailTab('fiche')}
+                    className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-extrabold uppercase transition-colors ${
+                      detailTab === 'fiche' ? 'bg-[#2563eb] text-white' : 'text-[#64748b] hover:bg-slate-50'
+                    }`}
+                  >
+                    <FileText className="w-3 h-3" />
+                    Fiche
+                  </button>
+                  <button
+                    onClick={() => setDetailTab('heures')}
+                    className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-extrabold uppercase transition-colors ${
+                      detailTab === 'heures' ? 'bg-[#2563eb] text-white' : 'text-[#64748b] hover:bg-slate-50'
+                    }`}
+                  >
+                    <Timer className="w-3 h-3" />
+                    Heures
+                  </button>
+                </div>
+                <button
+                  onClick={handlePrint}
+                  className="flex items-center gap-2 bg-[#2563eb] text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm shrink-0 print:hidden"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span className="hidden sm:inline">Imprimer</span>
+                </button>
+              </div>
             </div>
             
-            {/* Printable Content */}
+            {/* Tab Content */}
+            {detailTab === 'heures' ? (
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 print:hidden">
+                <TechnicianHoursAdmin missionId={selectedMission.id} />
+              </div>
+            ) : (
+            /* Printable Content */
             <div className="flex-1 overflow-y-auto p-4 sm:p-8 print:p-0">
               <div className="max-w-3xl mx-auto printable-sheet">
                 {/* Header */}
@@ -298,6 +329,7 @@ export default function MissionBriefs() {
                 </div>
               </div>
             </div>
+            )} {/* end detailTab ternary */}
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[#f8fafc] print:hidden">

@@ -24,13 +24,15 @@ import {
   X, 
   AlertCircle,
   AlertTriangle,
-  Play
+  Play,
+  Timer
 } from 'lucide-react';
 import { format, isSameDay, startOfWeek, endOfWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import { QRScannerModal } from '../components/QRScannerModal';
 import { toast } from '../store/toast';
+import TimeLogPanel from '../components/TimeLogPanel';
 
 export default function TechnicianDashboard() {
   const user = useAuthStore(state => state.user);
@@ -55,7 +57,7 @@ export default function TechnicianDashboard() {
   
   // Detail Drawer state
   const [selectedMission, setSelectedMission] = React.useState<typeof missions[0] | null>(null);
-  const [drawerTab, setDrawerTab] = React.useState<'general' | 'client' | 'team' | 'equipment' | 'report'>('general');
+  const [drawerTab, setDrawerTab] = React.useState<'general' | 'client' | 'team' | 'equipment' | 'report' | 'hours'>('general');
   const [scannedItemId, setScannedItemId] = React.useState<string | null>(null);
 
   // Local reports (saved to localStorage by mission and user id)
@@ -66,6 +68,10 @@ export default function TechnicianDashboard() {
   const syncQueue = useStore(state => state.syncQueue);
   const processSyncQueue = useStore(state => state.processSyncQueue);
   const [isOnline, setIsOnline] = React.useState(navigator.onLine);
+
+  const tabsList: Array<'general' | 'client' | 'team' | 'equipment' | 'report' | 'hours'> = [
+    'general', 'client', 'team', 'equipment', 'report', 'hours'
+  ];
 
   React.useEffect(() => {
     const handleOnline = () => {
@@ -95,8 +101,8 @@ export default function TechnicianDashboard() {
 
   const swipeStartX = React.useRef(0);
   const swipeStartY = React.useRef(0);
-  const tabsList: Array<'general' | 'client' | 'team' | 'equipment' | 'report'> = [
-    'general', 'client', 'team', 'equipment', 'report'
+  const tabsList: Array<'general' | 'client' | 'team' | 'equipment' | 'report' | 'hours'> = [
+    'general', 'client', 'team', 'equipment', 'report', 'hours'
   ];
 
   // Helper for centralized vibrations (haptic feedback)
@@ -872,6 +878,7 @@ className="flex flex-col items-center justify-center w-full h-full text-[#64748b
                 { id: 'client',    label: 'Client',   icon: Phone },
                 { id: 'team',      label: 'Équipe',   icon: Users },
                 { id: 'equipment', label: 'Matériel', icon: QrCode },
+                { id: 'hours',     label: 'Heures',   icon: Timer },
                 { id: 'report',    label: 'Rapport',  icon: FileText }
               ] as const).map(tab => {
                 const TabIcon = tab.icon;
@@ -1194,6 +1201,15 @@ className="flex flex-col items-center justify-center w-full h-full text-[#64748b
                     );
                   })()}
                 </div>
+              )}
+
+              {/* ══ HEURES ══ */}
+              {drawerTab === 'hours' && (
+                <TimeLogPanel
+                  missionId={selectedMission.id}
+                  missionColor={selectedMission.color}
+                  missionStatus={selectedMission.status}
+                />
               )}
 
               {/* ══ REPORT ══ */}

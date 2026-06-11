@@ -228,6 +228,38 @@ export interface Database {
         };
         Relationships: [];
       };
+      mission_time_logs: {
+        Row: {
+          id: string;
+          mission_id: string;
+          technician_id: string;
+          start_time: string;
+          end_time: string | null;
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          mission_id: string;
+          technician_id: string;
+          start_time: string;
+          end_time?: string | null;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          mission_id?: string;
+          technician_id?: string;
+          start_time?: string;
+          end_time?: string | null;
+          note?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: Record<never, never>;

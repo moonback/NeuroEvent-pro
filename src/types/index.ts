@@ -79,3 +79,15 @@ export interface Mission {
   status: MissionStatus;
   color: string;
 }
+
+export interface TimeLog {
+  id: string;
+  missionId: string;
+  technicianId: string;
+  startTime: Date;
+  endTime: Date | null;
+  note?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
