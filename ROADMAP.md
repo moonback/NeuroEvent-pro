@@ -1,4 +1,4 @@
-# EventFlow Pro — Roadmap
+# NeuroEventPro — Roadmap
 
 Plateforme professionnelle de planification pour agences événementielles : orchestration des missions de terrain, des techniciens, des véhicules et du matériel technique.
 

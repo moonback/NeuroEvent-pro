@@ -1,4 +1,4 @@
-# 🎯 EventFlow Planning Pro
+# 🎯 NeuroEventPlanning Pro
 
 > **Plateforme professionnelle de gestion d'événements** pour orchestrer vos missions, techniciens, véhicules et matériel en temps réel.
 
@@ -27,7 +27,7 @@
 
 ## 🎬 À Propos
 
-**EventFlow Planning Pro** est une application web moderne conçue pour les **agences événementielles** qui gèrent des interventions sur le terrain : livraisons, montages, démontages d'événements.
+**NeuroEventPlanning Pro** est une application web moderne conçue pour les **agences événementielles** qui gèrent des interventions sur le terrain : livraisons, montages, démontages d'événements.
 
 ### Problématique résolue
 
@@ -493,4 +493,4 @@ Technologies open-source utilisées :
 
 ---
 
-**EventFlow Planning Pro** — *Orchestrez vos événements en toute sérénité* 🚀
+**NeuroEventPlanning Pro** — *Orchestrez vos événements en toute sérénité* 🚀

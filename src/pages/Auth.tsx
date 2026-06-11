@@ -75,7 +75,10 @@ export default function Auth() {
         <div className="w-16 h-16 bg-[#0f172a] rounded-xl flex items-center justify-center mb-6 shadow-sm">
           <Calendar className="w-8 h-8 text-white" />
         </div>
-        <h2 className="text-center text-3xl font-bold tracking-tight text-[#0f172a]">EventFlow Planning</h2>
+        <h2 className="text-center text-3xl font-bold tracking-tight text-[#0f172a]">NeuroEvent</h2>
+        <p className="mt-2 text-center text-sm text-[#64748b]">
+          Portail de gestion des événements
+        </p>
         <p className="mt-2 text-center text-sm text-[#64748b] font-medium uppercase tracking-wider">
           {isSignUp ? 'Création de compte' : 'Connexion au portail'}
         </p>

@@ -1,5 +1,5 @@
 -- ============================================================================
--- EventFlow Planning — Migration complète issue de l'audit du 10/06/2026
+-- NeuroEventPlanning — Migration complète issue de l'audit du 10/06/2026
 --
 -- À exécuter dans le SQL Editor de votre projet Supabase
 -- (Dashboard → SQL Editor → New query → coller → Run).

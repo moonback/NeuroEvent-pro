@@ -85,7 +85,7 @@ export function Layout() {
             <Menu className="w-5 h-5" />
           </button>
           <div className="w-8 h-8 bg-[#2563eb] rounded-lg flex items-center justify-center text-white font-bold">E</div>
-          <h1 className="text-xl font-bold tracking-tight text-[#0f172a]">EVENTFLOW <span className="text-[#64748b] font-normal text-sm ml-2 uppercase tracking-widest hidden sm:inline">Planning v2.4</span></h1>
+          <h1 className="text-xl font-bold tracking-tight text-[#0f172a]">NeuroEvent<span className="text-[#64748b] font-normal text-sm ml-2 uppercase tracking-widest hidden sm:inline">Planning v2.4</span></h1>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
           <button onClick={handlePrint} className="p-2 text-[#64748b] hover:text-[#2563eb] transition-colors flex items-center space-x-2 border border-[#e2e8f0] rounded-md bg-[#f1f5f9]">
