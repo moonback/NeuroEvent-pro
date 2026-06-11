@@ -708,7 +708,7 @@ export default function TechnicianDashboard() {
               triggerVibrate('click');
               signOut();
             }} 
-            className="flex flex-col items-center justify-center w-full h-full text-[#64748b] hover:text-red-500 transition-all cursor-pointer active:scale-95 duration-100"
+className="flex flex-col items-center justify-center w-full h-full text-[#64748b] hover:text-red-500 transition-all cursor-pointer active:scale-95 duration-100"
           >
             <LogOut className="w-5.5 h-5.5 mb-1" />
             <span className="text-[10px] font-extrabold">Quitter</span>
@@ -724,7 +724,7 @@ export default function TechnicianDashboard() {
           
           {/* Bottom Sheet wrapper with touch gestures */}
           <div 
-            className="bg-white rounded-t-3xl w-full max-w-md h-[85vh] flex flex-col z-10 shadow-2xl relative overflow-hidden"
+            className="bg-white rounded-t-3xl w-full max-w-md h-[90vh] flex flex-col z-10 shadow-2xl relative overflow-hidden"
             style={{ 
               transform: `translateY(${dragOffsetY}px)`,
               transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' 
@@ -735,166 +735,86 @@ export default function TechnicianDashboard() {
               onTouchStart={handleDragStart}
               onTouchMove={handleDragMove}
               onTouchEnd={handleDragEnd}
-              className="w-full py-4 flex flex-col items-center cursor-grab active:cursor-grabbing shrink-0 select-none"
+              className="w-full pt-3 pb-1 flex flex-col items-center cursor-grab active:cursor-grabbing shrink-0 select-none absolute top-0 left-0 right-0 z-20"
             >
-              <div className="w-12 h-1.5 bg-slate-200 rounded-full"></div>
+              <div className="w-10 h-1 bg-white/50 rounded-full"></div>
             </div>
-            
-            {/* Drawer Header */}
-            <div className="px-5 pb-3 border-b border-[#e2e8f0]/60 flex justify-between items-start shrink-0">
-              <div>
-                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-slate-100 text-[#64748b] uppercase tracking-wider">
-                  {selectedMission.type}
-                </span>
-                <h2 className="text-base font-black text-[#0f172a] leading-tight mt-1">{selectedMission.title}</h2>
-                <p className="text-xs font-semibold text-[#64748b]">{selectedMission.client}</p>
-              </div>
+
+            {/* ── HERO HEADER ── */}
+            <div className="relative shrink-0 px-5 pt-8 pb-4" style={{ backgroundColor: selectedMission.color }}>
+              <div className="absolute right-0 top-0 w-32 h-32 rounded-full opacity-20 -translate-y-1/2 translate-x-1/2" style={{ background: 'rgba(255,255,255,0.4)', filter: 'blur(30px)' }}></div>
+
               <button 
                 onClick={() => { triggerVibrate('click'); setSelectedMission(null); }}
-                className="p-2 text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9] rounded-full transition-colors cursor-pointer active:scale-90"
+                className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 text-white rounded-full transition-colors cursor-pointer active:scale-90 backdrop-blur-sm"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
-            </div>
 
-            {/* Stepper Timeline Progression (State indicator) */}
-            <div className="bg-slate-50 border-b border-[#e2e8f0]/60 px-5 py-3 shrink-0">
-              <div className="flex items-center justify-between max-w-xs mx-auto animate-fade-in">
-                {/* Step 1: Planifiée */}
-                <div className="flex flex-col items-center">
-                  <div className="relative">
-                    {selectedMission.status === 'Planifiée' && (
-                      <span className="absolute -inset-1 rounded-full bg-blue-500/20 animate-ping"></span>
-                    )}
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all relative z-10 ${
-                      selectedMission.status === 'Planifiée' 
-                        ? 'bg-blue-600 text-white shadow-md shadow-blue-200' 
-                        : 'bg-emerald-500 text-white'
-                    }`}>
-                      {selectedMission.status === 'Planifiée' ? (
-                        <Calendar className="w-4 h-4" />
-                      ) : (
-                        <Check className="w-4 h-4 stroke-[3]" />
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-extrabold mt-1.5 text-[#475569]">Planifiée</span>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-md bg-white/20 text-white uppercase tracking-wider">{selectedMission.type}</span>
+                {isSameDay(selectedMission.start, new Date()) && (
+                  <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-md bg-white text-red-500 uppercase tracking-wider animate-pulse">Aujourd'hui</span>
+                )}
+              </div>
+              <h2 className="text-lg font-black text-white leading-tight">{selectedMission.title}</h2>
+              <p className="text-xs font-semibold text-white/80 mt-0.5">{selectedMission.client}</p>
+
+              <div className="mt-3 flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-white/90 text-[11px] font-semibold">
+                  <Clock className="w-3.5 h-3.5 shrink-0" />
+                  <span>{format(selectedMission.start, 'EEEE d MMM · HH:mm', { locale: fr })} → {format(selectedMission.end, 'HH:mm')}</span>
                 </div>
-                
-                {/* Line 1 */}
-                <div className={`flex-1 h-0.5 mx-2 rounded ${
-                  selectedMission.status !== 'Planifiée' ? 'bg-emerald-500' : 'bg-slate-200'
-                }`}></div>
-
-                {/* Step 2: En cours */}
-                <div className="flex flex-col items-center">
-                  <div className="relative">
-                    {selectedMission.status === 'En cours' && (
-                      <span className="absolute -inset-1 rounded-full bg-amber-500/20 animate-ping"></span>
-                    )}
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all relative z-10 ${
-                      selectedMission.status === 'En cours'
-                        ? 'bg-amber-500 text-white shadow-md shadow-amber-200'
-                        : selectedMission.status === 'Terminée'
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-200 text-slate-400'
-                    }`}>
-                      {selectedMission.status === 'Terminée' ? (
-                        <Check className="w-4 h-4 stroke-[3]" />
-                      ) : (
-                        <Play className={`w-3.5 h-3.5 ${selectedMission.status === 'En cours' ? 'fill-white text-white' : 'fill-slate-400 text-slate-400'}`} />
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-extrabold mt-1.5 text-[#475569]">En cours</span>
-                </div>
-
-                {/* Line 2 */}
-                <div className={`flex-1 h-0.5 mx-2 rounded ${
-                  selectedMission.status === 'Terminée' ? 'bg-emerald-500' : 'bg-slate-200'
-                }`}></div>
-
-                {/* Step 3: Terminée */}
-                <div className="flex flex-col items-center">
-                  <div className="relative">
-                    {selectedMission.status === 'Terminée' && (
-                      <span className="absolute -inset-1 rounded-full bg-emerald-500/20 animate-ping"></span>
-                    )}
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all relative z-10 ${
-                      selectedMission.status === 'Terminée'
-                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
-                        : 'bg-slate-200 text-slate-400'
-                    }`}>
-                      <CheckCircle className="w-4 h-4" />
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-extrabold mt-1.5 text-[#475569]">Terminée</span>
+                <div className="flex items-center gap-2 text-white/90 text-[11px] font-semibold">
+                  <MapPin className="w-3.5 h-3.5 shrink-0" />
+                  <span className="line-clamp-1">{selectedMission.address}</span>
                 </div>
               </div>
 
-              {/* Status Update Quick Button inside Drawer */}
-              <div className="mt-3 flex justify-center">
-                {selectedMission.status === 'Planifiée' && (
-                  <button
-                    onClick={() => {
-                      triggerVibrate('double');
-                      updateMission(selectedMission.id, { status: 'En cours' });
-                      setSelectedMission(prev => prev ? { ...prev, status: 'En cours' } : null);
-                      toast.success('Mission démarrée !');
-                    }}
-                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-xs cursor-pointer transition-colors active:scale-98 duration-100"
-                  >
-                    Démarrer la mission maintenant
-                  </button>
-                )}
-                {selectedMission.status === 'En cours' && (
-                  <button
-                    onClick={() => {
-                      triggerVibrate('double');
-                      // Verify checklist before finishing
-                      const prog = getEquipmentProgress(selectedMission.equipments);
-                      if (prog.pointed < prog.total) {
-                        triggerVibrate('error');
-                        const ok = window.confirm(`Attention: Tout le matériel requis (${prog.pointed}/${prog.total}) n'a pas été chargé. Voulez-vous quand même terminer la mission ?`);
-                        if (!ok) return;
-                      }
-                      updateMission(selectedMission.id, { status: 'Terminée' });
-                      setSelectedMission(null);
-                      toast.success('Mission terminée avec succès !');
-                    }}
-                    className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs rounded-xl shadow-xs cursor-pointer transition-colors active:scale-98 duration-100"
-                  >
-                    Terminer et archiver la mission
-                  </button>
-                )}
-                {selectedMission.status === 'Terminée' && (
-                  <div className="text-xs font-bold text-emerald-600 flex items-center gap-1.5 py-1 bg-emerald-50 px-3 rounded-full border border-emerald-100">
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Cette mission est terminée et archivée.</span>
-                  </div>
-                )}
+              {/* Stepper in hero */}
+              <div className="mt-4 flex items-center gap-2">
+                {[
+                  { key: 'Planifiée', label: 'Planifiée', done: ['En cours','Terminée'].includes(selectedMission.status), active: selectedMission.status === 'Planifiée' },
+                  { key: 'En cours',  label: 'En cours',  done: selectedMission.status === 'Terminée',                    active: selectedMission.status === 'En cours' },
+                  { key: 'Terminée',  label: 'Terminée',  done: false,                                                    active: selectedMission.status === 'Terminée' }
+                ].map((step, i, arr) => (
+                  <React.Fragment key={step.key}>
+                    <div className="flex flex-col items-center gap-1">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black transition-all ${
+                        step.active ? 'bg-white text-slate-800 shadow-md ring-2 ring-white/40' :
+                        step.done   ? 'bg-white/30 text-white' : 'bg-white/15 text-white/50'
+                      }`}>
+                        {step.done ? <Check className="w-3 h-3 stroke-[3]" /> : i + 1}
+                      </div>
+                      <span className={`text-[9px] font-bold whitespace-nowrap ${step.active || step.done ? 'text-white' : 'text-white/50'}`}>{step.label}</span>
+                    </div>
+                    {i < arr.length - 1 && (
+                      <div className={`flex-1 h-px rounded mb-4 ${step.done || step.active ? 'bg-white/50' : 'bg-white/20'}`}></div>
+                    )}
+                  </React.Fragment>
+                ))}
               </div>
             </div>
 
-            {/* Scrollable Tabs row */}
-            <div className="bg-white border-b border-[#e2e8f0]/60 px-4 py-1.5 flex gap-1 overflow-x-auto shrink-0 select-none no-scrollbar">
-              {[
-                { id: 'general', label: 'Général', icon: Clock },
-                { id: 'client', label: 'Client', icon: Phone },
-                { id: 'team', label: 'Équipe', icon: Users },
+            {/* ── PILL TAB BAR ── */}
+            <div className="bg-white border-b border-[#e2e8f0]/60 px-3 py-2 flex gap-1 overflow-x-auto shrink-0 select-none no-scrollbar">
+              {([
+                { id: 'general',   label: 'Général',  icon: Info },
+                { id: 'client',    label: 'Client',   icon: Phone },
+                { id: 'team',      label: 'Équipe',   icon: Users },
                 { id: 'equipment', label: 'Matériel', icon: QrCode },
-                { id: 'report', label: 'Rapport', icon: FileText }
-              ].map(tab => {
+                { id: 'report',    label: 'Rapport',  icon: FileText }
+              ] as const).map(tab => {
                 const TabIcon = tab.icon;
+                const isActive = drawerTab === tab.id;
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => { triggerVibrate('click'); setDrawerTab(tab.id as any); }}
-                    className={`flex items-center gap-1 px-3 py-2 text-xs font-extrabold rounded-lg whitespace-nowrap cursor-pointer transition-all active:scale-95 duration-100 ${
-                      drawerTab === tab.id 
-                        ? 'bg-blue-50 text-blue-600' 
-                        : 'text-[#64748b] hover:text-[#0f172a] hover:bg-slate-50'
+                    onClick={() => { triggerVibrate('click'); setDrawerTab(tab.id); }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-extrabold rounded-full whitespace-nowrap cursor-pointer transition-all active:scale-95 duration-100 ${
+                      isActive ? 'text-white shadow-sm' : 'text-[#64748b] hover:text-[#0f172a] hover:bg-slate-100'
                     }`}
+                    style={isActive ? { backgroundColor: selectedMission.color } : {}}
                   >
                     <TabIcon className="w-3.5 h-3.5" />
                     <span>{tab.label}</span>
@@ -903,182 +823,189 @@ export default function TechnicianDashboard() {
               })}
             </div>
 
-            {/* Swipeable & Scrollable Drawer Content Area */}
+            {/* ── SCROLLABLE CONTENT ── */}
             <div 
               onTouchStart={handleContentTouchStart}
               onTouchEnd={handleContentTouchEnd}
-              className="flex-1 overflow-y-auto p-5 select-none bg-slate-50/50"
+              className="flex-1 overflow-y-auto bg-[#f8fafc] select-none"
             >
-              <div key={drawerTab} className="space-y-4 animate-fade-in">
-              
-              {/* Tab: GENERAL */}
+              <div key={drawerTab} className="p-4 space-y-3 animate-fade-in">
+
+              {/* ══ GENERAL ══ */}
               {drawerTab === 'general' && (
-                <div className="space-y-4">
-                  <div className="bg-white border border-[#e2e8f0]/60 p-4 rounded-2xl space-y-3 shadow-xs">
-                    <h4 className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">Planification</h4>
-                    
-                    <div className="flex items-start gap-3 text-sm text-[#0f172a]">
-                      <Calendar className="w-5 h-5 text-[#94a3b8] shrink-0 mt-0.5" />
-                      <div>
-                        <div className="font-bold text-xs text-[#64748b]">Dates</div>
-                        <div className="font-bold text-slate-800 mt-0.5 text-xs sm:text-sm">
-                          Du {format(selectedMission.start, 'EEEE d MMMM yyyy à HH:mm', { locale: fr })}
+                <div className="space-y-3">
+                  <div className="bg-white border border-[#e2e8f0]/60 rounded-2xl overflow-hidden shadow-xs">
+                    <div className="px-4 py-2.5 border-b border-[#f1f5f9] flex items-center gap-2">
+                      <Calendar className="w-4 h-4 shrink-0" style={{ color: selectedMission.color }} />
+                      <span className="text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider">Planification</span>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="text-[10px] font-bold text-[#94a3b8] uppercase mb-0.5">Début</div>
+                          <div className="font-bold text-[#0f172a] text-sm capitalize">{format(selectedMission.start, 'EEEE d MMMM yyyy', { locale: fr })}</div>
+                          <div className="text-xs font-semibold text-[#64748b]">{format(selectedMission.start, 'HH:mm')}</div>
                         </div>
-                        <div className="font-bold text-slate-800 text-xs sm:text-sm">
-                          Au {format(selectedMission.end, 'EEEE d MMMM yyyy à HH:mm', { locale: fr })}
+                        <div className="w-px h-10 bg-[#e2e8f0] self-center"></div>
+                        <div className="text-right">
+                          <div className="text-[10px] font-bold text-[#94a3b8] uppercase mb-0.5">Fin</div>
+                          <div className="font-bold text-[#0f172a] text-sm capitalize">{format(selectedMission.end, 'EEEE d MMMM yyyy', { locale: fr })}</div>
+                          <div className="text-xs font-semibold text-[#64748b]">{format(selectedMission.end, 'HH:mm')}</div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-white border border-[#e2e8f0]/60 p-4 rounded-2xl space-y-3 shadow-xs">
-                    <h4 className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">Lieu de rendez-vous</h4>
-                    
-                    <div className="flex items-start gap-3 text-sm text-[#0f172a]">
-                      <MapPin className="w-5 h-5 text-[#94a3b8] shrink-0 mt-0.5" />
-                      <div className="flex-1">
-                        <div className="font-bold text-xs text-[#64748b] mb-1">Adresse complète</div>
-                        <div className="font-bold text-slate-800 leading-snug text-xs sm:text-sm">{selectedMission.address}</div>
-                        
-                        <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMission.address)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => triggerVibrate('click')}
-                          className="mt-3 inline-flex items-center gap-2 bg-[#2563eb] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors shadow-xs active:scale-95 duration-100"
-                        >
-                          <Navigation className="w-3.5 h-3.5" />
-                          <span>Itinéraire Google Maps</span>
-                        </a>
-                      </div>
+                  <div className="bg-white border border-[#e2e8f0]/60 rounded-2xl overflow-hidden shadow-xs">
+                    <div className="px-4 py-2.5 border-b border-[#f1f5f9] flex items-center gap-2">
+                      <MapPin className="w-4 h-4 shrink-0" style={{ color: selectedMission.color }} />
+                      <span className="text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider">Lieu de rendez-vous</span>
+                    </div>
+                    <div className="p-4">
+                      <p className="font-bold text-[#0f172a] text-sm leading-snug mb-3">{selectedMission.address}</p>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMission.address)}`}
+                        target="_blank" rel="noopener noreferrer"
+                        onClick={() => triggerVibrate('click')}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white shadow-xs active:scale-95 duration-100 transition-all"
+                        style={{ backgroundColor: selectedMission.color }}
+                      >
+                        <Navigation className="w-3.5 h-3.5" />
+                        Itinéraire Google Maps
+                      </a>
                     </div>
                   </div>
 
                   {selectedMission.truckId && (
-                    <div className="bg-white border border-[#e2e8f0]/60 p-4 rounded-2xl space-y-3 shadow-xs">
-                      <h4 className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">Logistique Véhicule</h4>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#e2e8f0]/40 text-[#475569] rounded-xl flex items-center justify-center shrink-0">
-                          <TruckIcon className="w-5 h-5" />
+                    <div className="bg-white border border-[#e2e8f0]/60 rounded-2xl overflow-hidden shadow-xs">
+                      <div className="px-4 py-2.5 border-b border-[#f1f5f9] flex items-center gap-2">
+                        <TruckIcon className="w-4 h-4 shrink-0" style={{ color: selectedMission.color }} />
+                        <span className="text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider">Véhicule assigné</span>
+                      </div>
+                      <div className="p-4 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: selectedMission.color + '20' }}>
+                          <TruckIcon className="w-5 h-5" style={{ color: selectedMission.color }} />
                         </div>
                         <div>
-                          <div className="font-bold text-xs text-[#64748b]">Véhicule assigné</div>
-                          <div className="font-bold text-slate-800 text-xs sm:text-sm">{getTruckName(selectedMission.truckId)}</div>
+                          <div className="font-extrabold text-[#0f172a] text-sm">{getTruckName(selectedMission.truckId)}</div>
+                          <div className="text-xs text-[#64748b] font-medium mt-0.5">Véhicule de la mission</div>
                         </div>
                       </div>
                     </div>
                   )}
+
+                  {selectedMission.equipments && selectedMission.equipments.length > 0 && (() => {
+                    const prog = getEquipmentProgress(selectedMission.equipments);
+                    return (
+                      <div 
+                        className="p-4 rounded-2xl border flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-all shadow-xs"
+                        style={{ borderColor: selectedMission.color + '40', backgroundColor: selectedMission.color + '08' }}
+                        onClick={() => { triggerVibrate('click'); setDrawerTab('equipment'); }}
+                      >
+                        <div className="relative w-12 h-12 shrink-0">
+                          <svg viewBox="0 0 36 36" className="w-12 h-12 -rotate-90">
+                            <circle cx="18" cy="18" r="15" fill="none" stroke="#e2e8f0" strokeWidth="3" />
+                            <circle cx="18" cy="18" r="15" fill="none" stroke={selectedMission.color} strokeWidth="3" strokeDasharray={`${prog.percent * 0.942} 100`} strokeLinecap="round" />
+                          </svg>
+                          <span className="absolute inset-0 flex items-center justify-center text-[11px] font-black" style={{ color: selectedMission.color }}>{prog.percent}%</span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-extrabold text-[#0f172a] text-sm">Pointage matériel</div>
+                          <div className="text-xs text-[#64748b] font-semibold mt-0.5">{prog.pointed} / {prog.total} éléments chargés</div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-[#94a3b8] shrink-0" />
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
-              {/* Tab: CLIENT */}
+              {/* ══ CLIENT ══ */}
               {drawerTab === 'client' && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {(() => {
                     const client = getClientInfo(selectedMission.clientId);
                     if (!client) {
                       return (
                         <div className="bg-white border border-slate-200/80 p-6 rounded-2xl text-center space-y-2 shadow-xs">
-                          <Info className="w-8 h-8 text-[#94a3b8] mx-auto" />
+                          <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3"><Info className="w-7 h-7 text-[#94a3b8]" /></div>
                           <h4 className="font-bold text-slate-800 text-sm">Pas de fiche client associée</h4>
                           <p className="text-xs text-[#64748b]">Ce client a été saisi manuellement lors de la planification.</p>
                           <div className="mt-3 bg-slate-50 p-3 border border-slate-100 rounded-xl text-left">
                             <span className="text-[10px] font-bold text-[#64748b] uppercase">Nom saisi</span>
-                            <div className="font-bold text-slate-800 mt-0.5 text-xs sm:text-sm">{selectedMission.client}</div>
+                            <div className="font-bold text-slate-800 mt-0.5 text-sm">{selectedMission.client}</div>
                           </div>
                         </div>
                       );
                     }
-
                     return (
-                      <div className="space-y-4">
-                        {/* Client details box */}
-                        <div className="bg-white border border-[#e2e8f0]/60 p-4 rounded-2xl shadow-xs space-y-3">
-                          <div className="flex justify-between items-start">
+                      <div className="space-y-3">
+                        <div className="bg-white border border-[#e2e8f0]/60 rounded-2xl overflow-hidden shadow-xs">
+                          <div className="px-4 pt-4 pb-3 border-b border-[#f1f5f9] flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-base shrink-0 shadow-xs" style={{ backgroundColor: selectedMission.color }}>
+                              {client.name.slice(0, 2).toUpperCase()}
+                            </div>
                             <div>
-                              <span className="text-[9px] font-extrabold text-[#2563eb] uppercase bg-blue-50 px-2 py-0.5 rounded-md">Fiche Client</span>
-                              <h3 className="font-black text-base text-slate-900 mt-1.5">{client.name}</h3>
-                              {client.contactName && (
-                                <p className="text-xs text-[#64748b] font-medium mt-0.5">Contact : <span className="font-bold text-[#334155]">{client.contactName}</span></p>
-                              )}
+                              <div className="text-[9px] font-extrabold text-[#2563eb] bg-blue-50 px-2 py-0.5 rounded-md uppercase tracking-wider inline-block mb-1">Fiche Client</div>
+                              <div className="font-black text-base text-slate-900 leading-tight">{client.name}</div>
+                              {client.contactName && <p className="text-xs text-[#64748b] font-medium">Contact : <span className="font-bold text-[#334155]">{client.contactName}</span></p>}
                             </div>
                           </div>
-
-                          {/* Contact Info rows */}
-                          <div className="space-y-2 pt-2 text-xs border-t border-[#f1f5f9]">
+                          <div className="divide-y divide-[#f1f5f9]">
                             {client.phone && (
-                              <div className="flex items-center gap-2">
-                                <Phone className="w-4 h-4 text-[#94a3b8] shrink-0" />
-                                <a 
-                                  href={`tel:${client.phone}`} 
-                                  onClick={() => triggerVibrate('click')}
-                                  className="font-bold text-blue-600 hover:underline"
-                                >
-                                  {client.phone}
-                                </a>
+                              <div className="px-4 py-3 flex items-center gap-3">
+                                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center shrink-0"><Phone className="w-4 h-4 text-blue-600" /></div>
+                                <div>
+                                  <div className="text-[10px] font-bold text-[#94a3b8] uppercase">Téléphone</div>
+                                  <a href={`tel:${client.phone}`} onClick={() => triggerVibrate('click')} className="font-bold text-blue-600 text-sm hover:underline">{client.phone}</a>
+                                </div>
                               </div>
                             )}
                             {client.email && (
-                              <div className="flex items-center gap-2">
-                                <Mail className="w-4 h-4 text-[#94a3b8] shrink-0" />
-                                <a 
-                                  href={`mailto:${client.email}`} 
-                                  onClick={() => triggerVibrate('click')}
-                                  className="font-bold text-blue-600 hover:underline truncate"
-                                >
-                                  {client.email}
-                                </a>
+                              <div className="px-4 py-3 flex items-center gap-3">
+                                <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center shrink-0"><Mail className="w-4 h-4 text-purple-600" /></div>
+                                <div className="min-w-0">
+                                  <div className="text-[10px] font-bold text-[#94a3b8] uppercase">Email</div>
+                                  <a href={`mailto:${client.email}`} onClick={() => triggerVibrate('click')} className="font-bold text-purple-600 text-sm hover:underline truncate block">{client.email}</a>
+                                </div>
                               </div>
                             )}
                             {client.address && (
-                              <div className="flex items-start gap-2">
-                                <MapPin className="w-4 h-4 text-[#94a3b8] shrink-0 mt-0.5" />
-                                <span className="font-semibold text-slate-700">{client.address}</span>
+                              <div className="px-4 py-3 flex items-center gap-3">
+                                <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center shrink-0"><MapPin className="w-4 h-4 text-[#64748b]" /></div>
+                                <div>
+                                  <div className="text-[10px] font-bold text-[#94a3b8] uppercase">Adresse</div>
+                                  <span className="font-semibold text-slate-700 text-sm">{client.address}</span>
+                                </div>
                               </div>
                             )}
                           </div>
                         </div>
-
-                        {/* Interactive contact buttons */}
                         <div className="grid grid-cols-3 gap-2">
                           {client.phone && (
                             <>
-                              <a 
-                                href={`tel:${client.phone}`}
-                                onClick={() => triggerVibrate('click')}
-                                className="flex flex-col items-center justify-center bg-white border border-[#e2e8f0]/60 hover:bg-blue-50/50 hover:border-blue-200 p-3 rounded-xl transition-all text-[#475569] hover:text-blue-600 cursor-pointer active:scale-95 duration-100 shadow-xs"
-                              >
-                                <Phone className="w-5 h-5 mb-1" />
-                                <span className="text-[10px] font-extrabold">Appeler</span>
+                              <a href={`tel:${client.phone}`} onClick={() => triggerVibrate('click')}
+                                className="flex flex-col items-center justify-center bg-white border border-[#e2e8f0]/60 hover:bg-blue-50/50 hover:border-blue-200 py-3.5 px-2 rounded-2xl transition-all text-[#475569] hover:text-blue-600 cursor-pointer active:scale-95 duration-100 shadow-xs gap-1.5">
+                                <Phone className="w-5 h-5" /><span className="text-[10px] font-extrabold">Appeler</span>
                               </a>
-                              <a 
-                                href={`sms:${client.phone}`}
-                                onClick={() => triggerVibrate('click')}
-                                className="flex flex-col items-center justify-center bg-white border border-[#e2e8f0]/60 hover:bg-blue-50/50 hover:border-blue-200 p-3 rounded-xl transition-all text-[#475569] hover:text-blue-600 cursor-pointer active:scale-95 duration-100 shadow-xs"
-                              >
-                                <MessageSquare className="w-5 h-5 mb-1" />
-                                <span className="text-[10px] font-extrabold">SMS</span>
+                              <a href={`sms:${client.phone}`} onClick={() => triggerVibrate('click')}
+                                className="flex flex-col items-center justify-center bg-white border border-[#e2e8f0]/60 hover:bg-green-50/50 hover:border-green-200 py-3.5 px-2 rounded-2xl transition-all text-[#475569] hover:text-green-600 cursor-pointer active:scale-95 duration-100 shadow-xs gap-1.5">
+                                <MessageSquare className="w-5 h-5" /><span className="text-[10px] font-extrabold">SMS</span>
                               </a>
                             </>
                           )}
                           {client.email && (
-                            <a 
-                              href={`mailto:${client.email}?subject=Mission%20${encodeURIComponent(selectedMission.title)}`}
-                              onClick={() => triggerVibrate('click')}
-                              className="flex flex-col items-center justify-center bg-white border border-[#e2e8f0]/60 hover:bg-blue-50/50 hover:border-blue-200 p-3 rounded-xl transition-all text-[#475569] hover:text-blue-600 cursor-pointer active:scale-95 duration-100 shadow-xs"
-                            >
-                              <Mail className="w-5 h-5 mb-1" />
-                              <span className="text-[10px] font-extrabold">E-mail</span>
+                            <a href={`mailto:${client.email}?subject=Mission%20${encodeURIComponent(selectedMission.title)}`} onClick={() => triggerVibrate('click')}
+                              className="flex flex-col items-center justify-center bg-white border border-[#e2e8f0]/60 hover:bg-purple-50/50 hover:border-purple-200 py-3.5 px-2 rounded-2xl transition-all text-[#475569] hover:text-purple-600 cursor-pointer active:scale-95 duration-100 shadow-xs gap-1.5">
+                              <Mail className="w-5 h-5" /><span className="text-[10px] font-extrabold">E-mail</span>
                             </a>
                           )}
                         </div>
-
-                        {/* Client specific notes */}
                         {client.notes && (
-                          <div className="bg-[#fffbeb] border border-amber-200 p-4 rounded-2xl space-y-2 shadow-xs">
-                            <h4 className="text-[10px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
+                          <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl space-y-2 shadow-xs">
+                            <h4 className="text-[10px] font-extrabold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
                               <AlertCircle className="w-4 h-4 shrink-0 text-amber-500" />
-                              <span>Consignes & Notes Client</span>
+                              Consignes & Notes Client
                             </h4>
                             <p className="text-xs font-semibold text-amber-900 leading-relaxed whitespace-pre-line">{client.notes}</p>
                           </div>
@@ -1089,216 +1016,159 @@ export default function TechnicianDashboard() {
                 </div>
               )}
 
-              {/* Tab: TEAM */}
+              {/* ══ TEAM ══ */}
               {drawerTab === 'team' && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="bg-white border border-[#e2e8f0]/60 rounded-2xl overflow-hidden shadow-xs">
-                    <div className="bg-slate-50 px-4 py-3 border-b border-[#e2e8f0]/60">
-                      <h3 className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">
-                        Membres de l'équipe ({selectedMission.technicianIds.length})
-                      </h3>
+                    <div className="px-4 py-3 border-b border-[#f1f5f9] flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 shrink-0" style={{ color: selectedMission.color }} />
+                        <span className="text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider">Membres de l'équipe</span>
+                      </div>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: selectedMission.color }}>{selectedMission.technicianIds.length}</span>
                     </div>
-                    
                     <ul className="divide-y divide-[#f1f5f9]">
                       {getColleaguesDetailed(selectedMission.technicianIds).map(tech => (
-                        <li key={tech.id} className="p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
-                          <div className="flex items-center gap-3">
-                            {/* Avatar */}
-                            <div 
-                              className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-black text-white border-2 border-white shadow-xs shrink-0"
-                              style={{ backgroundColor: tech.color }}
-                            >
-                              {tech.name.split(' ').map(n => n[0]).join('')}
-                            </div>
-                            
-                            <div>
-                              <div className="font-bold text-sm text-[#0f172a] flex items-center gap-1.5">
-                                <span>{tech.name}</span>
-                                {tech.isSelf && (
-                                  <span className="text-[9px] font-extrabold bg-blue-50 text-blue-600 px-1.5 py-0.25 rounded">Vous</span>
-                                )}
-                              </div>
-                              <p className="text-xs font-semibold text-[#64748b]">{tech.specialty}</p>
-                            </div>
+                        <li key={tech.id} className="px-4 py-3.5 flex items-center gap-3 hover:bg-slate-50/50 transition-colors">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-black text-white border-2 border-white shadow-xs shrink-0" style={{ backgroundColor: tech.color }}>
+                            {tech.name.split(' ').map(n => n[0]).join('')}
                           </div>
-                          
-                          <div className="text-xs text-[#94a3b8] font-bold italic">
-                            Disponible
+                          <div className="flex-1 min-w-0">
+                            <div className="font-bold text-sm text-[#0f172a] flex items-center gap-1.5 flex-wrap">
+                              <span>{tech.name}</span>
+                              {tech.isSelf && <span className="text-[9px] font-extrabold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">Vous</span>}
+                            </div>
+                            <p className="text-xs font-semibold text-[#64748b] truncate">{tech.specialty}</p>
                           </div>
+                          <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></div>
                         </li>
                       ))}
                     </ul>
                   </div>
-
-                  <div className="p-3.5 bg-blue-50/50 rounded-xl border border-blue-100 flex items-start gap-2.5">
-                    <Users className="w-4.5 h-4.5 text-[#2563eb] shrink-0 mt-0.5" />
-                    <p className="text-[11px] text-blue-800 leading-relaxed font-semibold">
-                      Coordonnez vos actions avec vos collègues affectés sur cette mission. Pensez à pointer le matériel au chargement et au déchargement.
+                  <div className="p-4 rounded-2xl border flex items-start gap-3" style={{ borderColor: selectedMission.color + '30', backgroundColor: selectedMission.color + '08' }}>
+                    <Users className="w-4 h-4 shrink-0 mt-0.5" style={{ color: selectedMission.color }} />
+                    <p className="text-[11px] leading-relaxed font-semibold" style={{ color: selectedMission.color }}>
+                      Coordonnez vos actions avec vos collègues. Pensez à pointer le matériel au chargement et au déchargement.
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* Tab: EQUIPMENT */}
+              {/* ══ EQUIPMENT ══ */}
               {drawerTab === 'equipment' && (
-                <div className="space-y-4">
-                  {/* Equipment checklist progress banner */}
+                <div className="space-y-3">
                   {(() => {
                     const prog = getEquipmentProgress(selectedMission.equipments);
                     return (
-                      <div className="bg-white border border-[#e2e8f0]/60 p-4 rounded-2xl shadow-xs space-y-3">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h3 className="font-extrabold text-sm text-slate-900">Chargement matériel</h3>
-                            <p className="text-xs text-[#64748b] mt-0.5">Scannez ou cochez les éléments requis</p>
+                      <div className="bg-white border border-[#e2e8f0]/60 rounded-2xl overflow-hidden shadow-xs">
+                        <div className="px-4 pt-4 pb-3 space-y-2 border-b border-[#f1f5f9]">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <h3 className="font-extrabold text-sm text-slate-900">Chargement matériel</h3>
+                              <p className="text-xs text-[#64748b] mt-0.5">Scannez ou cochez les éléments requis</p>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-xl font-black" style={{ color: selectedMission.color }}>{prog.percent}%</span>
+                              <div className="text-[10px] text-[#64748b] font-bold">{prog.pointed}/{prog.total}</div>
+                            </div>
                           </div>
-                          <span className="text-xs font-bold text-[#64748b] bg-slate-100 px-2.5 py-1 rounded-lg">
-                            {prog.pointed}/{prog.total}
-                          </span>
+                          <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${prog.percent}%`, backgroundColor: prog.percent === 100 ? '#10b981' : selectedMission.color }}></div>
+                          </div>
+                          {selectedMission.status !== 'Terminée' && (
+                            <button
+                              onClick={() => { triggerVibrate('click'); setActiveMissionIdForScanner(selectedMission.id); setScannerOpen(true); }}
+                              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-xs cursor-pointer active:scale-98 duration-100 mt-1"
+                              style={{ backgroundColor: selectedMission.color }}
+                            >
+                              <QrCode className="w-4 h-4" />Scanner un QR Code
+                            </button>
+                          )}
                         </div>
-                        
-                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              prog.percent === 100 
-                                ? 'bg-emerald-500' 
-                                : prog.percent >= 50 
-                                  ? 'bg-blue-500' 
-                                  : 'bg-orange-400'
-                            }`}
-                            style={{ width: `${prog.percent}%` }}
-                          ></div>
-                        </div>
-
-                        {selectedMission.status !== 'Terminée' && (
-                          <button
-                            onClick={() => {
-                              triggerVibrate('click');
-                              setActiveMissionIdForScanner(selectedMission.id);
-                              setScannerOpen(true);
-                            }}
-                            className="w-full flex items-center justify-center gap-2 py-3 bg-[#2563eb] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-98 duration-100"
-                          >
-                            <QrCode className="w-4 h-4" />
-                            <span>Scanner un QR Code</span>
-                          </button>
+                        {selectedMission.equipments && selectedMission.equipments.length > 0 ? (
+                          <ul className="divide-y divide-[#f8fafc]">
+                            {selectedMission.equipments.map(me => {
+                              const def = equipmentDefs.find(e => e.id === me.equipmentId);
+                              const isChecked = !!me.checked;
+                              const isFlashing = scannedItemId === me.equipmentId;
+                              return (
+                                <li 
+                                  key={me.equipmentId}
+                                  onClick={() => { if (selectedMission.status !== 'Terminée') handleToggle(selectedMission.id, me.equipmentId); }}
+                                  className={`px-4 py-3.5 flex items-center justify-between cursor-pointer transition-all ${isChecked ? 'bg-emerald-50/30' : 'hover:bg-slate-50'} ${isFlashing ? 'bg-amber-100 ring-2 ring-amber-400 animate-pulse duration-500' : ''}`}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 ${isChecked ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 bg-white hover:border-slate-400'}`}>
+                                      {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                                    </div>
+                                    <span className={`text-sm font-bold ${isChecked ? 'line-through text-slate-400' : 'text-slate-700'}`}>{def?.name || 'Matériel inconnu'}</span>
+                                  </div>
+                                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md shrink-0 ${isChecked ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-[#475569]'}`}>×{me.quantity}</span>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <div className="p-8 text-center text-xs text-[#94a3b8] italic">Aucun matériel requis pour cette mission.</div>
                         )}
                       </div>
                     );
                   })()}
-
-                  {/* Material checklist list */}
-                  <div className="bg-white border border-[#e2e8f0]/60 rounded-2xl overflow-hidden shadow-xs">
-                    {selectedMission.equipments && selectedMission.equipments.length > 0 ? (
-                      <ul className="divide-y divide-[#f1f5f9]">
-                        {selectedMission.equipments.map(me => {
-                          const def = equipmentDefs.find(e => e.id === me.equipmentId);
-                          const isChecked = !!me.checked;
-                          const isFlashing = scannedItemId === me.equipmentId;
-
-                          return (
-                            <li 
-                              key={me.equipmentId}
-                              onClick={() => {
-                                if (selectedMission.status !== 'Terminée') {
-                                  handleToggle(selectedMission.id, me.equipmentId);
-                                }
-                              }}
-                              className={`p-3.5 flex items-center justify-between cursor-pointer transition-all ${
-                                isChecked ? 'bg-emerald-50/10 text-[#94a3b8]' : 'hover:bg-slate-50'
-                              } ${isFlashing ? 'bg-amber-100 ring-2 ring-amber-400 animate-pulse duration-500' : ''}`}
-                            >
-                              <div className="flex items-center gap-3">
-                                {/* Large Checkbox touch target */}
-                                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
-                                  isChecked 
-                                    ? 'bg-emerald-500 border-emerald-500 text-white' 
-                                    : 'border-slate-300 bg-white hover:border-slate-400'
-                                }`}>
-                                  {isChecked && <Check className="w-4 h-4 stroke-[3]" />}
-                                </div>
-                                <span className={`text-xs sm:text-sm font-bold ${isChecked ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                                  {def?.name || 'Matériel inconnu'}
-                                </span>
-                              </div>
-                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md transition-colors shrink-0 ${
-                                isChecked 
-                                  ? 'bg-emerald-50 text-emerald-700' 
-                                  : 'bg-slate-100 text-[#475569]'
-                              }`}>
-                                {me.quantity} unité{me.quantity > 1 ? 's' : ''}
-                              </span>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    ) : (
-                      <div className="p-8 text-center text-xs text-[#94a3b8] italic">
-                        Aucun matériel requis pour cette mission.
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
 
-              {/* Tab: REPORT */}
+              {/* ══ REPORT ══ */}
               {drawerTab === 'report' && (
-                <div className="space-y-4">
-                  <div className="bg-white border border-[#e2e8f0]/60 p-4 rounded-2xl shadow-xs space-y-3">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-extrabold text-sm text-slate-900">Rapport de fin de mission</h3>
-                      
-                      {/* Local saving status indicator */}
+                <div className="space-y-3">
+                  <div className="bg-white border border-[#e2e8f0]/60 rounded-2xl overflow-hidden shadow-xs">
+                    <div className="px-4 py-3 border-b border-[#f1f5f9] flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 shrink-0" style={{ color: selectedMission.color }} />
+                        <span className="text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider">Rapport de fin de mission</span>
+                      </div>
                       <span className="text-[10px] font-bold font-mono">
-                        {savingStatus === 'saving' && <span className="text-amber-500">Enregistrement...</span>}
-                        {savingStatus === 'saved' && <span className="text-emerald-500">Sauvegardé ✓</span>}
-                        {savingStatus === 'idle' && <span className="text-slate-400">Sauvegarde locale active</span>}
+                        {savingStatus === 'saving' && <span className="text-amber-500">Enregistrement…</span>}
+                        {savingStatus === 'saved'  && <span className="text-emerald-500">Sauvegardé ✓</span>}
+                        {savingStatus === 'idle'   && <span className="text-slate-400">Brouillon local</span>}
                       </span>
                     </div>
-
-                    <p className="text-xs text-[#64748b] leading-relaxed">
-                      Saisissez ici les observations, retours, anomalies ou matériels endommagés lors de cette mission.
-                    </p>
-
-                    <textarea
-                      placeholder="Ex: Le projecteur LED #4 ne s'allume pas, à vérifier à l'entrepôt. Client très satisfait, démontage rapide..."
-                      value={localReports[selectedMission.id] || ''}
-                      onChange={(e) => handleReportChange(selectedMission.id, e.target.value)}
-                      rows={6}
-                      className="w-full text-xs sm:text-sm border border-[#e2e8f0]/80 rounded-xl p-3 bg-slate-50 text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#2563eb] focus:border-transparent outline-none transition-all resize-none"
-                    ></textarea>
-
-                    <div className="flex justify-between items-center pt-2">
-                      <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                        <span>Enregistré sur cet appareil</span>
-                      </span>
-                      {localReports[selectedMission.id] && (
-                        <button
-                          onClick={() => {
-                            triggerVibrate('click');
-                            if (window.confirm('Voulez-vous effacer le rapport local ?')) {
-                              handleReportChange(selectedMission.id, '');
-                            }
-                          }}
-                          className="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer"
-                        >
-                          Effacer
-                        </button>
-                      )}
+                    <div className="p-4 space-y-3">
+                      <p className="text-xs text-[#64748b] leading-relaxed">Saisissez ici vos observations, retours, anomalies ou matériels endommagés.</p>
+                      <textarea
+                        placeholder="Ex: Le projecteur LED #4 ne s'allume pas..."
+                        value={localReports[selectedMission.id] || ''}
+                        onChange={(e) => handleReportChange(selectedMission.id, e.target.value)}
+                        rows={7}
+                        className="w-full text-sm border border-[#e2e8f0]/80 rounded-xl p-3.5 bg-[#f8fafc] text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:border-transparent outline-none transition-all resize-none"
+                        style={{ '--tw-ring-color': selectedMission.color } as React.CSSProperties}
+                      ></textarea>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          Enregistré sur cet appareil uniquement
+                        </span>
+                        {localReports[selectedMission.id] && (
+                          <button
+                            onClick={() => { triggerVibrate('click'); if (window.confirm('Voulez-vous effacer le rapport local ?')) handleReportChange(selectedMission.id, ''); }}
+                            className="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer"
+                          >
+                            Effacer
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-
-                  {/* Summary of local storage warning */}
-                  <div className="bg-white border border-[#e2e8f0]/60 p-4 rounded-xl text-[11px] text-[#64748b] leading-relaxed font-semibold shadow-xs">
-                    Les rapports sont enregistrés sur votre terminal. Lorsque vous terminez la mission, l'administrateur consultera vos remarques directement lors de l'archivage ou de votre débriefing technique.
+                  <div className="bg-white border border-[#e2e8f0]/60 p-4 rounded-2xl text-[11px] text-[#64748b] leading-relaxed font-semibold shadow-xs flex items-start gap-2">
+                    <Info className="w-4 h-4 shrink-0 mt-0.5 text-[#94a3b8]" />
+                    <span>Les rapports sont enregistrés sur votre terminal. L'administrateur les consultera lors de l'archivage ou du débriefing technique.</span>
                   </div>
                 </div>
               )}
-            </div>
-          </div>
 
-            {/* Bottom Safe Area Padding inside drawer */}
+              </div>
+            </div>
+
+            {/* Bottom Safe Area */}
             <div className="h-4 shrink-0 bg-white"></div>
           </div>
         </div>
