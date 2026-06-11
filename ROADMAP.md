@@ -71,7 +71,7 @@ Ce qui fait gagner du temps aux équipes sur le terrain.
 
 * [ ] **🔴 Multi-agences (multi-tenant).** Isolation des données par agence (`agency_id` + RLS) pour proposer l'app en SaaS à plusieurs structures.
 * [ ] **🟡 Exports comptables / facturation.** Génération de devis et bons de commande à partir des missions ; export PDF/CSV.
-* [ ] **🟡 Gestion des disponibilités techniciens.** Congés, indisponibilités, compétences requises par mission → suggestion d'affectation.
+* [x] **🟡 Gestion des disponibilités techniciens.** Congés, indisponibilités, compétences requises par mission → suggestion d'affectation.
 * [ ] **🟢 Historique & journal d'audit.** Traçabilité des modifications de mission (qui a changé quoi, quand).
 * [ ] **🟡 Rapports planifiés.** Envoi automatique par e-mail des stats hebdo/mensuelles aux gérants (Supabase Edge Functions + cron).
 

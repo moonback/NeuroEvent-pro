@@ -34,6 +34,7 @@ import { QRScannerModal } from '../components/QRScannerModal';
 import { toast } from '../store/toast';
 import TimeLogPanel from '../components/TimeLogPanel';
 import TechnicianMyHours from '../components/TechnicianMyHours';
+import TechnicianUnavailabilities from '../components/TechnicianUnavailabilities';
 
 export default function TechnicianDashboard() {
   const user = useAuthStore(state => state.user);
@@ -50,7 +51,7 @@ export default function TechnicianDashboard() {
   const timeLogs = useStore(state => state.timeLogs);
   const updateTimeLog = useStore(state => state.updateTimeLog);
 
-  const [activeTab, setActiveTab] = React.useState<'active' | 'history' | 'mes_heures'>('active');
+  const [activeTab, setActiveTab] = React.useState<'active' | 'history' | 'mes_heures' | 'disponibilites'>('active');
   const [scannerOpen, setScannerOpen] = React.useState(false);
   const [activeMissionIdForScanner, setActiveMissionIdForScanner] = React.useState<string | null>(null);
   
@@ -602,10 +603,27 @@ export default function TechnicianDashboard() {
         >
           Mes Heures
         </button>
+        <button
+          onClick={() => {
+            triggerVibrate('click');
+            setActiveTab('disponibilites');
+            setDateFilter('all');
+            setSearchTerm('');
+          }}
+          className={`pb-2 px-2 text-sm font-extrabold border-b-2 transition-all cursor-pointer active:scale-95 duration-100 ${
+            activeTab === 'disponibilites' 
+              ? 'border-[#2563eb] text-[#2563eb]' 
+              : 'border-transparent text-[#64748b] hover:text-[#334155]'
+          }`}
+        >
+          Absences
+        </button>
       </div>
 
       {activeTab === 'mes_heures' ? (
         <TechnicianMyHours />
+      ) : activeTab === 'disponibilites' ? (
+        <TechnicianUnavailabilities />
       ) : (
         <>
           {/* Search and Filters panel */}
