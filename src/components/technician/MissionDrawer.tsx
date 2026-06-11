@@ -37,13 +37,13 @@ interface MissionDrawerProps {
 }
 
 const TAB_CONFIG: { id: DrawerTab; label: string; icon: React.ElementType }[] = [
-  { id: 'general',   label: 'Infos',     icon: Info },
-  { id: 'client',    label: 'Client',    icon: Phone },
-  { id: 'team',      label: 'Équipe',    icon: Users },
-  { id: 'equipment', label: 'Matériel',  icon: QrCode },
-  { id: 'hours',     label: 'Heures',    icon: Timer },
+  { id: 'general', label: 'Infos', icon: Info },
+  { id: 'client', label: 'Client', icon: Phone },
+  { id: 'team', label: 'Équipe', icon: Users },
+  { id: 'equipment', label: 'Matériel', icon: QrCode },
+  { id: 'hours', label: 'Heures', icon: Timer },
   { id: 'checklist', label: 'Checklist', icon: ClipboardCheck },
-  { id: 'report',    label: 'Rapport',   icon: FileText },
+  { id: 'report', label: 'Rapport', icon: FileText },
 ];
 
 const STATUS_STEPS = [
@@ -109,7 +109,7 @@ export default function MissionDrawer(props: MissionDrawerProps) {
           {/* Close button */}
           <button
             onClick={() => { triggerVibrate('click'); onClose(); }}
-            className="absolute top-3 right-3 p-1.5 rounded-full transition-all active:scale-90 z-10"
+            className="absolute top-3 right-3 p-1.5 rounded-full transition-all active:scale-90 z-30 cursor-pointer"
             style={{ background: 'rgba(0,0,0,0.25)' }}
           >
             <X className="w-3.5 h-3.5 text-white" />
