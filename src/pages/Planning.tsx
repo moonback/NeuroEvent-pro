@@ -34,8 +34,9 @@ export default function Planning() {
     title: m.title,
     start: m.start,
     end: m.end,
-    backgroundColor: m.color,
-    borderColor: m.color,
+    backgroundColor: m.status === 'Termin\u00e9e' ? '#6b7280' : m.status === 'En cours' ? m.color : m.color,
+    borderColor: m.status === 'Termin\u00e9e' ? '#4b5563' : m.color,
+    textColor: '#ffffff',
     extendedProps: {
       status: m.status,
       type: m.type
@@ -160,10 +161,20 @@ export default function Planning() {
 }
 
 function renderEventContent(eventInfo: any) {
+  const status = eventInfo.event.extendedProps?.status;
+  const statusDot = {
+    'Planifi\u00e9e': { bg: 'rgba(255,255,255,0.3)', label: '\u25CF' },
+    'En cours':  { bg: 'rgba(251,191,36,0.8)',  label: '\u25CF' },
+    'Termin\u00e9e':  { bg: 'rgba(52,211,153,0.9)',  label: '\u2713' },
+  }[status] || { bg: 'rgba(255,255,255,0.3)', label: '\u25CF' };
+
   return (
-    <div className="flex flex-col overflow-hidden text-xs">
-      <div className="font-semibold truncate">{eventInfo.event.title}</div>
-      <div className="opacity-90">{eventInfo.timeText}</div>
+    <div className="flex flex-col overflow-hidden text-xs px-0.5">
+      <div className="flex items-center gap-1 mb-0.5">
+        <span style={{ color: statusDot.bg, fontWeight: 900, fontSize: '10px', lineHeight: 1 }}>{statusDot.label}</span>
+        <span className="font-bold truncate">{eventInfo.event.title}</span>
+      </div>
+      <div className="opacity-80 text-[10px]">{eventInfo.timeText}</div>
     </div>
   );
 }

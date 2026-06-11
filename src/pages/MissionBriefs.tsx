@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
-import { FileText, Printer, Search, Calendar as CalendarIcon, MapPin, Truck as TruckIcon, Users, Package, ArrowLeft } from 'lucide-react';
+import { FileText, Printer, Search, Calendar as CalendarIcon, MapPin, Truck as TruckIcon, Users, Package, ArrowLeft, Clock, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -9,15 +9,36 @@ export default function MissionBriefs() {
   const equipmentDef = useStore(state => state.equipment);
   const techniciansDef = useStore(state => state.technicians);
   const trucksDef = useStore(state => state.trucks);
+  const updateMission = useStore(state => state.updateMission);
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [statusFilter, setStatusFilter] = React.useState<'all' | 'Planifi\u00e9e' | 'En cours' | 'Termin\u00e9e'>('all');
+  const [selectedMissionId, setSelectedMissionId] = React.useState<string | null>(null);
+
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case 'Planifi\u00e9e': return { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', label: 'Planifi\u00e9e', dot: 'bg-blue-500 animate-pulse' };
+      case 'En cours':  return { color: '#d97706', bg: '#fffbeb', border: '#fde68a', label: 'En cours',  dot: 'bg-amber-500 animate-pulse' };
+      case 'Termin\u00e9e':  return { color: '#059669', bg: '#ecfdf5', border: '#a7f3d0', label: 'Termin\u00e9e',  dot: 'bg-emerald-500' };
+      default: return { color: '#64748b', bg: '#f8fafc', border: '#e2e8f0', label: status, dot: 'bg-slate-400' };
+    }
+  };
 
   const filteredMissions = missions
-    .filter(m => m.title.toLowerCase().includes(searchTerm.toLowerCase()) || m.client.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(m => {
+      const matchSearch = m.title.toLowerCase().includes(searchTerm.toLowerCase()) || m.client.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchStatus = statusFilter === 'all' || m.status === statusFilter;
+      return matchSearch && matchStatus;
+    })
     .sort((a, b) => b.start.getTime() - a.start.getTime());
 
   const selectedMission = missions.find(m => m.id === selectedMissionId);
+
+  // Quick status change directly from the brief
+  const handleStatusChange = async (newStatus: 'Planifi\u00e9e' | 'En cours' | 'Termin\u00e9e') => {
+    if (!selectedMission || selectedMission.status === newStatus) return;
+    await updateMission(selectedMission.id, { status: newStatus });
+  };
 
   const handlePrint = () => {
     window.print();
@@ -42,9 +63,32 @@ export default function MissionBriefs() {
               className="w-full pl-9 pr-3 py-2 text-sm border border-[#e2e8f0] rounded-lg bg-white placeholder-[#94a3b8] text-[#0f172a]"
             />
           </div>
+          {/* Status filter pills */}
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {(['all', 'Planifi\u00e9e', 'En cours', 'Termin\u00e9e'] as const).map(s => {
+              const cfg = s === 'all' ? null : getStatusConfig(s);
+              const isActive = statusFilter === s;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer active:scale-95 ${
+                    isActive
+                      ? s === 'all' ? 'bg-[#0f172a] text-white border-[#0f172a]' : ''
+                      : 'bg-white text-[#64748b] border-[#e2e8f0] hover:border-slate-300'
+                  }`}
+                  style={isActive && cfg ? { backgroundColor: cfg.bg, color: cfg.color, borderColor: cfg.border } : {}}
+                >
+                  {s === 'all' ? 'Toutes' : s}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {filteredMissions.map(mission => (
+          {filteredMissions.map(mission => {
+            const cfg = getStatusConfig(mission.status);
+            return (
             <button
               key={mission.id}
               onClick={() => setSelectedMissionId(mission.id)}
@@ -54,13 +98,23 @@ export default function MissionBriefs() {
                   : 'bg-white border-transparent hover:bg-[#f8fafc] text-[#334155]'
               }`}
             >
-              <div className="font-semibold text-sm truncate">{mission.title}</div>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <div className="font-semibold text-sm truncate">{mission.title}</div>
+                <span
+                  className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1"
+                  style={{ backgroundColor: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}
+                >
+                  <span className={`w-1 h-1 rounded-full inline-block ${cfg.dot}`} />
+                  {cfg.label}
+                </span>
+              </div>
               <div className="text-xs text-[#64748b] mt-1 flex items-center gap-1">
                 <CalendarIcon className="w-3 h-3" />
-                {format(mission.start, 'dd MMM yyyy', { locale: fr })}
+                {format(mission.start, 'dd MMM yyyy · HH:mm', { locale: fr })}
               </div>
             </button>
-          ))}
+            );
+          })}
           {filteredMissions.length === 0 && (
             <div className="p-4 text-center text-sm text-[#94a3b8]">Aucune mission trouvée</div>
           )}
@@ -95,16 +149,44 @@ export default function MissionBriefs() {
             <div className="flex-1 overflow-y-auto p-4 sm:p-8 print:p-0">
               <div className="max-w-3xl mx-auto printable-sheet">
                 {/* Header */}
-                <div className="border-b-2 border-black pb-4 mb-6 flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-end print:flex-row print:justify-between print:items-end">
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black mb-1">{selectedMission.title}</h1>
-                    <p className="text-base sm:text-lg font-medium text-gray-700">{selectedMission.client}</p>
-                  </div>
-                  <div className="text-left sm:text-right print:text-right">
-                    <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Fiche de Mission</p>
-                    <p className="font-mono text-xs text-gray-400">ID: {selectedMission.id.toUpperCase().substring(0,8)}</p>
-                  </div>
+              <div style={{ borderColor: getStatusConfig(selectedMission.status).color }} className="border-b-2 pb-4 mb-6 flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-end print:flex-row print:justify-between print:items-end">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black mb-1">{selectedMission.title}</h1>
+                  <p className="text-base sm:text-lg font-medium text-gray-700">{selectedMission.client}</p>
                 </div>
+                <div className="flex flex-col items-start sm:items-end gap-2 print:items-end">
+                  {/* Status control for admin */}
+                  <div className="flex items-center gap-1.5 print:hidden">
+                    {(['Planifi\u00e9e', 'En cours', 'Termin\u00e9e'] as const).map((s) => {
+                      const cfg = getStatusConfig(s);
+                      const isActive = selectedMission.status === s;
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => handleStatusChange(s)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border-2 transition-all cursor-pointer active:scale-95 ${
+                            isActive ? 'shadow-sm' : 'opacity-50 hover:opacity-100'
+                          }`}
+                          style={isActive
+                            ? { backgroundColor: cfg.bg, color: cfg.color, borderColor: cfg.color }
+                            : { backgroundColor: '#f8fafc', color: cfg.color, borderColor: cfg.border }
+                          }
+                        >
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* Status badge for print */}
+                  <div className="hidden print:flex items-center gap-2">
+                    <span className="text-xs font-extrabold uppercase px-3 py-1 rounded-lg" style={{ backgroundColor: getStatusConfig(selectedMission.status).bg, color: getStatusConfig(selectedMission.status).color }}>
+                      {selectedMission.status}
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">Fiche de Mission</p>
+                  <p className="font-mono text-xs text-gray-400">ID: {selectedMission.id.toUpperCase().substring(0,8)}</p>
+                </div>
+              </div>
 
                 {/* Details Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-6 sm:gap-8 mb-8">

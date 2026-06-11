@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '../store';
 import { MissionType, MissionStatus } from '../types';
-import { X, AlertTriangle, Calendar, Package, Users, Truck as TruckIcon, Plus, Trash2, User, MapPin, CheckSquare, Settings } from 'lucide-react';
+import { X, AlertTriangle, Calendar, Package, Users, Truck as TruckIcon, Plus, Trash2, User, MapPin, CheckSquare, Settings, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import Modal from './ui/Modal';
 import { toast } from '../store/toast';
@@ -336,6 +336,45 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
                 className={inputClass} 
               />
             </div>
+
+            {/* Status Stepper */}
+            <div className="sm:col-span-2">
+              <label className={labelClass}>Statut de la mission</label>
+              <div className="flex items-center gap-2 mt-1">
+                {([
+                  { key: 'Planifiée',  label: 'Planifiée',  color: '#2563eb', bg: '#eff6ff', done: ['En cours','Terminée'].includes(status), active: status === 'Planifiée' },
+                  { key: 'En cours', label: 'En cours', color: '#d97706', bg: '#fffbeb', done: status === 'Terminée', active: status === 'En cours' },
+                  { key: 'Terminée',  label: 'Terminée',  color: '#059669', bg: '#ecfdf5', done: false,                          active: status === 'Terminée' },
+                ] as { key: string; label: string; color: string; bg: string; done: boolean; active: boolean }[]).map((step, i, arr) => (
+                  <React.Fragment key={step.key}>
+                    <button
+                      type="button"
+                      onClick={() => setStatus(step.key as MissionStatus)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all cursor-pointer active:scale-95 duration-100 ${
+                        step.active
+                          ? 'shadow-sm'
+                          : step.done
+                            ? 'opacity-60 hover:opacity-100'
+                            : 'border-[#e2e8f0] bg-white text-[#94a3b8] hover:border-slate-300 hover:text-slate-600'
+                      }`}
+                      style={step.active ? { borderColor: step.color, backgroundColor: step.bg, color: step.color } : step.done ? { borderColor: step.color + '60', backgroundColor: step.bg, color: step.color } : {}}
+                    >
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 ${
+                        step.active ? 'text-white' : step.done ? 'text-white' : 'bg-slate-100 text-slate-400'
+                      }`} style={step.active || step.done ? { backgroundColor: step.color } : {}}>
+                        {step.done ? <Check className="w-3 h-3 stroke-[3]" /> : i + 1}
+                      </div>
+                      {step.label}
+                    </button>
+                    {i < arr.length - 1 && (
+                      <div className={`flex-1 h-px rounded ${
+                        step.done ? 'bg-emerald-300' : step.active ? 'bg-[#e2e8f0]' : 'bg-[#e2e8f0]'
+                      }`} />
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -359,19 +398,6 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
                 </select>
               </div>
 
-              <div>
-                <label htmlFor="mission-status" className={labelClass}>Statut actuel</label>
-                <select 
-                  id="mission-status" 
-                  value={status} 
-                  onChange={e => setStatus(e.target.value as MissionStatus)} 
-                  className={inputClass}
-                >
-                  <option value="Planifiée">Planifiée</option>
-                  <option value="En cours">En cours</option>
-                  <option value="Terminée">Terminée</option>
-                </select>
-              </div>
             </div>
 
             {/* Technicians assignment panel */}
