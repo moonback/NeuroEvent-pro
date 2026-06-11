@@ -37,18 +37,18 @@ interface MissionDrawerProps {
 }
 
 const TAB_CONFIG: { id: DrawerTab; label: string; icon: React.ElementType }[] = [
-  { id: 'general',   label: 'Infos',    icon: Info },
-  { id: 'client',    label: 'Client',   icon: Phone },
-  { id: 'team',      label: 'Équipe',   icon: Users },
+  { id: 'general', label: 'Infos', icon: Info },
+  { id: 'client', label: 'Client', icon: Phone },
+  { id: 'team', label: 'Équipe', icon: Users },
   { id: 'equipment', label: 'Matériel', icon: QrCode },
-  { id: 'hours',     label: 'Heures',   icon: Timer },
-  { id: 'report',    label: 'Rapport',  icon: FileText },
+  { id: 'hours', label: 'Heures', icon: Timer },
+  { id: 'report', label: 'Rapport', icon: FileText },
 ];
 
 const STATUS_STEPS = [
-  { key: 'Planifiée', label: 'Planifiée',  short: 'Prévu' },
-  { key: 'En cours',  label: 'En cours',   short: 'Actif' },
-  { key: 'Terminée',  label: 'Terminée',   short: 'Fini' },
+  { key: 'Planifiée', label: 'Planifiée', short: 'Prévu' },
+  { key: 'En cours', label: 'En cours', short: 'Actif' },
+  { key: 'Terminée', label: 'Terminée', short: 'Fini' },
 ] as const;
 
 export default function MissionDrawer(props: MissionDrawerProps) {
@@ -130,13 +130,15 @@ export default function MissionDrawer(props: MissionDrawerProps) {
                 >
                   Aujourd'hui
                 </span>
+
               )}
               <span
-                className="text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ml-auto"
+                className="text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider"
                 style={{ background: 'rgba(0,0,0,0.22)', color: '#fff' }}
               >
                 {durationLabel}
               </span>
+
             </div>
 
             {/* Title + signature */}
@@ -151,9 +153,8 @@ export default function MissionDrawer(props: MissionDrawerProps) {
               <button
                 onClick={mission.signatureUrl ? undefined : onOpenSignature}
                 disabled={!!mission.signatureUrl}
-                className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-all ${
-                  mission.signatureUrl ? 'cursor-not-allowed' : 'active:scale-95 cursor-pointer'
-                }`}
+                className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-all ${mission.signatureUrl ? 'cursor-not-allowed' : 'active:scale-95 cursor-pointer'
+                  }`}
                 style={{
                   background: mission.signatureUrl ? 'rgba(0,229,160,0.25)' : 'rgba(0,0,0,0.22)',
                   border: mission.signatureUrl ? '1px solid rgba(0,229,160,0.35)' : '1px solid rgba(255,255,255,0.15)',
@@ -185,10 +186,10 @@ export default function MissionDrawer(props: MissionDrawerProps) {
               style={{ background: 'rgba(0,0,0,0.22)' }}
             >
               {STATUS_STEPS.map((step, i) => {
-                const isDone   = i < stepIndex;
+                const isDone = i < stepIndex;
                 const isActive = i === stepIndex;
                 const isFuture = i > stepIndex;
-                const locked   = mission.status === 'Terminée';
+                const locked = mission.status === 'Terminée';
 
                 return (
                   <React.Fragment key={step.key}>
@@ -197,9 +198,8 @@ export default function MissionDrawer(props: MissionDrawerProps) {
                         if (locked) { triggerVibrate('error'); return; }
                         onStatusChange(step.key as any);
                       }}
-                      className={`flex flex-col items-center gap-1 flex-1 transition-all ${
-                        locked ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'
-                      }`}
+                      className={`flex flex-col items-center gap-1 flex-1 transition-all ${locked ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'
+                        }`}
                     >
                       <div
                         className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-black transition-all"
@@ -253,16 +253,16 @@ export default function MissionDrawer(props: MissionDrawerProps) {
                 style={
                   isActive
                     ? {
-                        background: `${mission.color}18`,
-                        border: `1px solid ${mission.color}35`,
-                        color: mission.color,
-                        boxShadow: `0 0 12px ${mission.color}20`,
-                      }
+                      background: `${mission.color}18`,
+                      border: `1px solid ${mission.color}35`,
+                      color: mission.color,
+                      boxShadow: `0 0 12px ${mission.color}20`,
+                    }
                     : {
-                        background: 'transparent',
-                        border: '1px solid transparent',
-                        color: 'var(--tech-text-muted)',
-                      }
+                      background: 'transparent',
+                      border: '1px solid transparent',
+                      color: 'var(--tech-text-muted)',
+                    }
                 }
               >
                 <TabIcon className="w-3.5 h-3.5" />
