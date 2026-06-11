@@ -36,7 +36,7 @@ export default defineConfig(() => {
           ],
         },
         manifest: {
-          name: 'EventPlanner Pro',
+          name: 'NeuroEvent Pro',
           short_name: 'EventPro',
           description: "Application de gestion pour techniciens d'événements",
           theme_color: '#0f172a',

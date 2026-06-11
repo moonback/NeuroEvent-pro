@@ -1,5 +1,5 @@
 {
-  "name": "EventPlanner Pro",
+  "name": "NeuroEvent Pro",
   "description": "Application de planning pour agence événementielle (livraisons, montages, jeux d'arcade) avec gestion de matériel de camions et de techniciens.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
