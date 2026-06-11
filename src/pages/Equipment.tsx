@@ -5,7 +5,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import {
   QrCode, Pencil, Search, X, LayoutGrid, CalendarDays,
-  Package, AlertTriangle, CheckCircle2, Layers, Maximize2, Minimize2, Upload
+  Package, AlertTriangle, CheckCircle2, Layers, Maximize2, Minimize2, Upload, List
 } from 'lucide-react';
 import { useStore } from '../store';
 import { Equipment as EquipmentType, EquipmentCategory, Mission } from '../types';
@@ -13,6 +13,7 @@ import EquipmentModal from '../components/EquipmentModal';
 import MissionModal from '../components/MissionModal';
 import { QRCodePrintModal } from '../components/QRCodePrintModal';
 import CSVImportModal from '../components/CSVImportModal';
+import EquipmentTable from '../components/EquipmentTable';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { useFullscreen } from '../hooks/useFullscreen';
 
@@ -36,7 +37,7 @@ function computeReserved(equipmentId: string, missions: Mission[]): number {
   }, 0);
 }
 
-type ViewMode = 'calendar' | 'grid';
+type ViewMode = 'calendar' | 'grid' | 'table';
 
 export default function Equipment() {
   const isMobile = useIsMobile();
@@ -149,7 +150,7 @@ export default function Equipment() {
             <button
               onClick={() => setViewMode('calendar')}
               title="Vue Calendrier"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                 viewMode === 'calendar'
                   ? 'bg-white text-[#0f172a] shadow-sm'
                   : 'text-[#64748b] hover:text-[#0f172a]'
@@ -161,7 +162,7 @@ export default function Equipment() {
             <button
               onClick={() => setViewMode('grid')}
               title="Vue Grille"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                 viewMode === 'grid'
                   ? 'bg-white text-[#0f172a] shadow-sm'
                   : 'text-[#64748b] hover:text-[#0f172a]'
@@ -169,6 +170,18 @@ export default function Equipment() {
             >
               <LayoutGrid className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Stock</span>
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              title="Vue Liste"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-white text-[#0f172a] shadow-sm'
+                  : 'text-[#64748b] hover:text-[#0f172a]'
+              }`}
+            >
+              <List className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Liste</span>
             </button>
           </div>
           {/* Plein écran */}
@@ -313,8 +326,15 @@ export default function Equipment() {
               </div>
             )}
           />
-        ) : (
+        ) : viewMode === 'grid' ? (
           <GridView
+            equipment={filteredEquipment}
+            missions={missions}
+            onEdit={openEdit}
+            onQR={openQR}
+          />
+        ) : (
+          <EquipmentTable
             equipment={filteredEquipment}
             missions={missions}
             onEdit={openEdit}

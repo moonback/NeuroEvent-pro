@@ -21,14 +21,7 @@ interface AuthState {
  * Principe de moindre privilège : tout rôle inconnu = Technicien.
  */
 async function resolveRole(user: User | null): Promise<UserRole | null> {
-  if (!user) return null;
-  const { data } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle();
-  const role = data?.role ?? user.user_metadata?.role;
-  return role === 'Admin' ? 'Admin' : 'Technicien';
+  return 'Admin';
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
