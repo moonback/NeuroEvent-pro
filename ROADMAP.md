@@ -55,7 +55,7 @@ Ce qui fait gagner du temps aux équipes sur le terrain.
 
 * [x] **🔴 Mode PWA / Offline-first.** Rendre l'app installable et fonctionnelle sans réseau (lieux d'événement mal couverts). Cache des missions du jour + file de synchro des pointages QR différés. *La fonctionnalité la plus demandée par le terrain.*
 * [ ] **🟡 Signature électronique tactile.** Composant `<canvas>` sur le portail Technicien pour faire signer le bon de livraison au client (remplace le papier imprimé). Stocker la signature dans Supabase Storage, l'intégrer à la fiche de mission.
-* [ ] **🟢 Cartographie & GPS.** Rendre l'adresse de la mission cliquable → ouverture Google/Apple Maps (app-linking). Étape 2 : calcul de trajet / temps estimé.
+* [x] **🟢 Cartographie & GPS.** Rendre l'adresse de la mission cliquable → ouverture Google/Apple Maps (app-linking). Étape 2 : calcul de trajet / temps estimé.
 * [ ] **🟡 Suivi des pannes & retours matériel.** Statut « En panne / Maintenance » au retour de mission + upload photo (preuve du dégât) via Supabase Storage. Retirer automatiquement le matériel en panne du stock disponible.
 * [ ] **🟢 Glisser-déposer enrichi.** Drop zones visuelles sur le planning, assignation instantanée camion/technicien par drag & drop (FullCalendar `eventDrop` / `resourceTimeline`).
 

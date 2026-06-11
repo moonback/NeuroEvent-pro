@@ -798,7 +798,15 @@ export default function TechnicianDashboard() {
 
                     <div className="flex items-start gap-2 text-xs text-[#475569]">
                       <MapPin className="w-4 h-4 text-[#cbd5e1] shrink-0 mt-0.5" />
-                      <span className="line-clamp-1 font-medium">{mission.address}</span>
+                      <a 
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mission.address)}`}
+                        target="_blank" rel="noopener noreferrer"
+                        onClick={(e) => { e.stopPropagation(); triggerVibrate('click'); }}
+                        className="line-clamp-1 font-medium hover:text-[#2563eb] hover:underline"
+                        title="Ouvrir dans Google Maps"
+                      >
+                        {mission.address}
+                      </a>
                     </div>
 
                     {/* Progress Bar for Equipment */}
