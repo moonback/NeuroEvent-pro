@@ -156,30 +156,459 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   TECHNICIAN PORTAL — Uber-style dark theme
+   TECHNICIAN PORTAL — Ultra-Modern Minimalist Dark Theme v2
    All classes prefixed with .tech-* to avoid bleeding into admin.
    ══════════════════════════════════════════════════════════════════════════ */
 
 .tech-dark {
-  --tech-bg: #0a0a0a;
-  --tech-surface: #161616;
-  --tech-card: #1c1c1e;
-  --tech-card-hover: #252528;
-  --tech-border: rgba(255,255,255,0.06);
-  --tech-border-strong: rgba(255,255,255,0.12);
-  --tech-text: #f5f5f7;
-  --tech-text-secondary: #a1a1aa;
-  --tech-text-muted: #71717a;
-  --tech-accent: #06c167;
-  --tech-accent-soft: rgba(6,193,103,0.12);
-  --tech-accent-glow: rgba(6,193,103,0.25);
-  --tech-danger: #ef4444;
-  --tech-warning: #f59e0b;
-  --tech-blue: #3b82f6;
+  --tech-bg: #080b12;
+  --tech-surface: #0f1420;
+  --tech-card: #131926;
+  --tech-card-hover: #1a2133;
+  --tech-border: rgba(255,255,255,0.05);
+  --tech-border-strong: rgba(255,255,255,0.10);
+  --tech-text: #f0f4ff;
+  --tech-text-secondary: #8892a4;
+  --tech-text-muted: #4d5a72;
+  --tech-accent: #00e5a0;
+  --tech-accent-dim: #00b87d;
+  --tech-accent-soft: rgba(0,229,160,0.08);
+  --tech-accent-glow: rgba(0,229,160,0.20);
+  --tech-danger: #ff4d6d;
+  --tech-warning: #ffb700;
+  --tech-blue: #4d9fff;
+  --tech-purple: #a78bfa;
 
   background-color: var(--tech-bg);
   color: var(--tech-text);
   min-height: 100dvh;
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* ── Ambient background mesh ───────────────────────────────────────────── */
+.tech-dark::before {
+  content: '';
+  position: fixed;
+  top: -20%;
+  left: -10%;
+  width: 60vw;
+  height: 60vw;
+  background: radial-gradient(circle, rgba(0,229,160,0.04) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  animation: tech-ambient-drift 12s ease-in-out infinite alternate;
+}
+.tech-dark::after {
+  content: '';
+  position: fixed;
+  bottom: -10%;
+  right: -10%;
+  width: 50vw;
+  height: 50vw;
+  background: radial-gradient(circle, rgba(77,159,255,0.04) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  animation: tech-ambient-drift 16s ease-in-out infinite alternate-reverse;
+}
+
+/* ── Glow utility ──────────────────────────────────────────────────────── */
+.tech-glow {
+  box-shadow: 0 0 24px var(--tech-accent-glow), 0 0 80px rgba(0,229,160,0.06);
+}
+.tech-glow-sm {
+  box-shadow: 0 0 10px var(--tech-accent-glow);
+}
+
+/* ── Card surface ──────────────────────────────────────────────────────── */
+.tech-card {
+  background: var(--tech-card);
+  border: 1px solid var(--tech-border);
+  border-radius: 1.125rem;
+  transition: background 0.25s, border-color 0.25s, transform 0.18s, box-shadow 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+.tech-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,0.025) 0%, transparent 60%);
+  pointer-events: none;
+}
+.tech-card:hover {
+  background: var(--tech-card-hover);
+  border-color: var(--tech-border-strong);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,229,160,0.05);
+}
+.tech-card:active {
+  transform: scale(0.975);
+}
+
+/* ── Glass surfaces ────────────────────────────────────────────────────── */
+.tech-glass {
+  background: rgba(8,11,18,0.82);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--tech-border);
+}
+.tech-glass-card {
+  background: rgba(19,25,38,0.7);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 1.25rem;
+}
+
+/* ── Animations ────────────────────────────────────────────────────────── */
+@keyframes tech-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes tech-scale-in {
+  from { opacity: 0; transform: scale(0.93); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes tech-slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes tech-pulse-glow {
+  0%, 100% { opacity: 0.7; }
+  50%       { opacity: 1; box-shadow: 0 0 12px currentColor; }
+}
+@keyframes tech-dot-ping {
+  0%   { transform: scale(1); opacity: 0.9; }
+  75%  { transform: scale(2.4); opacity: 0; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+@keyframes tech-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes tech-ambient-drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(4%, 4%) scale(1.08); }
+}
+@keyframes tech-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-3px); }
+}
+@keyframes tech-spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes tech-gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+@keyframes tech-bar-grow {
+  from { width: 0; }
+}
+@keyframes tech-nav-pill-in {
+  from { width: 6px; opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.tech-animate-in {
+  animation: tech-fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.tech-animate-scale {
+  animation: tech-scale-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.tech-animate-slide-up {
+  animation: tech-slide-up 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.tech-animate-pulse-glow {
+  animation: tech-pulse-glow 2.4s ease-in-out infinite;
+}
+.tech-animate-float {
+  animation: tech-float 3s ease-in-out infinite;
+}
+
+/* Stagger children */
+.tech-stagger > * {
+  animation: tech-fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.tech-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.tech-stagger > *:nth-child(2) { animation-delay: 55ms; }
+.tech-stagger > *:nth-child(3) { animation-delay: 110ms; }
+.tech-stagger > *:nth-child(4) { animation-delay: 165ms; }
+.tech-stagger > *:nth-child(5) { animation-delay: 220ms; }
+.tech-stagger > *:nth-child(6) { animation-delay: 275ms; }
+.tech-stagger > *:nth-child(7) { animation-delay: 330ms; }
+.tech-stagger > *:nth-child(8) { animation-delay: 385ms; }
+
+/* ── Bottom nav pill indicator ─────────────────────────────────────────── */
+.tech-nav-pill {
+  height: 3px;
+  border-radius: 9999px;
+  background: var(--tech-accent);
+  box-shadow: 0 0 10px var(--tech-accent-glow);
+  animation: tech-nav-pill-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Status badges ─────────────────────────────────────────────────────── */
+.tech-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+.tech-badge-planned {
+  background: rgba(77,159,255,0.10);
+  color: #6eb5ff;
+  border: 1px solid rgba(77,159,255,0.18);
+}
+.tech-badge-active {
+  background: rgba(255,183,0,0.10);
+  color: #ffd84d;
+  border: 1px solid rgba(255,183,0,0.20);
+}
+.tech-badge-done {
+  background: rgba(0,229,160,0.10);
+  color: var(--tech-accent);
+  border: 1px solid rgba(0,229,160,0.18);
+}
+
+/* ── Shimmer text gradient ─────────────────────────────────────────────── */
+.tech-shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--tech-text) 0%,
+    var(--tech-accent) 30%,
+    var(--tech-blue) 60%,
+    var(--tech-text) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tech-shimmer 4s linear infinite;
+}
+
+/* ── Progress bar ──────────────────────────────────────────────────────── */
+.tech-progress-track {
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.05);
+  overflow: hidden;
+}
+.tech-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: tech-bar-grow 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Accent button ─────────────────────────────────────────────────────── */
+.tech-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 1rem;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+.tech-btn:active {
+  transform: scale(0.95);
+}
+.tech-btn-accent {
+  background: linear-gradient(135deg, var(--tech-accent) 0%, var(--tech-accent-dim) 100%);
+  color: #000;
+  box-shadow: 0 4px 20px rgba(0,229,160,0.25);
+}
+.tech-btn-accent:hover {
+  box-shadow: 0 6px 28px rgba(0,229,160,0.40);
+  transform: translateY(-1px);
+}
+.tech-btn-ghost {
+  background: rgba(255,255,255,0.04);
+  color: var(--tech-text);
+  border: 1px solid var(--tech-border);
+}
+.tech-btn-ghost:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: var(--tech-border-strong);
+}
+
+/* ── Section header ────────────────────────────────────────────────────── */
+.tech-section-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--tech-text-muted);
+}
+
+/* ── Divider ───────────────────────────────────────────────────────────── */
+.tech-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--tech-border-strong), transparent);
+}
+
+/* ── TechnicianMyHours / TechnicianUnavailabilities Dark Mode Overrides ── */
+.tech-dark .bg-white {
+  background-color: var(--tech-card) !important;
+  border-color: var(--tech-border) !important;
+}
+.tech-dark .text-\[\#0f172a\] {
+  color: var(--tech-text) !important;
+}
+.tech-dark .text-\[\#64748b\] {
+  color: var(--tech-text-secondary) !important;
+}
+.tech-dark .bg-\[\#f8fafc\] {
+  background-color: rgba(255,255,255,0.025) !important;
+}
+.tech-dark .border-\[\#e2e8f0\] {
+  border-color: var(--tech-border-strong) !important;
+}
+.tech-dark .divide-\[\#f1f5f9\] > * + * {
+  border-color: var(--tech-border) !important;
+}
+.tech-dark .bg-\[\#f8fafc\]\/50:hover {
+  background-color: rgba(255,255,255,0.06) !important;
+}
+.tech-dark .border-\[\#e2e8f0\]\/80 {
+  border-color: var(--tech-border) !important;
+}
+.tech-dark .border-b.border-\[\#f1f5f9\] {
+  border-color: var(--tech-border) !important;
+}
+.tech-dark input.bg-\[\#f8fafc\],
+.tech-dark select.bg-\[\#f8fafc\] {
+  background-color: rgba(255,255,255,0.04) !important;
+  color: var(--tech-text) !important;
+  border-color: var(--tech-border-strong) !important;
+}
+.tech-dark input.bg-\[\#f8fafc\]:focus,
+.tech-dark select.bg-\[\#f8fafc\]:focus {
+  border-color: var(--tech-accent) !important;
+}
+.tech-dark button.bg-\[\#0f172a\] {
+  background-color: var(--tech-accent) !important;
+  color: #000 !important;
+}
+.tech-dark button.bg-\[\#0f172a\]:hover {
+  background-color: var(--tech-accent-dim) !important;
+}
+.tech-dark .bg-amber-100 {
+  background-color: rgba(255,183,0,0.12) !important;
+  color: #ffd84d !important;
+}
+.tech-dark .bg-red-100 {
+  background-color: rgba(255,77,109,0.12) !important;
+  color: #ff8fa0 !important;
+}
+.tech-dark .hover\:bg-red-50:hover {
+  background-color: rgba(255,77,109,0.08) !important;
+}
+.tech-dark .text-slate-400 {
+  color: var(--tech-text-muted) !important;
+}
+.tech-dark .bg-slate-800\/50 {
+  background-color: rgba(255,255,255,0.05) !important;
+}
+.tech-dark .text-slate-300 {
+  color: var(--tech-text) !important;
+}
+.tech-dark .text-slate-500 {
+  color: var(--tech-text-muted) !important;
+}
+
+/* ── Settings page dark mode overrides ── */
+.tech-dark div.flex-1.overflow-auto.bg-\[\#f8fafc\] {
+  background-color: var(--tech-bg) !important;
+}
+.tech-dark nav.bg-white\/80 {
+  display: none !important;
+}
+.tech-dark a[href="/"] {
+  display: none !important;
+}
+.tech-dark button.bg-\[\#f8fafc\],
+.tech-dark a.bg-\[\#f8fafc\] {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  border-color: var(--tech-border-strong) !important;
+  color: var(--tech-text) !important;
+}
+.tech-dark button.bg-\[\#f8fafc\]:hover,
+.tech-dark a.bg-\[\#f8fafc\]:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+.tech-dark .bg-blue-50 {
+  background-color: rgba(77, 159, 255, 0.08) !important;
+  border-color: rgba(77, 159, 255, 0.18) !important;
+}
+.tech-dark .text-blue-800 {
+  color: var(--tech-text) !important;
+}
+.tech-dark .bg-violet-50 {
+  background-color: rgba(167, 139, 250, 0.08) !important;
+}
+.tech-dark .bg-orange-50 {
+  background-color: rgba(249, 115, 22, 0.08) !important;
+}
+.tech-dark .bg-blue-50.text-blue-700 {
+  background-color: rgba(77, 159, 255, 0.10) !important;
+  color: var(--tech-blue) !important;
+  border-color: rgba(77, 159, 255, 0.18) !important;
+}
+.tech-dark .border-violet-600 {
+  border-color: #a78bfa !important;
+}
+.tech-dark .text-violet-600 {
+  color: #c4b5fd !important;
+}
+.tech-dark .text-blue-600 {
+  color: var(--tech-blue) !important;
+}
+.tech-dark .bg-emerald-50 {
+  background-color: rgba(0, 229, 160, 0.08) !important;
+  border-color: rgba(0, 229, 160, 0.15) !important;
+  color: var(--tech-accent) !important;
+}
+.tech-dark .bg-red-50 {
+  background-color: rgba(255, 77, 109, 0.08) !important;
+  border-color: rgba(255, 77, 109, 0.15) !important;
+  color: #ff8fa0 !important;
+}
+.tech-dark .shadow-violet-200 {
+  box-shadow: none !important;
+}
+.tech-dark .shadow-blue-200 {
+  box-shadow: none !important;
+}
+.tech-dark input.bg-white,
+.tech-dark select.bg-white {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  color: var(--tech-text) !important;
+  border-color: var(--tech-border-strong) !important;
+}
+.tech-dark h1, .tech-dark h2, .tech-dark h3, .tech-dark h4 {
+  color: var(--tech-text) !important;
+}
+.tech-dark .bg-white.border-\[\#e2e8f0\] {
+  background-color: var(--tech-card) !important;
+  border-color: var(--tech-border) !important;
+}
+.tech-dark div.border-t.border-\[\#f1f5f9\] {
+  border-color: var(--tech-border) !important;
+}
+.tech-dark div.border-b.border-\[\#f1f5f9\] {
+  border-color: var(--tech-border) !important;
 }
 
 /* ── Glow utility ──────────────────────────────────────────────────────── */

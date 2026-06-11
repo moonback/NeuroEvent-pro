@@ -20,11 +20,13 @@ import { Calendar } from 'lucide-react';
 export default function TechnicianDashboard() {
   const tech = useTechDashboard();
 
-  const currentTech = tech.technicians.find(t => t.id === tech.user?.id);
-  const userName = currentTech ? currentTech.firstName : (tech.user?.user_metadata?.first_name || '');
+  const currentTech = tech.technicians.find((t) => t.id === tech.user?.id);
+  const userName = currentTech
+    ? currentTech.firstName
+    : tech.user?.user_metadata?.first_name || '';
 
   return (
-    <div className="tech-dark min-h-screen bg-[#090d16] text-[#f8fafc] font-sans pb-24 overflow-x-hidden">
+    <div className="tech-dark min-h-screen bg-[#080b12] text-[#f0f4ff] font-sans pb-24 overflow-x-hidden">
       {/* Header */}
       <TechHeader
         userName={userName}
@@ -37,54 +39,73 @@ export default function TechnicianDashboard() {
 
       {/* Main Tab Routing */}
       {tech.activeTab === 'mes_heures' ? (
-        <div className="max-w-md mx-auto animate-fade-in pt-4">
-          <h1 className="text-2xl font-black text-white px-4">Mes Heures de Travail</h1>
-          <p className="text-slate-400 text-xs px-4 mt-1">Consultez l'historique complet de vos missions.</p>
+        <div className="max-w-md mx-auto tech-animate-in pt-5">
+          <div className="px-4 mb-4">
+            <h1 className="text-xl font-black tracking-tight" style={{ color: 'var(--tech-text)' }}>
+              Mes Heures
+            </h1>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--tech-text-muted)' }}>
+              Historique complet de vos missions.
+            </p>
+          </div>
           <TechnicianMyHours />
         </div>
       ) : tech.activeTab === 'disponibilites' ? (
-        <div className="max-w-md mx-auto animate-fade-in pt-4">
-          <h1 className="text-2xl font-black text-white px-4">Mes Indisponibilités</h1>
-          <p className="text-slate-400 text-xs px-4 mt-1">Déclarez vos absences et consultez votre historique.</p>
+        <div className="max-w-md mx-auto tech-animate-in pt-5">
+          <div className="px-4 mb-4">
+            <h1 className="text-xl font-black tracking-tight" style={{ color: 'var(--tech-text)' }}>
+              Mes Absences
+            </h1>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--tech-text-muted)' }}>
+              Déclarez vos indisponibilités.
+            </p>
+          </div>
           <TechnicianUnavailabilities />
         </div>
       ) : tech.activeTab === 'profil' ? (
-        <div className="animate-fade-in">
+        <div className="tech-animate-in">
           <Settings />
         </div>
       ) : (
         <div className="max-w-md mx-auto space-y-3 pt-3 pb-6">
-          {/* Segmented Picker: Active vs History */}
+          {/* Segmented picker */}
           <div className="px-4">
-            <div className="flex p-0.5 bg-slate-950 rounded-xl border border-slate-800/80 max-w-[200px]">
-              <button
-                onClick={() => {
-                  triggerVibrate('click');
-                  tech.setActiveTab('active');
-                }}
-                className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${
-                  tech.activeTab === 'active'
-                    ? 'bg-slate-800 text-white shadow'
-                    : 'text-slate-400 hover:text-slate-350'
-                }`}
-              >
-                Missions
-              </button>
-              <button
-                onClick={() => {
-                  triggerVibrate('click');
-                  tech.setActiveTab('history');
-                }}
-                className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${
-                  tech.activeTab === 'history'
-                    ? 'bg-slate-800 text-white shadow'
-                    : 'text-slate-400 hover:text-slate-350'
-                }`}
-              >
-                Historique
-              </button>
+            <div
+              className="flex p-1 rounded-2xl"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid var(--tech-border)',
+              }}
+            >
+              {[
+                { id: 'active' as const, label: 'Missions' },
+                { id: 'history' as const, label: 'Historique' },
+              ].map((tab) => {
+                const isActive = tech.activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      triggerVibrate('click');
+                      tech.setActiveTab(tab.id);
+                    }}
+                    className="flex-1 py-1.5 text-[10px] font-black rounded-xl transition-all duration-200"
+                    style={{
+                      background: isActive
+                        ? 'linear-gradient(135deg, rgba(0,229,160,0.12) 0%, rgba(0,229,160,0.06) 100%)'
+                        : 'transparent',
+                      color: isActive ? 'var(--tech-accent)' : 'var(--tech-text-muted)',
+                      border: isActive ? '1px solid rgba(0,229,160,0.15)' : '1px solid transparent',
+                      boxShadow: isActive ? '0 2px 8px rgba(0,229,160,0.08)' : 'none',
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
+
           {/* Filters */}
           <MissionFilters
             activeTab={tech.activeTab}
@@ -97,23 +118,40 @@ export default function TechnicianDashboard() {
           />
 
           {/* Missions List */}
-          <div className="px-4 space-y-3">
+          <div className="px-4 space-y-2.5">
             {tech.displayedMissions.length === 0 ? (
-              <div className="tech-card py-12 px-4 text-center">
-                <div className="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center mx-auto mb-3">
-                  <Calendar className="w-6 h-6 text-slate-500" />
+              <div
+                className="tech-card py-14 px-6 text-center tech-animate-in"
+              >
+                {/* Animated empty state icon */}
+                <div
+                  className="w-14 h-14 rounded-3xl flex items-center justify-center mx-auto mb-4 tech-animate-float"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)',
+                    border: '1px solid var(--tech-border)',
+                  }}
+                >
+                  <Calendar className="w-6 h-6" style={{ color: 'var(--tech-text-muted)' }} />
                 </div>
-                <h3 className="font-extrabold text-sm text-slate-300">Aucune mission trouvée</h3>
-                <p className="text-xs text-slate-500 mt-1 max-w-[240px] mx-auto">
-                  Ajustez vos filtres ou contactez votre administrateur si besoin.
+                <h3
+                  className="font-extrabold text-sm tracking-tight"
+                  style={{ color: 'var(--tech-text-secondary)' }}
+                >
+                  Aucune mission trouvée
+                </h3>
+                <p
+                  className="text-xs mt-1.5 max-w-[220px] mx-auto leading-relaxed"
+                  style={{ color: 'var(--tech-text-muted)' }}
+                >
+                  Ajustez vos filtres ou contactez votre administrateur.
                 </p>
               </div>
             ) : (
               tech.displayedMissions.map((mission, idx) => (
                 <div
                   key={mission.id}
-                  className="animate-fade-in"
-                  style={{ animationDelay: `${idx * 40}ms` }}
+                  className="tech-animate-in"
+                  style={{ animationDelay: `${idx * 45}ms` }}
                 >
                   <MissionCard
                     mission={mission}
@@ -171,7 +209,7 @@ export default function TechnicianDashboard() {
         />
       )}
 
-      {/* Time picker modal (for status changes) */}
+      {/* Time picker modal */}
       {tech.timeModal && tech.selectedMission && (
         <TimeModal
           timeModal={tech.timeModal}
@@ -202,7 +240,7 @@ export default function TechnicianDashboard() {
             await tech.updateMission(tech.selectedMission!.id, { signatureUrl: url });
             tech.setSelectedMission({ ...tech.selectedMission!, signatureUrl: url });
             tech.setSignatureModalOpen(false);
-            toast.success("Signature enregistrée avec succès");
+            toast.success('Signature enregistrée avec succès');
           }}
           onClose={() => tech.setSignatureModalOpen(false)}
         />

@@ -1,24 +1,26 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
 import { useAuthStore } from '../store/auth';
-import { CalendarDays, Plus, Trash2, CalendarX2 } from 'lucide-react';
+import { CalendarDays, Plus, Trash2, CalendarX2, Info, X } from 'lucide-react';
 import { UnavailabilityType } from '../types';
 
 export default function TechnicianUnavailabilities() {
-  const user = useAuthStore(state => state.user);
-  const unavailabilities = useStore(state => state.unavailabilities);
-  const addUnavailability = useStore(state => state.addUnavailability);
-  const deleteUnavailability = useStore(state => state.deleteUnavailability);
+  const user = useAuthStore((state) => state.user);
+  const unavailabilities = useStore((state) => state.unavailabilities);
+  const addUnavailability = useStore((state) => state.addUnavailability);
+  const deleteUnavailability = useStore((state) => state.deleteUnavailability);
 
+  const [modalOpen, setModalOpen] = useState(false);
   const [unavailStart, setUnavailStart] = useState('');
   const [unavailEnd, setUnavailEnd] = useState('');
   const [unavailType, setUnavailType] = useState<UnavailabilityType>('Congé');
   const [unavailReason, setUnavailReason] = useState('');
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   if (!user) return null;
 
   const myUnavailabilities = unavailabilities
-    .filter(u => u.technicianId === user.id)
+    .filter((u) => u.technicianId === user.id)
     .sort((a, b) => b.start.getTime() - a.start.getTime());
 
   const handleAddUnavailability = () => {
@@ -28,112 +30,450 @@ export default function TechnicianUnavailabilities() {
       start: new Date(unavailStart),
       end: new Date(unavailEnd),
       type: unavailType,
-      reason: unavailReason
+      reason: unavailReason,
     });
     setUnavailStart('');
     setUnavailEnd('');
     setUnavailReason('');
+    setUnavailType('Congé');
+    setModalOpen(false);
   };
 
-  const inputClass = "w-full rounded-xl border border-[#e2e8f0] px-3.5 py-2.5 focus:ring-2 focus:ring-[#2563eb]/20 focus:border-[#2563eb] outline-none bg-[#f8fafc] text-sm transition-all text-[#0f172a] placeholder-[#cbd5e1]";
-  const labelClass = "block text-[10px] font-extrabold text-[#64748b] tracking-wider uppercase mb-1.5";
+  const handleOpenModal = () => setModalOpen(true);
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setUnavailStart('');
+    setUnavailEnd('');
+    setUnavailReason('');
+    setUnavailType('Congé');
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.10)',
+    borderRadius: '0.875rem',
+    padding: '0.7rem 0.875rem',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    color: 'var(--tech-text)',
+    outline: 'none',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
+    colorScheme: 'dark',
+  };
+
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+    e.currentTarget.style.borderColor = 'rgba(0,229,160,0.40)';
+    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,229,160,0.08)';
+  };
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)';
+    e.currentTarget.style.boxShadow = 'none';
+  };
+
+  const typeConfig: Record<string, { bg: string; border: string; color: string }> = {
+    Congé: {
+      bg: 'rgba(255,183,0,0.10)',
+      border: 'rgba(255,183,0,0.22)',
+      color: '#ffd84d',
+    },
+    Indisponibilité: {
+      bg: 'rgba(255,77,109,0.10)',
+      border: 'rgba(255,77,109,0.22)',
+      color: '#ff8fa0',
+    },
+  };
+
+  const canSubmit = !!unavailStart && !!unavailEnd;
 
   return (
-    <div className="p-4 space-y-6 animate-fade-in pb-8">
-      {/* Ajout d'indisponibilité */}
-      <div className="bg-white p-5 rounded-2xl border border-[#e2e8f0]/80 shadow-xs space-y-4">
-        <h4 className="text-sm font-bold text-[#0f172a] flex items-center gap-2 mb-2">
-          <CalendarDays className="w-4 h-4 text-[#2563eb]" />
-          Déclarer une absence
-        </h4>
-        
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>Du</label>
-              <input type="datetime-local" value={unavailStart} onChange={e => setUnavailStart(e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Au</label>
-              <input type="datetime-local" value={unavailEnd} onChange={e => setUnavailEnd(e.target.value)} className={inputClass} />
-            </div>
-          </div>
-          <div>
-            <label className={labelClass}>Type</label>
-            <select value={unavailType} onChange={e => setUnavailType(e.target.value as UnavailabilityType)} className={inputClass}>
-              <option value="Congé">Congé</option>
-              <option value="Indisponibilité">Indisponibilité</option>
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Motif (optionnel)</label>
-            <input type="text" value={unavailReason} onChange={e => setUnavailReason(e.target.value)} placeholder="ex: Rendez-vous médical" className={inputClass} />
-          </div>
-        </div>
+    <>
+      <div className="px-4 space-y-4 tech-animate-in pb-8">
 
+        {/* ── CTA button ──────────────────────────────────────────────── */}
         <button
           type="button"
-          onClick={handleAddUnavailability}
-          disabled={!unavailStart || !unavailEnd}
-          className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-3 bg-[#0f172a] text-white rounded-xl text-sm font-bold hover:bg-[#1e293b] disabled:opacity-50 transition-colors active:scale-95 duration-100"
+          onClick={handleOpenModal}
+          className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-black text-sm text-black uppercase tracking-wider transition-all active:scale-[0.97]"
+          style={{
+            background: 'linear-gradient(135deg, var(--tech-accent) 0%, var(--tech-accent-dim) 100%)',
+            boxShadow: '0 4px 24px rgba(0,229,160,0.28)',
+          }}
         >
-          <Plus className="w-4 h-4" /> Enregistrer l'absence
+          <Plus className="w-4 h-4" strokeWidth={3} />
+          Déclarer une absence
         </button>
-      </div>
 
-      {/* Liste des indisponibilités */}
-      <div className="bg-white rounded-2xl border border-[#e2e8f0]/80 overflow-hidden shadow-xs">
-        <div className="px-4 py-3 border-b border-[#f1f5f9] flex justify-between items-center bg-[#f8fafc]">
-          <div className="flex items-center gap-2 text-[#0f172a]">
-            <CalendarX2 className="w-4 h-4 text-amber-500" />
-            <span className="text-xs font-bold uppercase tracking-wider">Mes absences prévues</span>
+        {/* ── Liste des absences ───────────────────────────────────────── */}
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: 'var(--tech-card)',
+            border: '1px solid var(--tech-border)',
+          }}
+        >
+          {/* Header */}
+          <div
+            className="px-4 py-3 flex justify-between items-center"
+            style={{
+              background: 'rgba(255,255,255,0.02)',
+              borderBottom: '1px solid var(--tech-border)',
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <CalendarX2 className="w-3.5 h-3.5" style={{ color: '#ffb700' }} />
+              <span
+                className="text-[10px] font-black uppercase tracking-widest"
+                style={{ color: 'var(--tech-text-secondary)' }}
+              >
+                Mes absences prévues
+              </span>
+            </div>
+            <span
+              className="text-[9px] font-black px-2.5 py-1 rounded-full"
+              style={{
+                background: 'rgba(255,183,0,0.08)',
+                border: '1px solid rgba(255,183,0,0.18)',
+                color: '#ffb700',
+              }}
+            >
+              {myUnavailabilities.length} au total
+            </span>
           </div>
-          <span className="text-[10px] font-bold text-[#64748b] bg-white px-2 py-1 rounded-md border border-[#e2e8f0]">
-            {myUnavailabilities.length} au total
-          </span>
+
+          {myUnavailabilities.length === 0 ? (
+            <div className="py-14 text-center">
+              <CalendarDays
+                className="w-8 h-8 mx-auto mb-3 tech-animate-float"
+                style={{ color: 'var(--tech-text-muted)' }}
+              />
+              <p className="text-sm font-bold" style={{ color: 'var(--tech-text-muted)' }}>
+                Aucune absence prévue
+              </p>
+              <p className="text-[11px] mt-1 max-w-[200px] mx-auto" style={{ color: 'var(--tech-text-muted)', opacity: 0.55 }}>
+                Appuyez sur le bouton ci-dessus pour en déclarer une.
+              </p>
+            </div>
+          ) : (
+            <div>
+              {myUnavailabilities.map((u, idx) => {
+                const cfg = typeConfig[u.type] ?? typeConfig['Indisponibilité'];
+                const isConfirming = confirmId === u.id;
+                return (
+                  <div
+                    key={u.id}
+                    className="px-4 py-3.5 flex items-center justify-between transition-all tech-animate-in"
+                    style={{
+                      borderBottom:
+                        idx < myUnavailabilities.length - 1 ? '1px solid var(--tech-border)' : 'none',
+                      animationDelay: `${idx * 40}ms`,
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.025)';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.background = 'transparent';
+                    }}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span
+                          className="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider"
+                          style={{
+                            background: cfg.bg,
+                            border: `1px solid ${cfg.border}`,
+                            color: cfg.color,
+                          }}
+                        >
+                          {u.type}
+                        </span>
+                        {u.reason && (
+                          <span
+                            className="text-xs font-semibold truncate"
+                            style={{ color: 'var(--tech-text)' }}
+                          >
+                            {u.reason}
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        className="text-[10px] font-semibold"
+                        style={{ color: 'var(--tech-text-muted)' }}
+                      >
+                        {u.start.toLocaleDateString('fr-FR', {
+                          weekday: 'short',
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                        <span className="mx-2 opacity-40">→</span>
+                        {u.end.toLocaleDateString('fr-FR', {
+                          weekday: 'short',
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Delete */}
+                    <div className="ml-3 shrink-0">
+                      {isConfirming ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setConfirmId(null)}
+                            className="text-[9px] font-black px-2.5 py-1.5 rounded-xl transition-all"
+                            style={{
+                              background: 'rgba(255,255,255,0.05)',
+                              border: '1px solid var(--tech-border)',
+                              color: 'var(--tech-text-muted)',
+                            }}
+                          >
+                            Annuler
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              deleteUnavailability(u.id);
+                              setConfirmId(null);
+                            }}
+                            className="text-[9px] font-black px-2.5 py-1.5 rounded-xl transition-all"
+                            style={{
+                              background: 'rgba(255,77,109,0.14)',
+                              border: '1px solid rgba(255,77,109,0.28)',
+                              color: '#ff8fa0',
+                            }}
+                          >
+                            Supprimer
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmId(u.id)}
+                          className="p-2 rounded-xl transition-all active:scale-90"
+                          style={{
+                            background: 'rgba(255,77,109,0.06)',
+                            border: '1px solid transparent',
+                            color: 'rgba(255,77,109,0.45)',
+                          }}
+                          onMouseEnter={(e) => {
+                            (e.currentTarget as HTMLElement).style.background = 'rgba(255,77,109,0.12)';
+                            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,77,109,0.22)';
+                            (e.currentTarget as HTMLElement).style.color = '#ff8fa0';
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLElement).style.background = 'rgba(255,77,109,0.06)';
+                            (e.currentTarget as HTMLElement).style.borderColor = 'transparent';
+                            (e.currentTarget as HTMLElement).style.color = 'rgba(255,77,109,0.45)';
+                          }}
+                          aria-label="Supprimer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {myUnavailabilities.length === 0 ? (
-          <div className="p-8 text-center">
-            <CalendarDays className="w-8 h-8 text-[#cbd5e1] mx-auto mb-2" />
-            <p className="text-sm font-bold text-[#64748b]">Aucune absence prévue</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-[#f1f5f9]">
-            {myUnavailabilities.map(u => (
-              <div key={u.id} className="p-4 flex items-center justify-between hover:bg-[#f8fafc]/50 transition-colors">
-                <div>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                      u.type === 'Congé' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {u.type}
-                    </span>
-                    {u.reason && <span className="text-sm font-bold text-[#0f172a]">{u.reason}</span>}
-                  </div>
-                  <div className="text-[11px] font-medium text-[#64748b]">
-                    {u.start.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                    <span className="mx-1.5 opacity-50">→</span>
-                    {u.end.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm('Supprimer cette absence ?')) {
-                      deleteUnavailability(u.id);
-                    }
-                  }}
-                  className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all cursor-pointer active:scale-95 ml-2 shrink-0"
-                  aria-label="Supprimer"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Info note */}
+        <div
+          className="flex items-start gap-2.5 px-3.5 py-3 rounded-2xl tech-animate-in"
+          style={{
+            background: 'rgba(77,159,255,0.06)',
+            border: '1px solid rgba(77,159,255,0.12)',
+            animationDelay: '160ms',
+          }}
+        >
+          <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: 'var(--tech-blue)' }} />
+          <p
+            className="text-[10px] font-semibold leading-relaxed"
+            style={{ color: 'var(--tech-blue)', opacity: 0.8 }}
+          >
+            Vos absences sont visibles par votre administrateur et bloquent les affectations sur ces plages horaires.
+          </p>
+        </div>
       </div>
-    </div>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          MODAL — Déclarer une absence (bottom sheet)
+      ══════════════════════════════════════════════════════════════════ */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0"
+            style={{ background: 'rgba(0,0,0,0.70)', backdropFilter: 'blur(4px)' }}
+            onClick={handleCloseModal}
+          />
+
+          {/* Sheet */}
+          <div
+            className="relative w-full max-w-md rounded-t-3xl p-5 space-y-5 z-10 tech-animate-slide-up"
+            style={{
+              background: 'rgba(13,17,28,0.98)',
+              backdropFilter: 'blur(28px)',
+              borderTop: '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            {/* Grab handle */}
+            <div
+              className="w-9 h-[3px] rounded-full mx-auto"
+              style={{ background: 'rgba(255,255,255,0.14)' }}
+            />
+
+            {/* Header */}
+            <div className="flex justify-between items-center">
+              <div>
+                <h3
+                  className="text-base font-black tracking-tight"
+                  style={{ color: 'var(--tech-text)' }}
+                >
+                  Déclarer une absence
+                </h3>
+                <p className="text-[10px] mt-0.5" style={{ color: 'var(--tech-text-muted)' }}>
+                  Renseignez vos dates et le type d'absence.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                className="p-2 rounded-xl transition-all active:scale-90"
+                style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid var(--tech-border)',
+                }}
+              >
+                <X className="w-4 h-4" style={{ color: 'var(--tech-text-muted)' }} />
+              </button>
+            </div>
+
+            {/* ── Form ── */}
+            <div className="space-y-4">
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label
+                    className="block text-[9px] font-black uppercase tracking-widest mb-1.5"
+                    style={{ color: 'var(--tech-text-muted)' }}
+                  >
+                    Du
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={unavailStart}
+                    onChange={(e) => setUnavailStart(e.target.value)}
+                    style={inputStyle}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                  />
+                </div>
+                <div>
+                  <label
+                    className="block text-[9px] font-black uppercase tracking-widest mb-1.5"
+                    style={{ color: 'var(--tech-text-muted)' }}
+                  >
+                    Au
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={unavailEnd}
+                    onChange={(e) => setUnavailEnd(e.target.value)}
+                    style={inputStyle}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                  />
+                </div>
+              </div>
+
+              {/* Type segmented picker */}
+              <div>
+                <label
+                  className="block text-[9px] font-black uppercase tracking-widest mb-1.5"
+                  style={{ color: 'var(--tech-text-muted)' }}
+                >
+                  Type
+                </label>
+                <div
+                  className="flex p-1 rounded-xl gap-1"
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid var(--tech-border)',
+                  }}
+                >
+                  {(['Congé', 'Indisponibilité'] as UnavailabilityType[]).map((t) => {
+                    const cfg = typeConfig[t];
+                    const active = unavailType === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setUnavailType(t)}
+                        className="flex-1 py-2 text-[10px] font-black rounded-lg transition-all duration-200"
+                        style={{
+                          background: active ? cfg.bg : 'transparent',
+                          border: active ? `1px solid ${cfg.border}` : '1px solid transparent',
+                          color: active ? cfg.color : 'var(--tech-text-muted)',
+                          boxShadow: active ? `0 0 12px ${cfg.bg}` : 'none',
+                        }}
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Reason */}
+              <div>
+                <label
+                  className="block text-[9px] font-black uppercase tracking-widest mb-1.5"
+                  style={{ color: 'var(--tech-text-muted)' }}
+                >
+                  Motif{' '}
+                  <span style={{ opacity: 0.45, textTransform: 'none', letterSpacing: 0 }}>
+                    (optionnel)
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={unavailReason}
+                  onChange={(e) => setUnavailReason(e.target.value)}
+                  placeholder="ex: Rendez-vous médical"
+                  style={{
+                    ...inputStyle,
+                    caretColor: 'var(--tech-accent)',
+                  }}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
+                />
+              </div>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="button"
+              onClick={handleAddUnavailability}
+              disabled={!canSubmit}
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm text-black uppercase tracking-wider transition-all active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: 'linear-gradient(135deg, var(--tech-accent) 0%, var(--tech-accent-dim) 100%)',
+                boxShadow: canSubmit ? '0 4px 24px rgba(0,229,160,0.28)' : 'none',
+              }}
+            >
+              <Plus className="w-4 h-4" strokeWidth={3} />
+              Enregistrer l'absence
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

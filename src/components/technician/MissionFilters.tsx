@@ -67,12 +67,20 @@ export default function MissionFilters({
             placeholder="Rechercher une mission..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-9 py-2.5 text-xs rounded-xl outline-none transition-all font-semibold"
+            className="w-full pl-10 pr-9 py-2.5 text-xs rounded-2xl outline-none transition-all font-semibold"
             style={{
-              background: 'var(--tech-card)',
+              background: 'rgba(255,255,255,0.03)',
               border: '1px solid var(--tech-border)',
               color: 'var(--tech-text)',
               caretColor: 'var(--tech-accent)',
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(0,229,160,0.35)';
+              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,229,160,0.08)';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = 'var(--tech-border)';
+              e.currentTarget.style.boxShadow = 'none';
             }}
           />
           {searchTerm && (
@@ -95,16 +103,24 @@ export default function MissionFilters({
             triggerVibrate('click');
             setModalOpen(true);
           }}
-          className="p-2.5 rounded-xl border flex items-center justify-center relative transition-all active:scale-90"
+          className="p-2.5 rounded-2xl flex items-center justify-center relative transition-all active:scale-90"
           style={{
-            background: hasActiveFilters ? 'var(--tech-accent-soft)' : 'var(--tech-card)',
-            borderColor: hasActiveFilters ? 'var(--tech-accent)' : 'var(--tech-border)',
+            background: hasActiveFilters ? 'rgba(0,229,160,0.10)' : 'rgba(255,255,255,0.03)',
+            border: hasActiveFilters ? '1px solid rgba(0,229,160,0.25)' : '1px solid var(--tech-border)',
             color: hasActiveFilters ? 'var(--tech-accent)' : 'var(--tech-text-secondary)',
+            boxShadow: hasActiveFilters ? '0 0 12px rgba(0,229,160,0.12)' : 'none',
           }}
         >
           <SlidersHorizontal className="w-4 h-4" />
           {hasActiveFilters && (
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#090d16]" />
+            <span
+              className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2"
+              style={{
+                background: 'var(--tech-accent)',
+                borderColor: '#080b12',
+                boxShadow: '0 0 6px rgba(0,229,160,0.5)',
+              }}
+            />
           )}
         </button>
       </div>
@@ -115,10 +131,11 @@ export default function MissionFilters({
           {activeLabels.map((item) => (
             <div
               key={item.label}
-              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border bg-slate-900"
+              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold"
               style={{
-                borderColor: 'var(--tech-border-strong)',
-                color: 'var(--tech-text-secondary)',
+                background: 'rgba(0,229,160,0.06)',
+                border: '1px solid rgba(0,229,160,0.15)',
+                color: 'var(--tech-accent)',
               }}
             >
               <span>{item.label}</span>
@@ -128,7 +145,7 @@ export default function MissionFilters({
                   if (item.type === 'date') setDateFilter('all');
                   else setStatusFilter('all');
                 }}
-                className="hover:text-red-400 p-0.5 cursor-pointer ml-0.5"
+                className="p-0.5 cursor-pointer ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
               >
                 <X className="w-2.5 h-2.5" />
               </button>
@@ -140,7 +157,8 @@ export default function MissionFilters({
               setDateFilter('all');
               setStatusFilter('all');
             }}
-            className="text-[9px] font-extrabold text-[#ef4444] ml-1 self-center hover:underline"
+            className="text-[9px] font-extrabold ml-1 self-center hover:underline"
+            style={{ color: 'var(--tech-danger)', opacity: 0.7 }}
           >
             Effacer tout
           </button>
@@ -157,24 +175,49 @@ export default function MissionFilters({
           />
 
           {/* Sheet */}
-          <div className="relative bg-[#161616] border-t border-slate-800 rounded-t-3xl w-full max-w-md shadow-2xl overflow-hidden z-10 p-5 space-y-5 animate-fade-in">
+          <div
+            className="relative rounded-t-3xl w-full max-w-md shadow-2xl overflow-hidden z-10 p-5 space-y-5 tech-animate-in"
+            style={{
+              background: 'rgba(13,17,28,0.98)',
+              backdropFilter: 'blur(24px)',
+              borderTop: '1px solid rgba(255,255,255,0.07)',
+            }}
+          >
             {/* Grab Notch */}
-            <div className="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-1" />
+            <div
+              className="w-9 h-[3px] rounded-full mx-auto mb-1"
+              style={{ background: 'rgba(255,255,255,0.12)' }}
+            />
 
             <div className="flex justify-between items-center">
-              <h3 className="text-sm font-black text-white uppercase tracking-wider">Filtrer les missions</h3>
+              <h3
+                className="text-sm font-black uppercase tracking-widest"
+                style={{ color: 'var(--tech-text)' }}
+              >
+                Filtres
+              </h3>
               <button
                 onClick={() => setModalOpen(false)}
-                className="p-1 rounded-full bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1.5 rounded-xl transition-all active:scale-90"
+                style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid var(--tech-border)',
+                  color: 'var(--tech-text-muted)',
+                }}
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
             {/* Date filter section */}
             <div className="space-y-2">
-              <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Date</label>
-              <div className="flex flex-col gap-2">
+              <label
+                className="block text-[9px] font-black uppercase tracking-widest"
+                style={{ color: 'var(--tech-text-muted)' }}
+              >
+                Période
+              </label>
+              <div className="flex flex-col gap-1.5">
                 {datePills.map((p) => {
                   const active = dateFilter === p.id;
                   return (
@@ -184,15 +227,22 @@ export default function MissionFilters({
                         triggerVibrate('click');
                         setDateFilter(p.id);
                       }}
-                      className="flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition-all text-left"
+                      className="flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all text-left"
                       style={{
-                        background: active ? 'var(--tech-accent-soft)' : 'var(--tech-card)',
+                        background: active
+                          ? 'linear-gradient(135deg, rgba(0,229,160,0.10) 0%, rgba(0,229,160,0.05) 100%)'
+                          : 'rgba(255,255,255,0.025)',
                         color: active ? 'var(--tech-accent)' : 'var(--tech-text)',
-                        border: active ? '1px solid var(--tech-accent)' : '1px solid var(--tech-border)',
+                        border: active ? '1px solid rgba(0,229,160,0.25)' : '1px solid var(--tech-border)',
                       }}
                     >
                       <span>{p.label}</span>
-                      {active && <Check className="w-4 h-4" />}
+                      {active && (
+                        <Check
+                          className="w-3.5 h-3.5"
+                          style={{ color: 'var(--tech-accent)' }}
+                        />
+                      )}
                     </button>
                   );
                 })}
@@ -202,8 +252,13 @@ export default function MissionFilters({
             {/* Status filter section (only for Active tab) */}
             {activeTab === 'active' && (
               <div className="space-y-2">
-                <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Statut</label>
-                <div className="flex flex-col gap-2">
+                <label
+                  className="block text-[9px] font-black uppercase tracking-widest"
+                  style={{ color: 'var(--tech-text-muted)' }}
+                >
+                  Statut
+                </label>
+                <div className="flex flex-col gap-1.5">
                   {statusPills.map((p) => {
                     const active = statusFilter === p.id;
                     return (
@@ -213,15 +268,15 @@ export default function MissionFilters({
                           triggerVibrate('click');
                           setStatusFilter(p.id);
                         }}
-                        className="flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition-all text-left"
+                        className="flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all text-left"
                         style={{
-                          background: active ? 'rgba(255,255,255,0.06)' : 'var(--tech-card)',
+                          background: active ? `${p.color}12` : 'rgba(255,255,255,0.025)',
                           color: active ? p.color : 'var(--tech-text)',
-                          border: active ? `1px solid ${p.color}40` : '1px solid var(--tech-border)',
+                          border: active ? `1px solid ${p.color}35` : '1px solid var(--tech-border)',
                         }}
                       >
                         <span>{p.label}</span>
-                        {active && <Check className="w-4 h-4" style={{ color: p.color }} />}
+                        {active && <Check className="w-3.5 h-3.5" style={{ color: p.color }} />}
                       </button>
                     );
                   })}
@@ -235,9 +290,13 @@ export default function MissionFilters({
                 triggerVibrate('success');
                 setModalOpen(false);
               }}
-              className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-black text-xs font-black rounded-xl uppercase tracking-wider transition-all active:scale-[0.98]"
+              className="w-full py-3.5 text-black text-xs font-black rounded-2xl uppercase tracking-wider transition-all active:scale-[0.97]"
+              style={{
+                background: 'linear-gradient(135deg, var(--tech-accent) 0%, var(--tech-accent-dim) 100%)',
+                boxShadow: '0 4px 20px rgba(0,229,160,0.25)',
+              }}
             >
-              Appliquer les filtres
+              Appliquer
             </button>
           </div>
         </div>
