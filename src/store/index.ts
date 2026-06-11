@@ -41,6 +41,7 @@ interface AppState {
   addEquipment: (item: Omit<Equipment, 'id'>) => Promise<void>;
   updateEquipment: (id: string, item: Partial<Equipment>) => Promise<void>;
   deleteEquipment: (id: string) => Promise<void>;
+  importEquipment: (items: (Omit<Equipment, 'id'> & { id?: string })[]) => Promise<void>;
 
   addClient: (client: Omit<Client, 'id'>) => Promise<void>;
   updateClient: (id: string, client: Partial<Client>) => Promise<void>;
@@ -351,6 +352,25 @@ export const useStore = create<AppState>((set, get) => ({
     const { error } = await supabase.from('equipments').delete().eq('id', id);
     if (reportError('Suppression du matériel', error)) return;
     toast.success('Matériel supprimé.');
+    get().initialize();
+  },
+
+  importEquipment: async (items) => {
+    const payload = items.map(item => {
+      const obj: any = {
+        name: item.name,
+        category: item.category,
+        total_quantity: item.totalQuantity
+      };
+      if (item.id) {
+        obj.id = item.id;
+      }
+      return obj;
+    });
+
+    const { error } = await supabase.from('equipments').upsert(payload);
+    if (reportError('Importation du matériel', error)) return;
+    toast.success(`${items.length} matériel(s) importé(s) avec succès.`);
     get().initialize();
   },
 

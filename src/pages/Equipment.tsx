@@ -5,13 +5,14 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import {
   QrCode, Pencil, Search, X, LayoutGrid, CalendarDays,
-  Package, AlertTriangle, CheckCircle2, Layers, Maximize2, Minimize2
+  Package, AlertTriangle, CheckCircle2, Layers, Maximize2, Minimize2, Upload
 } from 'lucide-react';
 import { useStore } from '../store';
 import { Equipment as EquipmentType, EquipmentCategory, Mission } from '../types';
 import EquipmentModal from '../components/EquipmentModal';
 import MissionModal from '../components/MissionModal';
 import { QRCodePrintModal } from '../components/QRCodePrintModal';
+import CSVImportModal from '../components/CSVImportModal';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { useFullscreen } from '../hooks/useFullscreen';
 
@@ -47,6 +48,7 @@ export default function Equipment() {
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [selectedEqId, setSelectedEqId] = useState('');
   const [selectedEqName, setSelectedEqName] = useState('');
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   // ── Filtres ──────────────────────────────────────────────────────────────
   const [search, setSearch] = useState('');
@@ -179,8 +181,15 @@ export default function Equipment() {
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
           <button
+            onClick={() => setImportModalOpen(true)}
+            className="flex items-center justify-center gap-2 border border-[#cbd5e1] text-[#0f172a] hover:bg-[#f8fafc] px-4 py-2 rounded-md text-sm font-medium transition-colors shrink-0 cursor-pointer"
+          >
+            <Upload className="w-4 h-4" />
+            Importer CSV
+          </button>
+          <button
             onClick={openCreate}
-            className="flex items-center justify-center gap-2 bg-[#0f172a] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-black transition-colors shrink-0"
+            className="flex items-center justify-center gap-2 bg-[#0f172a] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-black transition-colors shrink-0 cursor-pointer"
           >
             + Nouveau
           </button>
@@ -336,6 +345,12 @@ export default function Equipment() {
           onClose={() => setPrintModalOpen(false)}
           equipmentId={selectedEqId}
           equipmentName={selectedEqName}
+        />
+      )}
+      {importModalOpen && (
+        <CSVImportModal
+          isOpen={importModalOpen}
+          onClose={() => setImportModalOpen(false)}
         />
       )}
     </div>
