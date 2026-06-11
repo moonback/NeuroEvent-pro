@@ -33,6 +33,7 @@ import { Link } from 'react-router-dom';
 import { QRScannerModal } from '../components/QRScannerModal';
 import { toast } from '../store/toast';
 import TimeLogPanel from '../components/TimeLogPanel';
+import TechnicianMyHours from '../components/TechnicianMyHours';
 
 export default function TechnicianDashboard() {
   const user = useAuthStore(state => state.user);
@@ -45,8 +46,11 @@ export default function TechnicianDashboard() {
   const technicians = useStore(state => state.technicians);
   const equipmentDefs = useStore(state => state.equipment);
   const clients = useStore(state => state.clients);
+  const addTimeLog = useStore(state => state.addTimeLog);
+  const timeLogs = useStore(state => state.timeLogs);
+  const updateTimeLog = useStore(state => state.updateTimeLog);
 
-  const [activeTab, setActiveTab] = React.useState<'active' | 'history'>('active');
+  const [activeTab, setActiveTab] = React.useState<'active' | 'history' | 'mes_heures'>('active');
   const [scannerOpen, setScannerOpen] = React.useState(false);
   const [activeMissionIdForScanner, setActiveMissionIdForScanner] = React.useState<string | null>(null);
   
@@ -63,6 +67,14 @@ export default function TechnicianDashboard() {
   // Local reports (saved to localStorage by mission and user id)
   const [localReports, setLocalReports] = React.useState<Record<string, string>>({});
   const [savingStatus, setSavingStatus] = React.useState<'idle' | 'saving' | 'saved'>('idle');
+
+  // Time Modal state (status transition with time logging)
+  const [timeModal, setTimeModal] = React.useState<{
+    type: 'start' | 'end';
+    targetStatus: 'En cours' | 'Termin\u00e9e';
+    time: string;
+    loading: boolean;
+  } | null>(null);
 
   // Network & Sync State
   const syncQueue = useStore(state => state.syncQueue);
@@ -101,9 +113,6 @@ export default function TechnicianDashboard() {
 
   const swipeStartX = React.useRef(0);
   const swipeStartY = React.useRef(0);
-  const tabsList: Array<'general' | 'client' | 'team' | 'equipment' | 'report' | 'hours'> = [
-    'general', 'client', 'team', 'equipment', 'report', 'hours'
-  ];
 
   // Helper for centralized vibrations (haptic feedback)
   const triggerVibrate = (type: 'click' | 'success' | 'double' | 'error') => {
@@ -403,16 +412,82 @@ export default function TechnicianDashboard() {
     setDrawerTab('general');
   };
 
-  const handleStatusChange = async (newStatus: 'Planifiée' | 'En cours' | 'Terminée') => {
+  const handleStatusChange = (newStatus: 'Planifiée' | 'En cours' | 'Terminée') => {
     if (!selectedMission || selectedMission.status === newStatus) return;
     triggerVibrate('double');
-    
-    // Optimistic update locally
+
+    // Planifiée -> En cours : demander l'heure de début
+    if (newStatus === 'En cours') {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const defaultTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      setTimeModal({ type: 'start', targetStatus: 'En cours', time: defaultTime, loading: false });
+      return;
+    }
+
+    // En cours -> Terminée : demander l'heure de fin
+    if (newStatus === 'Terminée') {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const defaultTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      setTimeModal({ type: 'end', targetStatus: 'Terminée', time: defaultTime, loading: false });
+      return;
+    }
+
+    // Autres transitions (ex : revenir à Planifiée) : direct, sans modal
     setSelectedMission({ ...selectedMission, status: newStatus });
-    
-    // Actual update in store
-    await updateMission(selectedMission.id, { status: newStatus });
+    updateMission(selectedMission.id, { status: newStatus });
     toast.success(`Statut mis à jour : ${newStatus}`);
+  };
+
+  // Valider le modal de saisie d'heure et appliquer le changement de statut
+  const handleTimeModalConfirm = async () => {
+    if (!timeModal || !selectedMission || !user?.id) return;
+    setTimeModal(prev => prev ? { ...prev, loading: true } : null);
+
+    const [h, m] = timeModal.time.split(':').map(Number);
+    const logTime = new Date();
+    logTime.setHours(h, m, 0, 0);
+
+    try {
+      if (timeModal.type === 'start') {
+        // Créer un nouveau time log avec heure de début
+        await addTimeLog({
+          missionId: selectedMission.id,
+          technicianId: user.id,
+          startTime: logTime,
+          endTime: null,
+        });
+      } else {
+        // Trouver le time log ouvert de ce technicien pour cette mission
+        const openLog = timeLogs.find(
+          l => l.missionId === selectedMission.id &&
+               l.technicianId === user.id &&
+               !l.endTime
+        );
+        if (openLog) {
+          await updateTimeLog(openLog.id, { endTime: logTime });
+        } else {
+          // Pas de log ouvert : créer un log complet (début = now - 1h par défaut)
+          const start = new Date(logTime);
+          start.setHours(start.getHours() - 1);
+          await addTimeLog({
+            missionId: selectedMission.id,
+            technicianId: user.id,
+            startTime: start,
+            endTime: logTime,
+          });
+        }
+      }
+
+      // Appliquer le changement de statut
+      const newStatus = timeModal.targetStatus;
+      setSelectedMission(prev => prev ? { ...prev, status: newStatus } : null);
+      await updateMission(selectedMission.id, { status: newStatus });
+      toast.success(`Statut mis à jour : ${newStatus}`);
+    } finally {
+      setTimeModal(null);
+    }
   };
 
   const handleTimeChange = async (field: 'start' | 'end', newTimeString: string) => {
@@ -512,10 +587,29 @@ export default function TechnicianDashboard() {
         >
           Historique
         </button>
+        <button
+          onClick={() => {
+            triggerVibrate('click');
+            setActiveTab('mes_heures');
+            setDateFilter('all');
+            setSearchTerm('');
+          }}
+          className={`pb-2 px-2 text-sm font-extrabold border-b-2 transition-all cursor-pointer active:scale-95 duration-100 ${
+            activeTab === 'mes_heures' 
+              ? 'border-[#2563eb] text-[#2563eb]' 
+              : 'border-transparent text-[#64748b] hover:text-[#334155]'
+          }`}
+        >
+          Mes Heures
+        </button>
       </div>
 
-      {/* Search and Filters panel */}
-      <div className="bg-white border-b border-[#e2e8f0]/60 p-4 space-y-3">
+      {activeTab === 'mes_heures' ? (
+        <TechnicianMyHours />
+      ) : (
+        <>
+          {/* Search and Filters panel */}
+          <div className="bg-white border-b border-[#e2e8f0]/60 p-4 space-y-3">
         {/* Search Input */}
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
@@ -740,9 +834,12 @@ export default function TechnicianDashboard() {
                 </div>
               </div>
             );
-          })
-        )}
-      </div>
+
+              })
+            )}
+          </div>
+        </>
+      )}
 
       {/* Bottom spacing & version info */}
       <div className="text-center py-6 text-[10px] text-[#cbd5e1] font-mono select-none">
@@ -1280,6 +1377,105 @@ className="flex flex-col items-center justify-center w-full h-full text-[#64748b
           }}
           onScan={handleScan}
         />
+      )}
+
+      {/* ── TIME MODAL : saisie heure lors du changement de statut ── */}
+      {timeModal && selectedMission && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+            onClick={() => !timeModal.loading && setTimeModal(null)}
+          />
+
+          {/* Card */}
+          <div className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md shadow-2xl overflow-hidden z-10 animate-fade-in">
+            {/* Colored header band */}
+            <div
+              className="px-6 pt-6 pb-5 relative"
+              style={{ backgroundColor: selectedMission.color }}
+            >
+              {/* Notch */}
+              <div className="w-10 h-1 bg-white/30 rounded-full mx-auto mb-4 sm:hidden" />
+
+              <div className="flex items-center gap-3 text-white">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0 backdrop-blur-sm">
+                  {timeModal.type === 'start'
+                    ? <Play className="w-6 h-6 text-white" />
+                    : <CheckCircle className="w-6 h-6 text-white" />
+                  }
+                </div>
+                <div>
+                  <div className="text-[10px] font-extrabold uppercase tracking-widest text-white/70">
+                    {timeModal.type === 'start' ? 'Démarrage de la mission' : 'Clôture de la mission'}
+                  </div>
+                  <div className="font-black text-lg leading-tight">{selectedMission.title}</div>
+                  <div className="text-xs font-semibold text-white/80 mt-0.5">{selectedMission.client}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-5">
+              <div>
+                <p className="text-sm font-semibold text-[#475569] leading-relaxed">
+                  {timeModal.type === 'start'
+                    ? 'Indiquez votre heure de prise de poste. Cette heure sera enregistrée comme début de votre créneau.'
+                    : 'Indiquez votre heure de fin de mission. Votre créneau de travail sera clôturé.'}
+                </p>
+              </div>
+
+              {/* Time picker */}
+              <div>
+                <label className="block text-[10px] font-extrabold uppercase tracking-wider text-[#94a3b8] mb-2">
+                  {timeModal.type === 'start' ? 'Heure de début' : 'Heure de fin'}
+                </label>
+                <input
+                  type="time"
+                  value={timeModal.time}
+                  onChange={e => setTimeModal(prev => prev ? { ...prev, time: e.target.value } : null)}
+                  className="w-full text-3xl font-black text-[#0f172a] text-center border-2 rounded-2xl py-4 focus:outline-none focus:border-transparent focus:ring-4 transition-all bg-[#f8fafc]"
+                  style={{
+                    borderColor: selectedMission.color + '40',
+                    '--tw-ring-color': selectedMission.color + '30',
+                  } as React.CSSProperties}
+                  autoFocus
+                />
+                <p className="text-center text-xs text-[#94a3b8] font-semibold mt-2">
+                  {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </p>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3 pt-1 pb-safe">
+                <button
+                  type="button"
+                  onClick={() => setTimeModal(null)}
+                  disabled={timeModal.loading}
+                  className="flex-1 py-3.5 rounded-2xl text-sm font-extrabold text-[#64748b] bg-[#f1f5f9] hover:bg-[#e2e8f0] transition-all active:scale-95 duration-100 disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleTimeModalConfirm}
+                  disabled={timeModal.loading || !timeModal.time}
+                  className="flex-[2] py-3.5 rounded-2xl text-sm font-extrabold text-white transition-all active:scale-95 duration-100 disabled:opacity-50 shadow-sm flex items-center justify-center gap-2"
+                  style={{ backgroundColor: selectedMission.color }}
+                >
+                  {timeModal.loading ? (
+                    <span className="animate-pulse">Enregistrement…</span>
+                  ) : (
+                    <>
+                      {timeModal.type === 'start' ? <Play className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                      {timeModal.type === 'start' ? 'Démarrer la mission' : 'Terminer la mission'}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
