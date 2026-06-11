@@ -397,6 +397,34 @@ export default function TechnicianDashboard() {
     setDrawerTab('general');
   };
 
+  const handleStatusChange = async (newStatus: 'Planifiée' | 'En cours' | 'Terminée') => {
+    if (!selectedMission || selectedMission.status === newStatus) return;
+    triggerVibrate('double');
+    
+    // Optimistic update locally
+    setSelectedMission({ ...selectedMission, status: newStatus });
+    
+    // Actual update in store
+    await updateMission(selectedMission.id, { status: newStatus });
+    toast.success(`Statut mis à jour : ${newStatus}`);
+  };
+
+  const handleTimeChange = async (field: 'start' | 'end', newTimeString: string) => {
+    if (!selectedMission || !newTimeString) return;
+    const [hours, minutes] = newTimeString.split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return;
+
+    const newDate = new Date(selectedMission[field]);
+    newDate.setHours(hours, minutes, 0, 0);
+
+    // Optimistic update
+    setSelectedMission({ ...selectedMission, [field]: newDate });
+
+    // Store update
+    await updateMission(selectedMission.id, { [field]: newDate });
+    toast.success(`Heure de ${field === 'start' ? 'début' : 'fin'} mise à jour`);
+  };
+
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#f8fafc] pb-24 relative shadow-2xl border-x border-[#e2e8f0]">
       
@@ -817,7 +845,10 @@ className="flex flex-col items-center justify-center w-full h-full text-[#64748b
                   { key: 'Terminée',  label: 'Terminée',  done: false,                                                    active: selectedMission.status === 'Terminée' }
                 ].map((step, i, arr) => (
                   <React.Fragment key={step.key}>
-                    <div className="flex flex-col items-center gap-1">
+                    <div 
+                      className="flex flex-col items-center gap-1 cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+                      onClick={() => handleStatusChange(step.key as any)}
+                    >
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black transition-all ${
                         step.active ? 'bg-white text-slate-800 shadow-md ring-2 ring-white/40' :
                         step.done   ? 'bg-white/30 text-white' : 'bg-white/15 text-white/50'
@@ -882,13 +913,23 @@ className="flex flex-col items-center justify-center w-full h-full text-[#64748b
                         <div>
                           <div className="text-[10px] font-bold text-[#94a3b8] uppercase mb-0.5">Début</div>
                           <div className="font-bold text-[#0f172a] text-sm capitalize">{format(selectedMission.start, 'EEEE d MMMM yyyy', { locale: fr })}</div>
-                          <div className="text-xs font-semibold text-[#64748b]">{format(selectedMission.start, 'HH:mm')}</div>
+                          <input 
+                            type="time" 
+                            value={format(selectedMission.start, 'HH:mm')} 
+                            onChange={(e) => handleTimeChange('start', e.target.value)}
+                            className="text-xs font-semibold text-[#64748b] bg-transparent border-b border-dashed border-[#cbd5e1] focus:outline-none focus:border-[#2563eb] cursor-pointer"
+                          />
                         </div>
                         <div className="w-px h-10 bg-[#e2e8f0] self-center"></div>
-                        <div className="text-right">
+                        <div className="text-right flex flex-col items-end">
                           <div className="text-[10px] font-bold text-[#94a3b8] uppercase mb-0.5">Fin</div>
                           <div className="font-bold text-[#0f172a] text-sm capitalize">{format(selectedMission.end, 'EEEE d MMMM yyyy', { locale: fr })}</div>
-                          <div className="text-xs font-semibold text-[#64748b]">{format(selectedMission.end, 'HH:mm')}</div>
+                          <input 
+                            type="time" 
+                            value={format(selectedMission.end, 'HH:mm')} 
+                            onChange={(e) => handleTimeChange('end', e.target.value)}
+                            className="text-xs font-semibold text-[#64748b] bg-transparent border-b border-dashed border-[#cbd5e1] focus:outline-none focus:border-[#2563eb] cursor-pointer text-right"
+                          />
                         </div>
                       </div>
                     </div>
