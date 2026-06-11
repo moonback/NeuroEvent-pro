@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import interactionPlugin from '@fullcalendar/interaction';
-import { Pencil } from 'lucide-react';
+import { Pencil, Maximize2, Minimize2 } from 'lucide-react';
 import { useStore } from '../store';
 import { Truck } from '../types';
 import TruckModal from '../components/TruckModal';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import { useFullscreen } from '../hooks/useFullscreen';
 
 export default function Trucks() {
   const isMobile = useIsMobile();
@@ -16,6 +17,7 @@ export default function Trucks() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Truck | null>(null);
+  const { ref: fsRef, isFullscreen, toggle: toggleFullscreen } = useFullscreen();
 
   const resources = trucks.map(truck => ({
     id: truck.id,
@@ -60,15 +62,25 @@ export default function Trucks() {
   };
 
   return (
-    <div className="h-full bg-white border border-[#e2e8f0] p-3 sm:p-6 flex flex-col relative z-0">
+    <div ref={fsRef} className={`bg-white border border-[#e2e8f0] p-3 sm:p-6 flex flex-col relative z-0 ${isFullscreen ? 'h-screen' : 'h-full'}`}>
       <div className="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div className="flex flex-col gap-1">
           <h2 className="text-lg sm:text-xl font-bold text-[#0f172a] uppercase tracking-tight">Planning des Camions</h2>
           <p className="text-xs text-[#64748b] font-medium">Glissez une mission pour changer son créneau ou son véhicule — cliquez sur un camion pour le modifier</p>
         </div>
-        <button onClick={openCreate} className="flex items-center justify-center gap-2 bg-[#0f172a] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-black transition-colors shrink-0 self-start sm:self-auto">
-          + Nouveau Camion
-        </button>
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <button
+            onClick={toggleFullscreen}
+            title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+            className="p-2 rounded-md text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9] border border-[#e2e8f0] transition-colors"
+            aria-label={isFullscreen ? 'Quitter le plein écran' : 'Passer en plein écran'}
+          >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+          <button onClick={openCreate} className="flex items-center justify-center gap-2 bg-[#0f172a] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-black transition-colors">
+            + Nouveau Camion
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 min-h-0">
