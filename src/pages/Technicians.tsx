@@ -63,7 +63,6 @@ export default function Technicians() {
     });
   };
 
-  const openCreate = () => { setEditing(null); setTechModalOpen(true); };
   const openEdit = (tech: Technician | undefined) => {
     if (!tech) return;
     setEditing(tech);
@@ -87,12 +86,6 @@ export default function Technicians() {
             aria-label={isFullscreen ? 'Quitter le plein écran' : 'Passer en plein écran'}
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
-          <button
-            onClick={openCreate}
-            className="flex items-center justify-center gap-2 bg-[#0f172a] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-black transition-colors"
-          >
-            + Nouveau Technicien
           </button>
         </div>
       </div>
