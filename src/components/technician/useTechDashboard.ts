@@ -6,11 +6,11 @@ import { isSameDay, startOfWeek, endOfWeek } from 'date-fns';
 import { supabase } from '../../lib/supabase';
 
 export type MainTab = 'active' | 'history' | 'mes_heures' | 'disponibilites' | 'profil';
-export type DrawerTab = 'general' | 'client' | 'team' | 'equipment' | 'report' | 'hours' | 'checklist';
+export type DrawerTab = 'general' | 'client' | 'team' | 'equipment' | 'photos' | 'report' | 'hours' | 'checklist';
 export type DateFilter = 'all' | 'today' | 'week';
 export type StatusFilter = 'all' | 'Planifiée' | 'En cours';
 
-export const DRAWER_TABS: DrawerTab[] = ['general', 'client', 'team', 'equipment', 'hours', 'checklist', 'report'];
+export const DRAWER_TABS: DrawerTab[] = ['general', 'client', 'team', 'equipment', 'photos', 'hours', 'checklist', 'report'];
 
 export interface TimeModalState {
   type: 'start' | 'end';

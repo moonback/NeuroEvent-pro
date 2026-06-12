@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   X, Check, Clock, MapPin, Info, Phone, Users, QrCode, FileText, Timer, PenTool,
-  Sparkles, ClipboardCheck, Truck, Wrench
+  Sparkles, ClipboardCheck, Truck, Wrench, Camera
 } from 'lucide-react';
 import { format, isSameDay, differenceInMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -46,6 +46,7 @@ const TAB_CONFIG: { id: DrawerTab; label: string; icon: React.ElementType }[] = 
   { id: 'client', label: 'Client', icon: Phone },
   { id: 'team', label: 'Équipe', icon: Users },
   { id: 'equipment', label: 'Matériel', icon: QrCode },
+  { id: 'photos', label: 'Photos', icon: Camera },
   { id: 'hours', label: 'Heures', icon: Timer },
   { id: 'checklist', label: 'Checklist', icon: ClipboardCheck },
   { id: 'report', label: 'Rapport', icon: FileText },

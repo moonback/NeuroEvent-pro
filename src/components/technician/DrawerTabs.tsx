@@ -983,41 +983,6 @@ function ReportTab({
         </div>
       </InfoCard>
 
-      {/* ── Photos Preuves Card ── */}
-      <InfoCard>
-        <CardHeader
-          icon={<Camera className="w-3.5 h-3.5" style={{ color: mission.color }} />}
-          label="Photos Preuves — Galerie Terrain"
-          right={
-            <span
-              className="text-[9px] font-black px-2 py-0.5 rounded-full"
-              style={{ background: 'rgba(0,229,160,0.1)', color: 'var(--tech-accent)' }}
-            >
-              {(mission.photos || []).length} total
-            </span>
-          }
-        />
-        <div className="p-4 space-y-5">
-          <p className="text-[10px] leading-relaxed" style={{ color: 'var(--tech-text-muted)' }}>
-            Ajoutez autant de photos que nécessaire pour chaque étape. Elles sont envoyées instantanément dans votre bucket privé et consultables par l'administrateur.
-          </p>
-
-          {renderPhotoSection('before', photoBefore)}
-
-          <div style={{ borderTop: '1px solid var(--tech-border)', paddingTop: '1rem' }}>
-            {renderPhotoSection('after', photoAfter)}
-          </div>
-
-          {(mission.photos || []).length === 0 && (
-            <div className="py-4 text-center">
-              <Camera className="w-7 h-7 mx-auto mb-2 tech-animate-float" style={{ color: 'var(--tech-text-muted)' }} />
-              <p className="text-[11px] italic" style={{ color: 'var(--tech-text-muted)' }}>
-                Aucune photo. Appuyez sur + pour photographier l'état des lieux.
-              </p>
-            </div>
-          )}
-        </div>
-      </InfoCard>
     </div>
   );
 }
@@ -1028,6 +993,238 @@ function ReportTab({
    ══════════════════════════════════════════════════════════════════════════ */
 function HoursTab({ mission }: any) {
   return <TimeLogPanel missionId={mission.id} missionColor={mission.color} missionStatus={mission.status} />;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHOTOS TAB
+   ══════════════════════════════════════════════════════════════════════════ */
+function PhotosTab({
+  mission,
+  photoUploading,
+  handlePhotoUpload,
+  handlePhotoDelete
+}: any) {
+  const [lightbox, setLightbox] = React.useState<string | null>(null);
+
+  const photoBefore: any[] = (mission.photos || []).filter((p: any) => p.type === 'before');
+  const photoAfter: any[] = (mission.photos || []).filter((p: any) => p.type === 'after');
+  const totalPhotos = (mission.photos || []).length;
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'before' | 'after') => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    for (const file of files) {
+      await handlePhotoUpload(mission.id, type, file);
+    }
+    e.target.value = '';
+  };
+
+  const renderPhotoSection = (type: 'before' | 'after', photos: any[]) => {
+    const label = type === 'before' ? 'Avant Montage' : 'Après Montage';
+    const accentColor = type === 'before' ? '#4d9fff' : '#00e5a0';
+    const isUploading = photoUploading?.missionId === mission.id && photoUploading?.type === type;
+
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span
+            className="text-[9px] font-black uppercase tracking-widest"
+            style={{ color: accentColor }}
+          >
+            {label}
+          </span>
+          <span
+            className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+            style={{ background: `${accentColor}18`, color: accentColor }}
+          >
+            {photos.length} photo{photos.length > 1 ? 's' : ''}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {/* Existing photos */}
+          {photos.map((photo: any) => (
+            <div key={photo.id} className="relative aspect-square rounded-xl overflow-hidden group">
+              <img
+                src={photo.url}
+                alt={label}
+                className="w-full h-full object-cover cursor-pointer"
+                onClick={() => setLightbox(photo.url)}
+              />
+              {/* Delete overlay */}
+              <div
+                className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100"
+              >
+                <button
+                  onClick={() => handlePhotoDelete(mission.id, photo.id)}
+                  className="p-1.5 rounded-full transition-all cursor-pointer"
+                  style={{ background: 'rgba(255,60,80,0.25)', color: '#ff8fa0' }}
+                  title="Supprimer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setLightbox(photo.url)}
+                  className="p-1.5 rounded-full transition-all cursor-pointer"
+                  style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}
+                  title="Agrandir"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {/* Add camera button */}
+          <label
+            className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all group"
+            style={{
+              borderColor: isUploading ? accentColor : 'var(--tech-border-strong)',
+              background: isUploading ? `${accentColor}08` : 'rgba(255,255,255,0.01)',
+            }}
+          >
+            {isUploading ? (
+              <Loader2 className="w-5 h-5 animate-spin" style={{ color: accentColor }} />
+            ) : (
+              <>
+                <Camera
+                  className="w-4 h-4 mb-0.5 transition-colors group-hover:scale-110"
+                  style={{ color: 'var(--tech-text-muted)' }}
+                />
+                <span className="text-[7px] font-black uppercase tracking-wider text-center" style={{ color: 'var(--tech-text-muted)' }}>Appareil</span>
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={(e) => handleFileChange(e, type)}
+              className="hidden"
+              disabled={isUploading}
+            />
+          </label>
+
+          {/* Add gallery button */}
+          <label
+            className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all group"
+            style={{
+              borderColor: isUploading ? accentColor : 'var(--tech-border-strong)',
+              background: isUploading ? `${accentColor}08` : 'rgba(255,255,255,0.01)',
+            }}
+          >
+            {isUploading ? (
+              <Loader2 className="w-5 h-5 animate-spin" style={{ color: accentColor }} />
+            ) : (
+              <>
+                <ImageIcon
+                  className="w-4 h-4 mb-0.5 transition-colors group-hover:scale-110"
+                  style={{ color: 'var(--tech-text-muted)' }}
+                />
+                <span className="text-[7px] font-black uppercase tracking-wider text-center" style={{ color: 'var(--tech-text-muted)' }}>Galerie</span>
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => handleFileChange(e, type)}
+              className="hidden"
+              disabled={isUploading}
+            />
+          </label>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-3 tech-stagger">
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90"
+          onClick={() => setLightbox(null)}
+        >
+          <div className="relative max-w-[95vw] max-h-[90vh]">
+            <img src={lightbox} alt="Photo" className="max-w-full max-h-[85vh] object-contain rounded-2xl" />
+            <button
+              onClick={() => setLightbox(null)}
+              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center text-lg font-bold cursor-pointer"
+            >
+              ×
+            </button>
+            <a
+              href={lightbox}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="absolute bottom-2 right-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider text-white cursor-pointer"
+              style={{ background: 'rgba(255,255,255,0.15)' }}
+            >
+              Ouvrir l'original ↗
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* ── Photos Header Card ── */}
+      <InfoCard>
+        <CardHeader
+          icon={<Camera className="w-3.5 h-3.5" style={{ color: mission.color }} />}
+          label="Galerie Photos Terrain"
+          right={
+            <span
+              className="text-[9px] font-black px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(0,229,160,0.1)', color: 'var(--tech-accent)' }}
+            >
+              {totalPhotos} photo{totalPhotos > 1 ? 's' : ''}
+            </span>
+          }
+        />
+        <div className="p-4 space-y-2">
+          <p className="text-[10px] leading-relaxed" style={{ color: 'var(--tech-text-muted)' }}>
+            Documentez chaque étape de la mission. Les photos sont conservées sécurisément et consultables par l'administrateur.
+          </p>
+          {totalPhotos > 0 && (
+            <div className="flex items-center gap-2 mt-2 p-2 rounded-lg" style={{ background: 'rgba(0,229,160,0.08)', border: '1px solid rgba(0,229,160,0.15)' }}>
+              <Check className="w-3.5 h-3.5" style={{ color: 'var(--tech-accent)' }} />
+              <span className="text-[9px] font-semibold" style={{ color: 'var(--tech-accent)' }}>
+                {totalPhotos} photo{totalPhotos > 1 ? 's' : ''} documentée{totalPhotos > 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
+        </div>
+      </InfoCard>
+
+      {/* ── Photos Avant Montage ── */}
+      <InfoCard>
+        <div className="p-4">
+          {renderPhotoSection('before', photoBefore)}
+        </div>
+      </InfoCard>
+
+      {/* ── Photos Après Montage ── */}
+      <InfoCard>
+        <div className="p-4">
+          {renderPhotoSection('after', photoAfter)}
+        </div>
+      </InfoCard>
+
+      {/* ── Empty state ── */}
+      {totalPhotos === 0 && (
+        <InfoCard>
+          <div className="p-8 text-center">
+            <Camera className="w-12 h-12 mx-auto mb-3 tech-animate-float" style={{ color: 'var(--tech-text-muted)' }} />
+            <h4 className="font-bold text-sm" style={{ color: 'var(--tech-text)' }}>Aucune photo</h4>
+            <p className="text-[10px] mt-2" style={{ color: 'var(--tech-text-muted)' }}>
+              Commencez par photographier l'état des lieux avant et après montage pour justifier la mission.
+            </p>
+          </div>
+        </InfoCard>
+      )}
+    </div>
+  );
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1290,6 +1487,15 @@ export default function DrawerTabs(props: DrawerTabsProps) {
       return <TeamTab mission={mission} getColleaguesDetailed={props.getColleaguesDetailed} />;
     case 'equipment':
       return <EquipmentTab mission={mission} getEquipmentProgress={props.getEquipmentProgress} equipmentDefs={props.equipmentDefs} handleToggle={props.handleToggle} openScanner={props.openScanner} scannedItemId={props.scannedItemId} />;
+    case 'photos':
+      return (
+        <PhotosTab
+          mission={mission}
+          photoUploading={props.photoUploading}
+          handlePhotoUpload={props.handlePhotoUpload}
+          handlePhotoDelete={props.handlePhotoDelete}
+        />
+      );
     case 'hours':
       return <HoursTab mission={mission} />;
     case 'checklist':

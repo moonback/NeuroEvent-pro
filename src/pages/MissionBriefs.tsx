@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
-import { FileText, Printer, Search, Calendar as CalendarIcon, MapPin, Truck as TruckIcon, Users, Package, ArrowLeft, Clock, CheckCircle2, Circle, AlertCircle, Timer } from 'lucide-react';
+import { FileText, Printer, Search, Calendar as CalendarIcon, MapPin, Truck as TruckIcon, Users, Package, ArrowLeft, Clock, CheckCircle2, Circle, AlertCircle, Timer, Camera, Image as ImageIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import TechnicianHoursAdmin from '../components/TechnicianHoursAdmin';
@@ -318,19 +318,77 @@ export default function MissionBriefs() {
                   </table>
                 </div>
 
-                {/* Signatures */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-6 sm:gap-8 mt-12 bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-200">
-                  <div className="h-32 border-2 border-dashed border-gray-300 rounded-lg p-4 relative flex items-center justify-center">
-                    <span className="absolute top-2 left-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Visa Technicien</span>
+                {/* Photos Preuves Section */}
+                {selectedMission.photos && selectedMission.photos.length > 0 && (
+                  <div className="mb-8">
+                    <h2 className="text-lg font-bold border-b border-gray-300 pb-2 mb-4 flex items-center gap-2 text-black">
+                      <Camera className="w-5 h-5" />
+                      Photos Preuves
+                    </h2>
+                    
+                    {/* Avant Montage */}
+                    {selectedMission.photos.some((p: any) => p.type === 'before') && (
+                      <div className="mb-6">
+                        <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                          Avant Montage
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {selectedMission.photos
+                            .filter((p: any) => p.type === 'before')
+                            .map((photo: any) => (
+                              <div key={photo.id} className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 aspect-square">
+                                <img 
+                                  src={photo.url} 
+                                  alt="Photo avant"
+                                  className="w-full h-full object-cover print:max-h-40"
+                                />
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Après Montage */}
+                    {selectedMission.photos.some((p: any) => p.type === 'after') && (
+                      <div>
+                        <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          Après Montage
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {selectedMission.photos
+                            .filter((p: any) => p.type === 'after')
+                            .map((photo: any) => (
+                              <div key={photo.id} className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 aspect-square">
+                                <img 
+                                  src={photo.url} 
+                                  alt="Photo après"
+                                  className="w-full h-full object-cover print:max-h-40"
+                                />
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
+                )}
+
+                {/* Signature Client */}
+                <div className="mt-12 bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-200">
+                  <h2 className="text-lg font-bold border-b border-gray-300 pb-2 mb-4 text-black">
+                    Signature Client / Référent
+                  </h2>
                   <div className="h-32 border-2 border-dashed border-gray-300 rounded-lg p-4 relative flex items-center justify-center bg-white">
-                    <span className="absolute top-2 left-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Visa Client / Référent</span>
                     {selectedMission.signatureUrl && (
                       <img 
                         src={selectedMission.signatureUrl} 
                         alt="Signature Client" 
                         className="max-h-full max-w-full object-contain"
                       />
+                    )}
+                    {!selectedMission.signatureUrl && (
+                      <span className="text-sm text-gray-400 italic">Aucune signature enregistrée</span>
                     )}
                   </div>
                 </div>
