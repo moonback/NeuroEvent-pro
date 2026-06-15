@@ -19,6 +19,7 @@ const Trucks = lazy(() => import('./pages/Trucks'));
 const Equipment = lazy(() => import('./pages/Equipment'));
 const Clients = lazy(() => import('./pages/Clients'));
 const Users = lazy(() => import('./pages/Users'));
+const Kanban = lazy(() => import('./pages/Kanban'));
 const TechnicianDashboard = lazy(() => import('./pages/TechnicianDashboard'));
 const Settings = lazy(() => import('./pages/Settings'));
 const MissionBriefs = lazy(() => import('./pages/MissionBriefs'));
@@ -79,6 +80,7 @@ export default function App() {
             <>
               <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route index element={<Planning />} />
+                <Route path="kanban" element={<Kanban />} />
                 <Route path="technicians" element={<Technicians />} />
                 <Route path="trucks" element={<Trucks />} />
                 <Route path="equipment" element={<Equipment />} />

@@ -17,6 +17,7 @@ interface NavItem {
 
 const mainNavigation: NavItem[] = [
   { name: 'Planning Global', to: '/', icon: Calendar, end: true },
+  { name: 'Tableau Kanban', to: '/kanban', icon: Package },
   { name: 'Techniciens', to: '/technicians', icon: Users },
   { name: 'Camions', to: '/trucks', icon: Truck },
   { name: 'Matériel', to: '/equipment', icon: Package },
