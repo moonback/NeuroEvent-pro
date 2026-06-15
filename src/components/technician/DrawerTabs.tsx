@@ -70,9 +70,11 @@ function CardHeader({ icon, label, right }: { icon: React.ReactNode; label: stri
 function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab, handleTimeChange, onStatusChange, openScanner, onOpenSignature }: any) {
   const prog = getEquipmentProgress(mission.equipments);
   const user = useAuthStore(state => state.user);
+  const role = useAuthStore(state => state.role);
   const technicians = useStore(state => state.technicians);
   const currentTech = technicians.find(t => t.id === user?.id);
   const isChecklistEnabled = currentTech?.checklistEnabled ?? false;
+  const isTechnician = role === 'Technicien';
 
   const [checkedItems, setCheckedItems] = React.useState<Record<string, boolean>>({});
 
@@ -115,6 +117,8 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
                 onChange={(e) => handleTimeChange('start', e.target.value)}
                 className="text-sm font-black bg-transparent outline-none cursor-pointer w-full"
                 style={{ color: mission.color }}
+                disabled={isTechnician}
+                aria-disabled={isTechnician}
               />
             </div>
             {/* End */}
@@ -132,6 +136,8 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
                 onChange={(e) => handleTimeChange('end', e.target.value)}
                 className="text-sm font-black bg-transparent outline-none cursor-pointer w-full"
                 style={{ color: mission.color }}
+                disabled={isTechnician}
+                aria-disabled={isTechnician}
               />
             </div>
           </div>
