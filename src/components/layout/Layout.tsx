@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   Calendar, Users, Truck, Package, Settings, Menu, Printer, LogOut,
-  Building2, UserCog, FileText, BarChart3, Plus, Timer
+  Building2, UserCog, FileText, BarChart3, Plus, Timer, CalendarX2
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import MissionModal from '../MissionModal';
@@ -17,6 +17,7 @@ interface NavItem {
 
 const mainNavigation: NavItem[] = [
   { name: 'Planning Global', to: '/', icon: Calendar, end: true },
+  { name: 'Disponibilités', to: '/disponibilites', icon: CalendarX2 },
   { name: 'Tableau Kanban', to: '/kanban', icon: Package },
   { name: 'Techniciens', to: '/technicians', icon: Users },
   { name: 'Camions', to: '/trucks', icon: Truck },
