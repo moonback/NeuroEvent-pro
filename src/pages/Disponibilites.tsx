@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '../store';
 import { CalendarX2, Search, Info } from 'lucide-react';
-import { TechnicianUnavailability, Technician } from '../types';
+import { TechnicianUnavailability } from '../types';
 
 function formatDateRange(start: Date, end: Date) {
   return `${start.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} ${start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
@@ -33,8 +33,25 @@ export default function Disponibilites() {
     }, {} as Record<string, TechnicianUnavailability[]>);
   }, [filteredTechnicians, unavailabilities]);
 
-  const totalUnavailabilities = unavailabilities.length;
-  const nextUnavailability = unavailabilities.slice().sort((a, b) => a.start.getTime() - b.start.getTime())[0];
+  const now = new Date();
+
+  const displayedUnavailabilities = useMemo(() => {
+    const techIds = new Set(filteredTechnicians.map((tech) => tech.id));
+    return unavailabilities
+      .filter((u) => techIds.has(u.technicianId))
+      .sort((a, b) => a.start.getTime() - b.start.getTime());
+  }, [filteredTechnicians, unavailabilities]);
+
+  const activeUnavailabilities = displayedUnavailabilities.filter(
+    (u) => u.start.getTime() <= now.getTime() && u.end.getTime() > now.getTime()
+  );
+
+  const futureUnavailabilities = displayedUnavailabilities.filter((u) => u.start.getTime() > now.getTime());
+  const totalUnavailabilities = displayedUnavailabilities.length;
+  const currentAbsentTechnicians = new Set(activeUnavailabilities.map((u) => u.technicianId)).size;
+  const futureAbsentTechnicians = new Set(futureUnavailabilities.map((u) => u.technicianId)).size;
+  const nextUnavailability = futureUnavailabilities[0];
+  const hasNoResults = filteredTechnicians.length === 0;
 
   return (
     <div className="h-full flex flex-col">
@@ -56,16 +73,26 @@ export default function Disponibilites() {
         </div>
       </div>
 
-      <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <div className="rounded-3xl border border-[#e2e8f0] bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-[#64748b]">Techniciens</p>
           <p className="mt-3 text-3xl font-bold text-[#0f172a]">{filteredTechnicians.length}</p>
           <p className="mt-1 text-xs text-[#64748b]">Affichés</p>
         </div>
         <div className="rounded-3xl border border-[#e2e8f0] bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#64748b]">Absences enregistrées</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#64748b]">Absences affichées</p>
           <p className="mt-3 text-3xl font-bold text-[#0f172a]">{totalUnavailabilities}</p>
-          <p className="mt-1 text-xs text-[#64748b]">Total</p>
+          <p className="mt-1 text-xs text-[#64748b]">Sur le filtre actuel</p>
+        </div>
+        <div className="rounded-3xl border border-[#e2e8f0] bg-white p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#64748b]">Techniciens absents</p>
+          <p className="mt-3 text-3xl font-bold text-[#0f172a]">{currentAbsentTechnicians}</p>
+          <p className="mt-1 text-xs text-[#64748b]">En cours</p>
+        </div>
+        <div className="rounded-3xl border border-[#e2e8f0] bg-white p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#64748b]">Absences à venir</p>
+          <p className="mt-3 text-3xl font-bold text-[#0f172a]">{futureAbsentTechnicians}</p>
+          <p className="mt-1 text-xs text-[#64748b]">Techniciens concernés</p>
         </div>
         <div className="rounded-3xl border border-[#e2e8f0] bg-white p-4 flex items-start gap-3">
           <CalendarX2 className="w-5 h-5 text-[#2563eb]" />
@@ -80,41 +107,62 @@ export default function Disponibilites() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 overflow-hidden flex-1">
-        {filteredTechnicians.map((tech) => {
+      {hasNoResults ? (
+        <div className="rounded-3xl border border-[#e2e8f0] bg-white p-10 text-center text-sm text-[#64748b]">
+          Aucun technicien ne correspond à votre recherche.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 overflow-y-auto min-h-0 max-h-[68vh] flex-1">
+          {filteredTechnicians.map((tech) => {
           const techUnavail = unavailabilitiesByTech[tech.id] ?? [];
+          const isCurrentlyUnavailable = techUnavail.some(
+            (u) => u.start.getTime() <= now.getTime() && u.end.getTime() > now.getTime()
+          );
+          const nextTechUnavail = techUnavail.find((u) => u.start.getTime() > now.getTime());
+
           return (
             <div key={tech.id} className="rounded-3xl border border-[#e2e8f0] bg-white overflow-hidden shadow-sm">
               <div className="px-5 py-4 border-b border-[#e2e8f0] bg-[#f8fafc] flex items-center gap-3">
                 <div className="rounded-2xl bg-[#e2e8f0] text-[#1e3a8a] w-11 h-11 flex items-center justify-center font-bold uppercase">
                   {tech.firstName.charAt(0)}{tech.lastName.charAt(0)}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm font-bold text-[#0f172a] truncate">{tech.firstName} {tech.lastName}</p>
                   <p className="text-xs text-[#64748b]">{tech.specialty || 'Spécialité non définie'}</p>
                 </div>
+                <span className={`ml-auto text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${isCurrentlyUnavailable ? 'bg-[#ffe4e8] text-[#b91c1c]' : nextTechUnavail ? 'bg-[#e0f2fe] text-[#0369a1]' : 'bg-[#ecfccb] text-[#365314]'}`}>
+                  {isCurrentlyUnavailable ? 'Absent maintenant' : nextTechUnavail ? 'Absence à venir' : 'Disponible'}
+                </span>
               </div>
 
-              <div className="p-5 space-y-4">
+              <div className="p-4 space-y-3">
+                <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-wider text-[#64748b]">
+                  <span className="rounded-full bg-[#f8fafc] px-2.5 py-1 border border-[#e2e8f0]">{techUnavail.length} absence{techUnavail.length > 1 ? 's' : ''}</span>
+                  {nextTechUnavail && (
+                    <span className="rounded-full bg-[#e0f2fe] px-2.5 py-1 border border-[#bfdbfe] text-[#0369a1]">Prochaine : {nextTechUnavail.start.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
+                  )}
+                </div>
+
                 {techUnavail.length === 0 ? (
                   <div className="rounded-3xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] p-4 text-sm text-[#64748b]">
                     Aucune indisponibilité signalée pour le moment.
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {techUnavail.map((unav) => (
-                      <div key={unav.id} className="rounded-3xl border border-[#e2e8f0] p-4">
-                        <div className="flex items-center justify-between gap-3">
+                  <div className="space-y-2">
+                    {techUnavail.slice(0, 2).map((unav) => (
+                      <div key={unav.id} className="rounded-3xl border border-[#e2e8f0] p-3 bg-[#ffffff]">
+                        <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-[#64748b]">{unav.type}</p>
-                            <p className="mt-2 text-sm text-[#0f172a]">{formatDateRange(unav.start, unav.end)}</p>
-                          </div>
-                          <div className="rounded-full px-3 py-1 text-[11px] font-semibold text-[#0f172a] bg-[#e2e8f0] border border-[#cbd5e1]">
-                            {unav.reason || 'Sans raison'}
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#64748b]">{unav.type}</p>
+                            <p className="mt-1 text-sm text-[#0f172a]">{formatDateRange(unav.start, unav.end)}</p>
                           </div>
                         </div>
+                        <div className="mt-2 text-[11px] text-[#64748b]">{unav.reason || 'Sans raison'}</div>
                       </div>
                     ))}
+                    {techUnavail.length > 2 && (
+                      <div className="text-[11px] text-[#334155] font-semibold">+ {techUnavail.length - 2} autre{techUnavail.length - 2 > 1 ? 's' : ''}</div>
+                    )}
                   </div>
                 )}
               </div>
@@ -122,6 +170,7 @@ export default function Disponibilites() {
           );
         })}
       </div>
+      )}
 
       <div className="mt-4 rounded-3xl border border-[#e2e8f0] bg-[#eef2ff] p-4 text-sm text-[#334155] flex items-start gap-3">
         <Info className="w-5 h-5 text-[#4338ca] mt-0.5" />

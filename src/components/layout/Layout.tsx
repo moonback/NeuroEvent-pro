@@ -16,14 +16,14 @@ interface NavItem {
 }
 
 const operationsNavigation: NavItem[] = [
+  { name: 'Missions', to: '/missions', icon: FileText },
   { name: 'Planning Global', to: '/', icon: Calendar, end: true },
   { name: 'Tableau Kanban', to: '/kanban', icon: LayoutGrid },
-  { name: 'Liste Missions', to: '/missions', icon: FileText },
-  { name: 'Disponibilités', to: '/disponibilites', icon: CalendarX2 },
 ];
 
 const resourcesNavigation: NavItem[] = [
   { name: 'Techniciens', to: '/technicians', icon: Users },
+  { name: 'Disponibilités', to: '/disponibilites', icon: CalendarX2 },
   { name: 'Camions', to: '/trucks', icon: Truck },
   { name: 'Matériel', to: '/equipment', icon: Package },
 ];
