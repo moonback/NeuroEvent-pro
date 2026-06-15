@@ -313,8 +313,9 @@ export default function TechnicianDashboard() {
             ) : (
               <VirtualList
                 items={tech.displayedMissions}
-                itemHeight={220}
+                itemHeight={260}
                 buffer={6}
+                className="pb-24"
                 renderItem={(mission: any, idx: number) => (
                   <div key={mission.id} className="tech-animate-in" style={{ animationDelay: `${idx * 30}ms` }}>
                     <MissionCard

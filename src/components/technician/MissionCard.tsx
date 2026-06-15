@@ -343,11 +343,35 @@ function MissionCard({ mission, truckName, colleagueCount, onClick, onQuickActio
             )}
           </div>
 
-          {/* Right: ChevronRight */}
-          <ChevronRight className="w-4 h-4 transition-all duration-200" style={{ 
-            color: isHovered ? mission.color : 'var(--tech-text-muted)',
-            transform: isHovered ? 'translateX(2px)' : 'translateX(0)',
-          }} />
+          <div className="flex items-center gap-2">
+            {onQuickAction && mission.status !== 'Terminée' && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  triggerVibrate('click');
+                  onQuickAction(mission.status === 'Planifiée' ? 'En cours' : 'Terminée');
+                }}
+                className="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all active:scale-[0.97]"
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: mission.color,
+                }}
+              >
+                {mission.status === 'Planifiée' ? 'Commencer' : 'Terminer'}
+              </button>
+            )}
+
+            {/* Right: ChevronRight */}
+            <ChevronRight
+              className="w-4 h-4 transition-all duration-200"
+              style={{
+                color: isHovered ? mission.color : 'var(--tech-text-muted)',
+                transform: isHovered ? 'translateX(2px)' : 'translateX(0)',
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>
