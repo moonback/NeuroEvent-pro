@@ -20,6 +20,7 @@ const Equipment = lazy(() => import('./pages/Equipment'));
 const Clients = lazy(() => import('./pages/Clients'));
 const Users = lazy(() => import('./pages/Users'));
 const TechnicianDashboard = lazy(() => import('./pages/TechnicianDashboard'));
+const MobileLayout = lazy(() => import('./components/technician/MobileLayout'));
 const Settings = lazy(() => import('./pages/Settings'));
 const MissionBriefs = lazy(() => import('./pages/MissionBriefs'));
 const Stats = lazy(() => import('./pages/Stats'));
@@ -94,8 +95,8 @@ export default function App() {
             </>
           ) : (
             <>
-              <Route path="/" element={<ProtectedRoute><TechnicianDashboard /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedRoute><MobileLayout><TechnicianDashboard /></MobileLayout></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><MobileLayout><Settings /></MobileLayout></ProtectedRoute>} />
               {/* Tout chemin admin tenté par un technicien est redirigé vers son tableau de bord */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </>

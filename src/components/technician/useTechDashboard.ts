@@ -200,6 +200,11 @@ export function useTechDashboard() {
     const now = new Date();
     const defaultTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
     if (newStatus === 'En cours') {
+      if (!isSameDay(targetMission.start, new Date())) {
+        triggerVibrate('error');
+        toast.error('La mission ne peut démarrer que le jour J.');
+        return;
+      }
       setTimeModal({ type: 'start', targetStatus: 'En cours', time: defaultTime, loading: false });
       toast.info('Définissez l’heure de début pour démarrer la mission.');
       return;

@@ -21,6 +21,8 @@ export function QRScannerModal({ isOpen, onClose, onScan, equipmentDefs, mission
   const [scannedItems, setScannedItems] = useState<ScannedItem[]>([]);
   const [showFlash, setShowFlash] = useState(false);
   const cooldownRef = useRef<{ [key: string]: number }>({});
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const readerIdRef = useRef(`reader-${Math.random().toString(36).slice(2, 9)}`);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -28,16 +30,23 @@ export function QRScannerModal({ isOpen, onClose, onScan, equipmentDefs, mission
     setScannedItems([]);
     cooldownRef.current = {};
 
+    // If an existing scanner exists, clear it before creating a new one
+    if (scannerRef.current) {
+      scannerRef.current.clear().catch(() => {});
+      scannerRef.current = null;
+    }
+
     // Custom configuration for responsive scanning performance
     const scanner = new Html5QrcodeScanner(
-      "reader",
-      { 
+      readerIdRef.current,
+      {
         fps: 15,
         qrbox: { width: 220, height: 220 },
-        aspectRatio: 1.0
+        aspectRatio: 1.0,
       },
       /* verbose= */ false
     );
+    scannerRef.current = scanner;
 
     scanner.render(
       (decodedText) => {
@@ -80,7 +89,10 @@ export function QRScannerModal({ isOpen, onClose, onScan, equipmentDefs, mission
     );
 
     return () => {
-      scanner.clear().catch(console.error);
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(console.error);
+        scannerRef.current = null;
+      }
     };
   }, [isOpen, onScan, equipmentDefs]);
 
@@ -128,7 +140,7 @@ export function QRScannerModal({ isOpen, onClose, onScan, equipmentDefs, mission
         {/* Scanner Viewport */}
         <div className="p-5 flex flex-col items-center">
           <div className="relative w-full overflow-hidden rounded-2xl border border-white/[0.06] bg-black max-w-[280px]">
-            <div id="reader" className="w-full text-white bg-black"></div>
+            <div id={readerIdRef.current} className="w-full text-white bg-black"></div>
             
             {/* Holographic Laser line overlay */}
             <div className="tech-laser-line" />
