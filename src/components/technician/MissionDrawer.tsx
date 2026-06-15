@@ -6,7 +6,7 @@ import {
 import { format, isSameDay, differenceInMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { triggerVibrate, DRAWER_TABS, type DrawerTab } from './useTechDashboard';
-import DrawerTabs from './DrawerTabs';
+import MissionTabs from './MissionTabs';
 import { useStore } from '../../store';
 import { useAuthStore } from '../../store/auth';
 
@@ -298,7 +298,7 @@ export default function MissionDrawer(props: MissionDrawerProps) {
           style={{ background: 'var(--tech-bg)' }}
         >
           <div key={drawerTab} className="p-4 tech-animate-in">
-            <DrawerTabs
+            <MissionTabs
               mission={mission}
               drawerTab={drawerTab}
               setDrawerTab={setDrawerTab}

@@ -11,6 +11,7 @@ import { triggerVibrate, type DrawerTab } from './useTechDashboard';
 import TimeLogPanel from '../TimeLogPanel';
 import { useAuthStore } from '../../store/auth';
 import { useStore } from '../../store';
+import EquipmentChecklist from './EquipmentChecklist';
 
 interface DrawerTabsProps {
   mission: any;
@@ -729,69 +730,15 @@ function EquipmentTab({ mission, getEquipmentProgress, equipmentDefs, handleTogg
 
         {/* Equipment list */}
         {mission.equipments?.length > 0 ? (
-          <ul>
-            {mission.equipments.map((me: any, idx: number) => {
-              const def = equipmentDefs.find((e: any) => e.id === me.equipmentId);
-              const isChecked = !!me.checked;
-              const isFlashing = scannedItemId === me.equipmentId;
-              return (
-                <li
-                  key={me.equipmentId}
-                  onClick={() => { if (mission.status !== 'Terminée') handleToggle(mission.id, me.equipmentId); }}
-                  className={`px-4 py-3.5 flex items-center justify-between cursor-pointer transition-all ${isFlashing ? 'animate-pulse' : ''}`}
-                  style={{
-                    borderBottom: idx < mission.equipments.length - 1 ? '1px solid var(--tech-border)' : 'none',
-                    background: isChecked
-                      ? 'rgba(0,229,160,0.05)'
-                      : isFlashing
-                        ? 'rgba(255,183,0,0.08)'
-                        : 'transparent',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isChecked) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.025)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = isChecked
-                      ? 'rgba(0,229,160,0.05)'
-                      : 'transparent';
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Checkbox */}
-                    <div
-                      className="w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0"
-                      style={
-                        isChecked
-                          ? {
-                            background: 'var(--tech-accent)',
-                            borderColor: 'var(--tech-accent)',
-                            boxShadow: '0 0 8px rgba(0,229,160,0.4)',
-                          }
-                          : { borderColor: 'var(--tech-border-strong)', background: 'transparent' }
-                      }
-                    >
-                      {isChecked && <Check className="w-3.5 h-3.5 text-black stroke-[3]" />}
-                    </div>
-                    <span
-                      className={`text-sm font-bold ${isChecked ? 'line-through' : ''}`}
-                      style={{ color: isChecked ? 'var(--tech-text-muted)' : 'var(--tech-text)' }}
-                    >
-                      {def?.name || 'Matériel inconnu'}
-                    </span>
-                  </div>
-                  <span
-                    className="text-[10px] font-extrabold px-2 py-0.5 rounded-lg shrink-0"
-                    style={{
-                      background: isChecked ? 'rgba(0,229,160,0.10)' : 'rgba(255,255,255,0.05)',
-                      color: isChecked ? 'var(--tech-accent)' : 'var(--tech-text-secondary)',
-                    }}
-                  >
-                    ×{me.quantity}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+          <EquipmentChecklist
+            missionId={mission.id}
+            equipments={mission.equipments}
+            equipmentDefs={equipmentDefs}
+            onToggle={handleToggle}
+            scannedItemId={scannedItemId}
+            missionStatus={mission.status}
+            missionColor={mission.color}
+          />
         ) : (
           <div className="py-10 text-center">
             <Package className="w-7 h-7 mx-auto mb-2 tech-animate-float" style={{ color: 'var(--tech-text-muted)' }} />
@@ -1546,7 +1493,7 @@ function ChecklistTab({ mission }: { mission: any }) {
   );
 }
 
-export default function DrawerTabs(props: DrawerTabsProps) {
+function DrawerTabs(props: DrawerTabsProps) {
   const { mission, drawerTab } = props;
 
   switch (drawerTab) {
@@ -1596,3 +1543,5 @@ export default function DrawerTabs(props: DrawerTabsProps) {
       return null;
   }
 }
+
+export default React.memo(DrawerTabs);

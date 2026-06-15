@@ -3,6 +3,7 @@ import { useTechDashboard, triggerVibrate } from '../components/technician/useTe
 import TechHeader from '../components/technician/TechHeader';
 import TechBottomNav from '../components/technician/TechBottomNav';
 import MissionCard from '../components/technician/MissionCard';
+import MissionActiveCard from '../components/technician/MissionActiveCard';
 import MissionFilters from '../components/technician/MissionFilters';
 import MissionDrawer from '../components/technician/MissionDrawer';
 import { TimeModal } from '../components/technician/TimeModal';
@@ -116,6 +117,16 @@ export default function TechnicianDashboard() {
     ? currentTech.firstName
     : tech.user?.user_metadata?.first_name || '';
 
+  // Global event listener pour le FAB scanner (ouverture depuis n'importe quel écran)
+  React.useEffect(() => {
+    const handler = () => {
+      triggerVibrate('click');
+      tech.setScannerOpen(true);
+    };
+    window.addEventListener('open-qr-scanner', handler as EventListener);
+    return () => window.removeEventListener('open-qr-scanner', handler as EventListener);
+  }, [tech]);
+
   return (
     <div className="tech-dark min-h-screen bg-black text-[#f0f4ff] font-sans pb-24 overflow-x-hidden">
       {/* Header */}
@@ -130,54 +141,14 @@ export default function TechnicianDashboard() {
 
       {/* Main Tab Routing */}
       {nextMission && tech.activeTab === 'active' && (
-        <div className="max-w-md mx-auto px-4 pt-3">
-          <div
-            className="tech-card p-4 mb-3 rounded-3xl overflow-hidden"
-            style={{
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%)',
-              border: '1px solid rgba(0,229,160,0.08)',
-            }}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.25em] font-black mb-2" style={{ color: 'var(--tech-text-muted)' }}>
-                  Prochaine mission
-                </p>
-                <h2 className="text-base font-black leading-tight" style={{ color: 'var(--tech-text)' }}>
-                  {nextMission.title}
-                </h2>
-                <p className="text-[11px] mt-2 text-[var(--tech-text-secondary)]">
-                  {nextMission.client} · {nextMission.status}
-                </p>
-              </div>
-              <div className="flex flex-col gap-2 shrink-0">
-                <button
-                  onClick={() => tech.openMissionDetails(nextMission)}
-                  className="px-4 py-2 rounded-2xl text-[11px] font-black uppercase tracking-wide transition-all active:scale-95"
-                  style={{
-                    background: 'rgba(255,255,255,0.08)',
-                    color: 'var(--tech-text)',
-                    border: '1px solid rgba(255,255,255,0.10)',
-                  }}
-                >
-                  Voir
-                </button>
-                {nextMission.status !== 'Terminée' && (
-                  <button
-                    onClick={() => tech.handleStatusChange(nextMission, nextMission.status === 'Planifiée' ? 'En cours' : 'Terminée')}
-                    className="px-4 py-2 rounded-2xl text-[11px] font-black uppercase tracking-wide transition-all active:scale-95"
-                    style={{
-                      background: nextMission.status === 'Planifiée' ? nextMission.color : 'var(--tech-accent)',
-                      color: '#fff',
-                    }}
-                  >
-                    {nextMission.status === 'Planifiée' ? 'Démarrer' : 'Terminer'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <MissionActiveCard
+          mission={nextMission}
+          truckName={tech.getTruckName(nextMission.truckId)}
+          colleagues={tech.getColleagues(nextMission.technicianIds)}
+          progress={tech.getEquipmentProgress(nextMission.equipments)}
+          onOpen={() => tech.openMissionDetails(nextMission)}
+          onPrimary={() => tech.handleStatusChange(nextMission, nextMission.status === 'Planifiée' ? 'En cours' : 'Terminée')}
+        />
       )}
       {tech.activeTab === 'mes_heures' ? (
         <div className="max-w-md mx-auto tech-animate-in pt-5">
