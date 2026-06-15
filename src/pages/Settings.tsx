@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/auth';
 import { useStore } from '../store';
 import { supabase } from '../lib/supabase';
+import { toast } from '../store/toast';
 import {
   Save, User, Lock, ArrowLeft, Calendar, Settings as SettingsIcon,
   LogOut, Wrench, Car, Check, Plus, X,
@@ -211,6 +212,8 @@ export default function Settings() {
   const [skillsModal,   setSkillsModal]   = useState(false);
   const [licenseModal,  setLicenseModal]  = useState(false);
   const [securityModal, setSecurityModal] = useState(false);
+  const [confirmClearModal, setConfirmClearModal] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
 
   const isTechnician = role !== 'Admin';
 
@@ -248,6 +251,44 @@ export default function Settings() {
     if (error) { setErrorMsg(error.message); }
     else { setSuccessMsg('Mot de passe mis à jour.'); setNewPassword(''); setConfirmPassword(''); setSecurityModal(false); }
     setLoading(false);
+  };
+
+  const handleClearAllMissions = () => {
+    // Open confirmation modal where admin must type CONFIRMER
+    setConfirmText('');
+    setConfirmClearModal(true);
+  };
+
+  const performClearAllMissions = async () => {
+    if (confirmText !== 'CONFIRMER') return;
+    setLoading(true); setErrorMsg(null); setSuccessMsg(null);
+    try {
+      // 1) Delete files from storage bucket (list then remove)
+      const { data: files, error: listErr } = await supabase.storage.from('mission-photos').list('', { limit: 100000 });
+      if (listErr) throw listErr;
+      const paths = (files || []).map((f: any) => f.name).filter(Boolean);
+      if (paths.length > 0) {
+        const { error: rmErr } = await supabase.storage.from('mission-photos').remove(paths);
+        if (rmErr) throw rmErr;
+      }
+
+      // 2) Delete DB rows (tables with WHERE via neq to satisfy Supabase)
+      const tables = ['mission_photos', 'mission_time_logs', 'mission_equipments', 'mission_technicians', 'missions'];
+      for (const t of tables) {
+        const { error } = await supabase.from(t).delete().neq('id', '');
+        if (error) throw error;
+      }
+
+      toast.success('Toutes les missions, leurs données et fichiers associés ont été supprimés.');
+      setConfirmClearModal(false);
+      useStore.getState().initialize();
+    } catch (err: any) {
+      console.error('Clear all missions failed', err);
+      setErrorMsg(err?.message || String(err));
+      toast.error('Impossible de supprimer les missions : ' + (err?.message || String(err)));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSaveSkills = async () => {
@@ -419,7 +460,37 @@ export default function Settings() {
           </div>
         )}
 
-        {!isTechnician && <div className="h-4" />}
+            {/* Admin — Effacer toutes les missions */}
+            {!isTechnician && (
+              <div className="bg-white rounded-2xl shadow-xs border border-[#e2e8f0] overflow-hidden mt-4">
+                <div className="px-5 py-4 border-b border-[#f1f5f9] flex items-center gap-3">
+                  <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center">
+                    <svg className="w-5 h-5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                  </div>
+                  <h2 className="text-sm font-extrabold text-[#0f172a]">DANGER — Effacer les missions</h2>
+                </div>
+                <div className="p-5">
+                  <p className="text-sm text-[#64748b]">Supprime toutes les missions et les données associées (photos, créneaux, affectations).</p>
+                  <div className="mt-4 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleClearAllMissions}
+                      disabled={loading}
+                      className="px-4 py-3 bg-red-600 text-white rounded-xl text-sm font-extrabold hover:bg-red-700 transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                      Effacer toutes les missions
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { navigator.clipboard?.writeText('DELETE ALL MISSIONS'); toast.info('Copié dans le presse-papiers'); }}
+                      className="px-3 py-2 border border-[#e2e8f0] rounded-xl text-sm text-[#64748b] hover:bg-[#f8fafc]"
+                    >
+                      Copier l'alerte
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
       </div>
 
       {/* Mobile bottom nav (hidden – handled by TechBottomNav in dashboard) */}
@@ -732,6 +803,43 @@ export default function Settings() {
             </span>
           </div>
         )}
+      </div>
+    </BottomSheet>
+
+    {/* Confirmation modal pour suppression massive */}
+    <BottomSheet
+      open={confirmClearModal}
+      onClose={() => { setConfirmClearModal(false); setConfirmText(''); }}
+      title="CONFIRMER la suppression"
+      subtitle="Tapez CONFIRMER pour valider la suppression de toutes les missions et fichiers associés"
+      footer={
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => { setConfirmClearModal(false); setConfirmText(''); }}
+            className="px-4 py-3 bg-white border border-[#e2e8f0] rounded-2xl text-sm text-[#64748b]"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={performClearAllMissions}
+            disabled={confirmText !== 'CONFIRMER' || loading}
+            className="px-4 py-3 bg-red-600 text-white rounded-2xl text-sm font-extrabold disabled:opacity-50"
+          >
+            Supprimer définitivement
+          </button>
+        </div>
+      }
+    >
+      <div className="py-1">
+        <p className="text-sm text-[#94a3b8] mb-3">Cette opération est irréversible. Les fichiers stockés dans le bucket <strong>mission-photos</strong> seront également supprimés.</p>
+        <input
+          value={confirmText}
+          onChange={(e) => setConfirmText(e.target.value)}
+          placeholder="Tapez CONFIRMER"
+          className="w-full rounded-xl border border-[#e2e8f0] px-3 py-2 bg-[#f8fafc] text-sm"
+        />
       </div>
     </BottomSheet>
     </>
