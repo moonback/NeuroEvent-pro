@@ -25,6 +25,9 @@ export default function TechnicianDashboard() {
     ? tech.displayedMissions.find((mission) => mission.status !== 'Terminée')
     : null;
 
+  // Show active mission card only when user requests it (hidden by default)
+  const [showActive, setShowActive] = React.useState(false);
+
   // Gestes & Micro-interactions
   const [pullDistance, setPullDistance] = React.useState(0);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
@@ -142,6 +145,29 @@ export default function TechnicianDashboard() {
 
       {/* Main Tab Routing */}
       {nextMission && tech.activeTab === 'active' && (
+        <div className="px-4 mt-2">
+          <div className="flex items-center justify-between gap-2">
+            <button
+              onClick={() => { triggerVibrate('click'); setShowActive((s) => !s); }}
+              className="flex-1 py-2 px-3 rounded-xl text-sm font-bold transition"
+              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--tech-border)', color: 'var(--tech-text)' }}
+            >
+              {showActive ? 'Masquer la mission active' : 'Afficher la mission active'}
+            </button>
+            {showActive && (
+              <button
+                onClick={() => { triggerVibrate('click'); tech.openMissionDetails(nextMission); }}
+                className="py-2 px-3 rounded-xl text-sm font-semibold"
+                style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.04)', color: 'var(--tech-text-muted)' }}
+              >
+                Détails
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {nextMission && tech.activeTab === 'active' && showActive && (
         <MissionActiveCard
           mission={nextMission}
           truckName={tech.getTruckName(nextMission.truckId)}
