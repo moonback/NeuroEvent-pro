@@ -24,6 +24,8 @@ const Kanban = lazy(() => import('./pages/Kanban'));
 const TechnicianDashboard = lazy(() => import('./pages/TechnicianDashboard'));
 const Settings = lazy(() => import('./pages/Settings'));
 const MissionBriefs = lazy(() => import('./pages/MissionBriefs'));
+const MissionList = lazy(() => import('./pages/MissionList'));
+const MissionDetail = lazy(() => import('./pages/MissionDetail'));
 const Stats = lazy(() => import('./pages/Stats'));
 const TechnicianHours = lazy(() => import('./pages/TechnicianHours'));
 
@@ -89,6 +91,8 @@ export default function App() {
                 <Route path="clients" element={<Clients />} />
                 <Route path="users" element={<Users />} />
                 <Route path="fiches" element={<MissionBriefs />} />
+                <Route path="missions" element={<MissionList />} />
+                <Route path="missions/:id" element={<MissionDetail />} />
                 <Route path="stats" element={<Stats />} />
                 <Route path="heures" element={<TechnicianHours />} />
                 <Route path="settings" element={<Settings />} />
