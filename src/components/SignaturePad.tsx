@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import { X, Check, Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -19,6 +19,28 @@ export default function SignaturePad({ missionId, onSave, onClose }: SignaturePa
       sigCanvas.current.clear();
     }
   };
+
+  const handleBackdropClick = () => {
+    if (isUploading) return;
+    if (sigCanvas.current && !sigCanvas.current.isEmpty()) {
+      if (!window.confirm('La signature sera perdue. Fermer quand même ?')) return;
+    }
+    onClose();
+  };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isUploading) return;
+        if (sigCanvas.current && !sigCanvas.current.isEmpty()) {
+          if (!window.confirm('La signature sera perdue. Fermer ?')) return;
+        }
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isUploading, onClose]);
 
   const save = async () => {
     if (!sigCanvas.current || sigCanvas.current.isEmpty()) {
@@ -65,9 +87,10 @@ export default function SignaturePad({ missionId, onSave, onClose }: SignaturePa
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
-      <div 
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
-        onClick={onClose}
+      <div
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+        onClick={handleBackdropClick}
+        aria-hidden={isUploading}
       />
       
       <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-slide-up sm:animate-fade-in">
@@ -83,13 +106,14 @@ export default function SignaturePad({ missionId, onSave, onClose }: SignaturePa
           </button>
         </div>
 
-        <div className="p-4 bg-slate-50 flex-1 min-h-[300px] flex items-center justify-center relative">
+        <div className="p-4 bg-slate-50 flex-1 min-h-[300px] flex items-center justify-center relative" role="group" aria-label="Zone de signature">
           <div className="w-full bg-white rounded-2xl border-2 border-dashed border-[#cbd5e1] overflow-hidden">
             <SignatureCanvas 
               ref={sigCanvas}
-              penColor="black"
+              penColor="#0f172a"
               canvasProps={{
-                className: 'signature-canvas w-full h-64 touch-none cursor-crosshair'
+                className: 'signature-canvas w-full h-64 touch-none cursor-crosshair',
+                style: { background: '#ffffff' }
               }}
             />
           </div>
@@ -111,6 +135,7 @@ export default function SignaturePad({ missionId, onSave, onClose }: SignaturePa
           <button
             onClick={save}
             disabled={isUploading}
+            aria-disabled={isUploading}
             className="px-4 py-3 bg-[#0f172a] text-white rounded-xl text-xs font-bold hover:bg-[#1e293b] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
           >
             {isUploading ? (

@@ -139,7 +139,7 @@ export default function MissionDrawer(props: MissionDrawerProps) {
               </div>
 
               {/* Signature pill */}
-              <button
+              {/* <button
                 onClick={mission.signatureUrl ? undefined : onOpenSignature}
                 disabled={!!mission.signatureUrl}
                 className={`shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg transition-all ${mission.signatureUrl ? 'cursor-not-allowed' : 'active:scale-95 cursor-pointer'
@@ -151,10 +151,10 @@ export default function MissionDrawer(props: MissionDrawerProps) {
                 title={mission.signatureUrl ? 'Signature enregistrée' : 'Gérer la signature'}
               >
                 <PenTool className="w-2.5 h-2.5" style={{ color: mission.signatureUrl ? '#86efac' : '#fff' }} />
-                <span className="text-[8px] font-black" style={{ color: mission.signatureUrl ? '#86efac' : '#fff' }}>
+                <span className="text-[12px] font-black" style={{ color: mission.signatureUrl ? '#86efac' : '#fff' }}>
                   {mission.signatureUrl ? 'Signé ✓' : 'Signature'}
                 </span>
-              </button>
+              </button> */}
             </div>
 
             {/* Core Info Bar (Date, Address, Type) */}
@@ -166,7 +166,7 @@ export default function MissionDrawer(props: MissionDrawerProps) {
 
               <div className="flex items-center gap-1.5 truncate">
                 <span className="w-1.5 h-1.5 rounded-full bg-white/80 shrink-0" />
-                <span className="truncate opacity-80">{mission.type} · {durationLabel}</span>
+                <span className="truncate opacity-80">{mission.type} · Durées {durationLabel}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <MapPin className="w-3 h-3 text-white/70 shrink-0" />
