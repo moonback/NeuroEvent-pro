@@ -214,7 +214,7 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
       isOpen={isOpen}
       onClose={onClose}
       title={existingMission ? 'Modifier la mission' : 'Nouvelle mission'}
-      maxWidth="max-w-2xl"
+      maxWidth="max-w-[95vw] sm:max-w-5xl"
       footer={
         <div className="flex justify-between items-center w-full">
           {existingMission ? (

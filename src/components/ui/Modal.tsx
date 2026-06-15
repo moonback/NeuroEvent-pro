@@ -40,7 +40,7 @@ export default function Modal({ isOpen, onClose, title, children, footer, maxWid
         aria-label={title}
         className={cn(
           'bg-white shadow-xl w-full flex flex-col overflow-hidden',
-          'rounded-t-2xl sm:rounded-xl max-h-[92vh] sm:max-h-[90vh]',
+          'rounded-t-2xl sm:rounded-xl max-h-[95vh] sm:max-h-[95vh]',
           maxWidth
         )}
       >
