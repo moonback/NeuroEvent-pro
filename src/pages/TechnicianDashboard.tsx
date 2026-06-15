@@ -401,6 +401,7 @@ export default function TechnicianDashboard() {
           }}
           onScan={tech.handleScan}
           equipmentDefs={tech.equipmentDefs}
+          missionName={tech.selectedMission?.title}
         />
       )}
 

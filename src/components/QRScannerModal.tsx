@@ -7,6 +7,7 @@ interface QRScannerModalProps {
   onClose: () => void;
   onScan: (decodedText: string) => boolean | void;
   equipmentDefs?: { id: string; name: string }[];
+  missionName?: string;
 }
 
 interface ScannedItem {
@@ -16,13 +17,16 @@ interface ScannedItem {
   timestamp: number;
 }
 
-export function QRScannerModal({ isOpen, onClose, onScan, equipmentDefs }: QRScannerModalProps) {
+export function QRScannerModal({ isOpen, onClose, onScan, equipmentDefs, missionName }: QRScannerModalProps) {
   const [scannedItems, setScannedItems] = useState<ScannedItem[]>([]);
   const [showFlash, setShowFlash] = useState(false);
   const cooldownRef = useRef<{ [key: string]: number }>({});
 
   useEffect(() => {
     if (!isOpen) return;
+
+    setScannedItems([]);
+    cooldownRef.current = {};
 
     // Custom configuration for responsive scanning performance
     const scanner = new Html5QrcodeScanner(
@@ -102,9 +106,16 @@ export function QRScannerModal({ isOpen, onClose, onScan, equipmentDefs }: QRSca
         <div className="p-5 border-b border-white/[0.04] flex justify-between items-center bg-[#070a0f]">
           <div className="flex items-center gap-2">
             <Camera className="w-5 h-5 text-[var(--tech-accent)] animate-pulse" />
-            <h2 className="font-extrabold text-sm uppercase tracking-wider text-[#f0f4ff]">
-              Scanner Multi-Code
-            </h2>
+            <div>
+              <h2 className="font-extrabold text-sm uppercase tracking-wider text-[#f0f4ff]">
+                Scanner Multi-Code
+              </h2>
+              {missionName && (
+                <p className="text-[9px] uppercase tracking-wider text-neutral-500 mt-1">
+                  Mission : {missionName}
+                </p>
+              )}
+            </div>
           </div>
           <button 
             onClick={onClose}
