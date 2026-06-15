@@ -1,5 +1,5 @@
 import React from 'react';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { MapPin, Users, Truck, Clock, CheckCircle2 } from 'lucide-react';
 
 interface Props {
@@ -13,7 +13,12 @@ interface Props {
 
 export default function MissionActiveCard({ mission, truckName, colleagues, progress, onOpen, onPrimary }: Props) {
   const badgeClass = mission.status === 'En cours' ? 'tech-badge-active' : mission.status === 'Terminée' ? 'tech-badge-done' : 'tech-badge-planned';
-  const primaryLabel = mission.status === 'Planifiée' ? 'Commencer' : mission.status === 'En cours' ? 'Continuer' : 'Terminer';
+  const isToday = isSameDay(new Date(mission.start), new Date());
+  const primaryLabel = mission.status === 'Planifiée'
+    ? isToday ? 'Commencer' : 'Jour J requis'
+    : mission.status === 'En cours'
+    ? 'Continuer'
+    : 'Terminer';
   
   const statusColors = {
     'Planifiée': { bg: 'rgba(77,159,255,0.1)', border: '1px solid rgba(77,159,255,0.2)', text: 'var(--tech-blue)', dot: 'var(--tech-blue)' },
@@ -141,7 +146,8 @@ export default function MissionActiveCard({ mission, truckName, colleagues, prog
         <div className="max-w-md w-full px-4">
           <button
             onClick={onPrimary}
-            className="w-full py-3 rounded-xl tech-btn-accent text-black font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+            disabled={mission.status === 'Planifiée' && !isToday}
+            className={`w-full py-3 rounded-xl tech-btn-accent text-black font-black text-sm flex items-center justify-center gap-2 transition-all ${mission.status === 'Planifiée' && !isToday ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
             style={{ boxShadow: '0 6px 24px rgba(0,229,160,0.2)', minHeight: 48 }}
           >
             <CheckCircle2 className="w-5 h-5" />

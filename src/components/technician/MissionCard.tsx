@@ -352,14 +352,15 @@ function MissionCard({ mission, truckName, colleagueCount, onClick, onQuickActio
                   triggerVibrate('click');
                   onQuickAction(mission.status === 'Planifiée' ? 'En cours' : 'Terminée');
                 }}
-                className="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all active:scale-[0.97]"
+                disabled={mission.status === 'Planifiée' && !isToday}
+                className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all ${mission.status === 'Planifiée' && !isToday ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.97]'}`}
                 style={{
                   background: 'rgba(255,255,255,0.08)',
                   border: '1px solid rgba(255,255,255,0.12)',
                   color: mission.color,
                 }}
               >
-                {mission.status === 'Planifiée' ? 'Commencer' : 'Terminer'}
+                {mission.status === 'Planifiée' ? (isToday ? 'Commencer' : 'Jour J requis') : 'Terminer'}
               </button>
             )}
 
