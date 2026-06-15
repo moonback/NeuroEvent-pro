@@ -272,11 +272,24 @@ export default function Settings() {
         if (rmErr) throw rmErr;
       }
 
-      // 2) Delete DB rows (tables with WHERE via neq to satisfy Supabase)
-      const tables = ['mission_photos', 'mission_time_logs', 'mission_equipments', 'mission_technicians', 'missions'];
-      for (const t of tables) {
-        const { error } = await supabase.from(t).delete().neq('id', '');
-        if (error) throw error;
+      // 2) Delete DB rows : mission_* tables without id, then others
+      // Tables de jonction (sans colonne id, clé composée)
+      const junctionTables = ['mission_technicians', 'mission_equipments'];
+      for (const t of junctionTables) {
+        const { error: deleteErr } = await supabase.from(t).delete().not('mission_id', 'is', null);
+        if (deleteErr) throw deleteErr;
+      }
+      
+      // Tables with id column
+      const idTables = ['mission_photos', 'mission_time_logs', 'missions'];
+      for (const t of idTables) {
+        const { data: rows, error: selectErr } = await supabase.from(t).select('id');
+        if (selectErr) throw selectErr;
+        const ids = (rows || []).map((r: any) => r.id);
+        if (ids.length > 0) {
+          const { error: deleteErr } = await supabase.from(t).delete().in('id', ids);
+          if (deleteErr) throw deleteErr;
+        }
       }
 
       toast.success('Toutes les missions, leurs données et fichiers associés ont été supprimés.');
