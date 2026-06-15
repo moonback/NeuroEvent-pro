@@ -142,17 +142,18 @@ export default function MissionDrawer(props: MissionDrawerProps) {
               <button
                 onClick={mission.signatureUrl ? undefined : onOpenSignature}
                 disabled={!!mission.signatureUrl}
-                className={`shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg transition-all ${mission.signatureUrl ? 'cursor-not-allowed' : 'active:scale-95 cursor-pointer'
+                className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all font-semibold text-xs ${mission.signatureUrl ? 'cursor-not-allowed' : 'active:scale-95 cursor-pointer hover:shadow-lg'
                   }`}
                 style={{
-                  background: mission.signatureUrl ? 'rgba(0,229,160,0.25)' : 'rgba(0,0,0,0.25)',
-                  border: mission.signatureUrl ? '1px solid rgba(0,229,160,0.35)' : '1px solid rgba(255,255,255,0.15)',
+                  background: mission.signatureUrl ? 'rgba(0,229,160,0.3)' : 'rgba(255,255,255,0.15)',
+                  border: mission.signatureUrl ? '1.5px solid rgba(0,229,160,0.5)' : '1.5px solid rgba(255,255,255,0.25)',
+                  boxShadow: mission.signatureUrl ? 'inset 0 1px 2px rgba(0,229,160,0.2)' : 'inset 0 1px 2px rgba(255,255,255,0.1)',
                 }}
-                title={mission.signatureUrl ? 'Signature enregistrée' : 'Gérer la signature'}
+                title={mission.signatureUrl ? 'Signature enregistrée' : 'Cliquez pour ajouter une signature'}
               >
-                <PenTool className="w-2.5 h-2.5" style={{ color: mission.signatureUrl ? '#86efac' : '#fff' }} />
-                <span className="text-[8px] font-black" style={{ color: mission.signatureUrl ? '#86efac' : '#fff' }}>
-                  {mission.signatureUrl ? 'Signé ✓' : 'Signature'}
+                <PenTool className="w-3.5 h-3.5" style={{ color: mission.signatureUrl ? '#4ade80' : '#fff' }} />
+                <span style={{ color: mission.signatureUrl ? '#86efac' : '#fff' }}>
+                  {mission.signatureUrl ? '✓ Signé' : 'Signature'}
                 </span>
               </button>
             </div>

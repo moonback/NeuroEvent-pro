@@ -1,5 +1,4 @@
 import React from 'react';
-import ScannerFAB from './ScannerFAB';
 
 export default function MobileLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -7,9 +6,6 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
       <div className="max-w-md mx-auto px-0">
         {children}
       </div>
-
-      {/* Floating scanner FAB */}
-      <ScannerFAB />
     </div>
   );
 }

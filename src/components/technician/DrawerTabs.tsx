@@ -272,19 +272,6 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
           </button>
 
           <button
-            onClick={() => { triggerVibrate('click'); onOpenSignature(); }}
-            className="flex flex-col items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-wider transition-all active:scale-[0.97]"
-            style={{
-              background: mission.signatureUrl ? 'rgba(0,229,160,0.12)' : 'rgba(255,255,255,0.05)',
-              color: mission.signatureUrl ? 'var(--tech-accent)' : 'var(--tech-text)',
-              border: `1px solid ${mission.signatureUrl ? 'rgba(0,229,160,0.25)' : 'rgba(255,255,255,0.08)'}`,
-            }}
-          >
-            <PenTool className="w-4 h-4" />
-            {mission.signatureUrl ? 'Signé' : 'Signature'}
-          </button>
-
-          <button
             onClick={() => { triggerVibrate('click'); setDrawerTab('report'); }}
             className="flex flex-col items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-wider transition-all active:scale-[0.97]"
             style={{
