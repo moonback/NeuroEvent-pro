@@ -5,7 +5,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import {
   QrCode, Pencil, Search, X, LayoutGrid, CalendarDays,
-  Package, AlertTriangle, CheckCircle2, Layers, Maximize2, Minimize2, Upload, List
+  Package, AlertTriangle, CheckCircle2, Layers, Maximize2, Minimize2, Upload, List, Plus
 } from 'lucide-react';
 import { useStore } from '../store';
 import { Equipment as EquipmentType, EquipmentCategory, Mission } from '../types';
@@ -16,6 +16,8 @@ import CSVImportModal from '../components/CSVImportModal';
 import EquipmentTable from '../components/EquipmentTable';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { useFullscreen } from '../hooks/useFullscreen';
+import { supabase } from '../lib/supabase';
+import { toast } from '../store/toast';
 
 // ── Palette couleur par catégorie ──────────────────────────────────────────
 const CATEGORY_COLORS: Record<EquipmentCategory | string, { bg: string; text: string; border: string; dot: string }> = {
@@ -131,6 +133,36 @@ export default function Equipment() {
     setPrintModalOpen(true);
   };
 
+  const addStockToAll = async () => {
+    try {
+      if (equipment.length === 0) {
+        toast.info('Aucun équipement à mettre à jour.');
+        return;
+      }
+
+      // Update each equipment by adding 10 to total_quantity
+      for (const item of equipment) {
+        const newQuantity = (item.totalQuantity || 0) + 10;
+        const { error } = await supabase
+          .from('equipments')
+          .update({ total_quantity: newQuantity })
+          .eq('id', item.id);
+        
+        if (error) {
+          console.error(`Erreur mise à jour ${item.name}:`, error);
+          throw error;
+        }
+      }
+
+      // Refresh store
+      await useStore.getState().initialize();
+      toast.success(`+10 en stock pour ${equipment.length} produit${equipment.length > 1 ? 's' : ''} !`);
+    } catch (err: any) {
+      console.error('Add stock failed:', err);
+      toast.error('Erreur : ' + (err?.message || String(err)));
+    }
+  };
+
   return (
     <div ref={fsRef} className={`bg-white border border-[#e2e8f0] p-3 sm:p-6 flex flex-col relative z-0 gap-4 ${isFullscreen ? 'h-screen overflow-auto' : 'h-full'}`}>
 
@@ -199,6 +231,14 @@ export default function Equipment() {
           >
             <Upload className="w-4 h-4" />
             Importer CSV
+          </button>
+          <button
+            onClick={addStockToAll}
+            className="flex items-center justify-center gap-2 border border-[#10b981] text-[#10b981] hover:bg-[#ecfdf5] px-4 py-2 rounded-md text-sm font-medium transition-colors shrink-0 cursor-pointer"
+            title="Ajouter 10 en stock à tous les produits"
+          >
+            <Plus className="w-4 h-4" />
+            Stock +10
           </button>
           <button
             onClick={openCreate}

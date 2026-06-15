@@ -213,6 +213,7 @@ export default function Settings() {
   const [licenseModal,  setLicenseModal]  = useState(false);
   const [securityModal, setSecurityModal] = useState(false);
   const [confirmClearModal, setConfirmClearModal] = useState(false);
+  const [confirmGenerateModal, setConfirmGenerateModal] = useState(false);
   const [confirmText, setConfirmText] = useState('');
 
   const isTechnician = role !== 'Admin';
@@ -299,6 +300,154 @@ export default function Settings() {
       console.error('Clear all missions failed', err);
       setErrorMsg(err?.message || String(err));
       toast.error('Impossible de supprimer les missions : ' + (err?.message || String(err)));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenerateMockMissions = () => {
+    // Open confirmation modal for generating 10 mock missions
+    setConfirmText('');
+    setConfirmGenerateModal(true);
+  };
+
+  const performGenerateMockMissions = async () => {
+    if (confirmText !== 'GENERER') return;
+    setLoading(true); setErrorMsg(null); setSuccessMsg(null);
+    try {
+      // Fetch technicians and equipments
+      const { data: technicians, error: techErr } = await supabase.from('technicians').select('id');
+      if (techErr) throw techErr;
+      const techIds = (technicians || []).map((t: any) => t.id);
+      
+      const { data: equipments, error: eqErr } = await supabase.from('equipments').select('id, name');
+      if (eqErr) throw eqErr;
+      const eqIds = (equipments || []).map((e: any) => e.id);
+
+      // Mock data for realistic events - using valid mission types
+      const events = [
+        { title: 'Mariage Sophie & Jean', type: 'Événement complet', client: 'Sophie Martin', address: 'Château de Fontainebleau, 77300 Fontainebleau' },
+        { title: 'Conférence Tech 2026', type: 'Montage', client: 'Tech Summit Events', address: '123 Av. des Champs-Élysées, 75008 Paris' },
+        { title: 'Fête d\'entreprise Acme Inc', type: 'Événement complet', client: 'Acme Inc', address: '45 Quai de la Loire, 75019 Paris' },
+        { title: 'Concert Rock Indie', type: 'Montage', client: 'Festival Productions', address: 'Parc des Expositions, 75015 Paris' },
+        { title: 'Séminaire Leadership', type: 'Livraison', client: 'Business Coaching Ltd', address: 'Resort & Spa, 78000 Versailles' },
+        { title: 'Spectacle de Cirque', type: 'Événement complet', client: 'Cirque Merveilles', address: 'Parc Astérix, 95700 Roissy-en-Brie' },
+        { title: 'Gala Charité Red Cross', type: 'Montage', client: 'Croix-Rouge Française', address: 'Hôtel De Luxe Plaza, 75001 Paris' },
+        { title: 'Festival Musiques du Monde', type: 'Événement complet', client: 'Association Cultures', address: 'Bois de Vincennes, 75012 Paris' },
+        { title: 'Lancement Produit Gaming', type: 'Démontage', client: 'GameStudio Pro', address: 'Salle Omnisports Paris La Villette, 75019 Paris' },
+        { title: 'Soirée Prestige Immobilière', type: 'Événement complet', client: 'Prestige Immobilier', address: 'Terrasse panoramique Montparnasse, 75015 Paris' },
+      ];
+
+      // Equipment with Light Game/Baby foot concept
+      const equipmentNames = [
+        'Baby-foot compétition',
+        'Billard anglais',
+        'Jeu Pac-Man rétro',
+        'Flipper vintage',
+        'Table air hockey',
+        'Sonorisation professionnelle',
+        'Projecteur 4K',
+        'Éclairage scène LED',
+        'Tente événement 100m²',
+        'Chaises longues premium',
+      ];
+
+      // Get current month range
+      const now = new Date();
+      const month = now.getMonth();
+      const year = now.getFullYear();
+      const startMonth = new Date(year, month, 1);
+      const endMonth = new Date(year, month + 1, 0);
+
+      // Generate 10 mock missions
+      const missions = [];
+      for (let i = 0; i < 10; i++) {
+        const event = events[i % events.length];
+        
+        // Random date in current month, between 09:00 and 18:00
+        const randomDay = Math.floor(Math.random() * (endMonth.getDate() - 1)) + 1;
+        const startHour = 8 + Math.floor(Math.random() * 4); // 8-12
+        const endHour = startHour + 2 + Math.floor(Math.random() * 3); // +2 to +5 hours
+        
+        const startDate = new Date(year, month, randomDay, startHour, 0);
+        const endDate = new Date(year, month, randomDay, endHour, 0);
+
+        missions.push({
+          ...event,
+          start_date: startDate.toISOString(),
+          end_date: endDate.toISOString(),
+          status: 'Planifiée',
+          color: '#3b82f6',
+          required_skills: [],
+          truck_id: null,
+          client_id: null,
+        });
+      }
+
+      // Insert missions
+      const { data: insertedMissions, error: insertErr } = await supabase
+        .from('missions')
+        .insert(missions)
+        .select('id');
+      if (insertErr) throw insertErr;
+
+      // Assign technicians and equipments randomly
+      const missionIds = (insertedMissions || []).map((m: any) => m.id);
+      
+      // Assign technicians (1-3 per mission)
+      for (const missionId of missionIds) {
+        const numTechs = Math.floor(Math.random() * 3) + 1;
+        const selectedTechs = [];
+        const usedTechIds = new Set<string>();
+        
+        for (let i = 0; i < numTechs && techIds.length > 0; i++) {
+          let randomTech;
+          do {
+            randomTech = techIds[Math.floor(Math.random() * techIds.length)];
+          } while (usedTechIds.has(randomTech) && usedTechIds.size < techIds.length);
+          
+          usedTechIds.add(randomTech);
+          selectedTechs.push({ mission_id: missionId, technician_id: randomTech });
+        }
+        if (selectedTechs.length > 0) {
+          const { error: techAssignErr } = await supabase.from('mission_technicians').insert(selectedTechs);
+          if (techAssignErr) console.warn('Tech assignment error:', techAssignErr);
+        }
+      }
+
+      // Assign equipments (2-4 per mission, including light games)
+      for (const missionId of missionIds) {
+        const numEq = Math.floor(Math.random() * 3) + 2; // 2-4 equipments
+        const selectedEq = [];
+        const usedEqIds = new Set<string>();
+        
+        for (let i = 0; i < numEq && eqIds.length > 0; i++) {
+          let randomEq;
+          do {
+            randomEq = eqIds[Math.floor(Math.random() * eqIds.length)];
+          } while (usedEqIds.has(randomEq) && usedEqIds.size < eqIds.length);
+          
+          usedEqIds.add(randomEq);
+          selectedEq.push({ 
+            mission_id: missionId, 
+            equipment_id: randomEq, 
+            quantity: Math.floor(Math.random() * 3) + 1 
+          });
+        }
+        
+        if (selectedEq.length > 0) {
+          const { error: eqAssignErr } = await supabase.from('mission_equipments').insert(selectedEq);
+          if (eqAssignErr) console.warn('Equipment assignment error:', eqAssignErr);
+        }
+      }
+
+      toast.success('10 missions fictives générées avec succès !');
+      setConfirmGenerateModal(false);
+      useStore.getState().initialize();
+    } catch (err: any) {
+      console.error('Generate mock missions failed', err);
+      setErrorMsg(err?.message || String(err));
+      toast.error('Impossible de générer les missions : ' + (err?.message || String(err)));
     } finally {
       setLoading(false);
     }
@@ -499,6 +648,31 @@ export default function Settings() {
                       className="px-3 py-2 border border-[#e2e8f0] rounded-xl text-sm text-[#64748b] hover:bg-[#f8fafc]"
                     >
                       Copier l'alerte
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Admin — Générer 10 missions fictives */}
+            {!isTechnician && (
+              <div className="bg-white rounded-2xl shadow-xs border border-[#e2e8f0] overflow-hidden mt-4">
+                <div className="px-5 py-4 border-b border-[#f1f5f9] flex items-center gap-3">
+                  <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <svg className="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                  </div>
+                  <h2 className="text-sm font-extrabold text-[#0f172a]">Données de Test</h2>
+                </div>
+                <div className="p-5">
+                  <p className="text-sm text-[#64748b]">Génère 10 missions fictives crédibles avec des événements, locations et matériels variés pour tester l'application.</p>
+                  <div className="mt-4 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleGenerateMockMissions}
+                      disabled={loading}
+                      className="px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-extrabold hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                      Générer 10 missions tests
                     </button>
                   </div>
                 </div>
@@ -851,6 +1025,43 @@ export default function Settings() {
           value={confirmText}
           onChange={(e) => setConfirmText(e.target.value)}
           placeholder="Tapez CONFIRMER"
+          className="w-full rounded-xl border border-[#e2e8f0] px-3 py-2 bg-[#f8fafc] text-sm"
+        />
+      </div>
+    </BottomSheet>
+
+    {/* Confirmation modal pour génération de missions */}
+    <BottomSheet
+      open={confirmGenerateModal}
+      onClose={() => { setConfirmGenerateModal(false); setConfirmText(''); }}
+      title="Générer des missions tests"
+      subtitle="Tapez GENERER pour créer 10 missions fictives crédibles"
+      footer={
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => { setConfirmGenerateModal(false); setConfirmText(''); }}
+            className="px-4 py-3 bg-white border border-[#e2e8f0] rounded-2xl text-sm text-[#64748b]"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={performGenerateMockMissions}
+            disabled={confirmText !== 'GENERER' || loading}
+            className="px-4 py-3 bg-blue-600 text-white rounded-2xl text-sm font-extrabold disabled:opacity-50"
+          >
+            Générer
+          </button>
+        </div>
+      }
+    >
+      <div className="py-1">
+        <p className="text-sm text-[#94a3b8] mb-3">Génère 10 missions avec des événements variés (mariage, conférence, concert...), des technicians assignés aléatoirement et du matériel fictif mais crédible (baby-foot, sonorisation, éclairage...).</p>
+        <input
+          value={confirmText}
+          onChange={(e) => setConfirmText(e.target.value)}
+          placeholder="Tapez GENERER"
           className="w-full rounded-xl border border-[#e2e8f0] px-3 py-2 bg-[#f8fafc] text-sm"
         />
       </div>
