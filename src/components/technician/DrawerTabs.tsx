@@ -730,15 +730,16 @@ function EquipmentTab({ mission, getEquipmentProgress, equipmentDefs, handleTogg
 
         {/* Equipment list */}
         {mission.equipments?.length > 0 ? (
-          <EquipmentChecklist
-            missionId={mission.id}
-            equipments={mission.equipments}
-            equipmentDefs={equipmentDefs}
-            onToggle={handleToggle}
-            scannedItemId={scannedItemId}
-            missionStatus={mission.status}
-            missionColor={mission.color}
-          />
+            <EquipmentChecklist
+              missionId={mission.id}
+              equipments={mission.equipments}
+              equipmentDefs={equipmentDefs}
+              onToggle={handleToggle}
+              scannedItemId={scannedItemId}
+              missionStatus={mission.status}
+              missionColor={mission.color}
+              useVirtual={mission.equipments.length > 30}
+            />
         ) : (
           <div className="py-10 text-center">
             <Package className="w-7 h-7 mx-auto mb-2 tech-animate-float" style={{ color: 'var(--tech-text-muted)' }} />
@@ -1513,7 +1514,14 @@ function DrawerTabs(props: DrawerTabsProps) {
     case 'team':
       return <TeamTab mission={mission} getColleaguesDetailed={props.getColleaguesDetailed} />;
     case 'equipment':
-      return <EquipmentTab mission={mission} getEquipmentProgress={props.getEquipmentProgress} equipmentDefs={props.equipmentDefs} handleToggle={props.handleToggle} openScanner={props.openScanner} scannedItemId={props.scannedItemId} />;
+      return <EquipmentTab
+        mission={mission}
+        getEquipmentProgress={props.getEquipmentProgress}
+        equipmentDefs={props.equipmentDefs}
+        handleToggle={props.handleToggle}
+        openScanner={props.openScanner}
+        scannedItemId={props.scannedItemId}
+      />;
     case 'photos':
       return (
         <PhotosTab

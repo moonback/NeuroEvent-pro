@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check } from 'lucide-react';
 import { triggerVibrate } from './useTechDashboard';
+import VirtualList from '../ui/VirtualList';
 
 interface EquipmentItem {
   equipmentId: string;
@@ -16,6 +17,7 @@ interface Props {
   scannedItemId: string | null;
   missionStatus: string;
   missionColor?: string;
+  useVirtual?: boolean;
 }
 
 function ItemRow({ me, def, isChecked, onToggle, isFlashing, missionId }: any) {
@@ -46,7 +48,27 @@ function ItemRow({ me, def, isChecked, onToggle, isFlashing, missionId }: any) {
 
 const ItemRowMemo = React.memo(ItemRow);
 
-function EquipmentChecklistInner({ missionId, equipments, equipmentDefs, onToggle, scannedItemId, missionStatus }: Props) {
+function EquipmentChecklistInner({ missionId, equipments, equipmentDefs, onToggle, scannedItemId, missionStatus, useVirtual = false }: Props) {
+  if (useVirtual) {
+    return (
+      <VirtualList
+        items={equipments}
+        itemHeight={56}
+        buffer={8}
+        renderItem={(me: EquipmentItem, idx: number) => {
+          const def = equipmentDefs.find(d => d.id === me.equipmentId);
+          const isChecked = !!me.checked;
+          const isFlashing = scannedItemId === me.equipmentId;
+          return (
+            <div key={me.equipmentId} className={isFlashing ? 'tech-animate-pulse-glow' : ''}>
+              <ItemRowMemo me={me} def={def} isChecked={isChecked} onToggle={onToggle} isFlashing={isFlashing} missionId={missionId} />
+            </div>
+          );
+        }}
+      />
+    );
+  }
+
   return (
     <ul>
       {equipments.map((me) => {
