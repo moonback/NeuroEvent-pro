@@ -3,6 +3,7 @@ import { useTechDashboard, triggerVibrate } from '../components/technician/useTe
 import TechHeader from '../components/technician/TechHeader';
 import TechBottomNav from '../components/technician/TechBottomNav';
 import MissionCard from '../components/technician/MissionCard';
+import VirtualList from '../components/ui/VirtualList';
 import MissionActiveCard from '../components/technician/MissionActiveCard';
 import MissionFilters from '../components/technician/MissionFilters';
 import MissionDrawer from '../components/technician/MissionDrawer';
@@ -284,21 +285,22 @@ export default function TechnicianDashboard() {
                 </p>
               </div>
             ) : (
-              tech.displayedMissions.map((mission, idx) => (
-                <div
-                  key={mission.id}
-                  className="tech-animate-in"
-                  style={{ animationDelay: `${idx * 45}ms` }}
-                >
-                  <MissionCard
-                    mission={mission}
-                    truckName={tech.getTruckName(mission.truckId)}
-                    colleagueCount={tech.getColleagues(mission.technicianIds).length}
-                    onClick={() => tech.openMissionDetails(mission)}
-                    onQuickAction={(status) => tech.handleStatusChange(mission, status)}
-                  />
-                </div>
-              ))
+              <VirtualList
+                items={tech.displayedMissions}
+                itemHeight={220}
+                buffer={6}
+                renderItem={(mission: any, idx: number) => (
+                  <div key={mission.id} className="tech-animate-in" style={{ animationDelay: `${idx * 30}ms` }}>
+                    <MissionCard
+                      mission={mission}
+                      truckName={tech.getTruckName(mission.truckId)}
+                      colleagueCount={tech.getColleagues(mission.technicianIds).length}
+                      onClick={() => tech.openMissionDetails(mission)}
+                      onQuickAction={(status) => tech.handleStatusChange(mission, status)}
+                    />
+                  </div>
+                )}
+              />
             )}
           </div>
         </div>

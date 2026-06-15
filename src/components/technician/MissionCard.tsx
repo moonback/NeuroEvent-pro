@@ -28,7 +28,7 @@ interface MissionCardProps {
   onQuickAction?: (newStatus: 'En cours' | 'Terminée') => void;
 }
 
-export default function MissionCard({ mission, truckName, colleagueCount, onClick, onQuickAction }: MissionCardProps) {
+function MissionCard({ mission, truckName, colleagueCount, onClick, onQuickAction }: MissionCardProps) {
   const [isHovered, setIsHovered] = React.useState(false);
   const isToday = isSameDay(mission.start, new Date());
   const user = useAuthStore(state => state.user);
@@ -361,3 +361,5 @@ export default function MissionCard({ mission, truckName, colleagueCount, onClic
     </div>
   );
 }
+
+export default React.memo(MissionCard);
