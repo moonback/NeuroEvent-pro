@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   Calendar, Users, Truck, Package, Settings, Menu, Printer, LogOut,
-  Building2, UserCog, FileText, BarChart3, Plus, Timer, CalendarX2
+  Building2, UserCog, FileText, BarChart3, Plus, Timer, CalendarX2, LayoutGrid
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import MissionModal from '../MissionModal';
@@ -15,10 +15,13 @@ interface NavItem {
   end?: boolean;
 }
 
-const mainNavigation: NavItem[] = [
+const operationsNavigation: NavItem[] = [
   { name: 'Planning Global', to: '/', icon: Calendar, end: true },
+  { name: 'Tableau Kanban', to: '/kanban', icon: LayoutGrid },
   { name: 'Disponibilités', to: '/disponibilites', icon: CalendarX2 },
-  { name: 'Tableau Kanban', to: '/kanban', icon: Package },
+];
+
+const resourcesNavigation: NavItem[] = [
   { name: 'Techniciens', to: '/technicians', icon: Users },
   { name: 'Camions', to: '/trucks', icon: Truck },
   { name: 'Matériel', to: '/equipment', icon: Package },
@@ -121,8 +124,11 @@ export function Layout() {
           )}
         >
           <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
-            <div className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-2 ml-2">Vues Principales</div>
-            {mainNavigation.map(renderNavItem)}
+            <div className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-2 ml-2">Opérations</div>
+            {operationsNavigation.map(renderNavItem)}
+
+            <div className="pt-6 text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-2 ml-2">Ressources</div>
+            {resourcesNavigation.map(renderNavItem)}
 
             <div className="pt-6 text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-2 ml-2">Gestion</div>
             {managementNavigation.map(renderNavItem)}
