@@ -309,7 +309,9 @@ export default function MissionDrawer(props: MissionDrawerProps) {
               equipmentDefs={props.equipmentDefs}
               handleTimeChange={props.handleTimeChange}
               handleToggle={props.handleToggle}
+              onStatusChange={props.onStatusChange}
               openScanner={props.openScanner}
+              onOpenSignature={props.onOpenSignature}
               scannedItemId={props.scannedItemId}
               localReports={props.localReports}
               savingStatus={props.savingStatus}

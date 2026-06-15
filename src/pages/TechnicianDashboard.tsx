@@ -369,6 +369,7 @@ export default function TechnicianDashboard() {
           openScanner={() => {
             tech.setActiveMissionIdForScanner(tech.selectedMission!.id);
             tech.setScannerOpen(true);
+            toast.info('Scanner QR activé. Scannez le matériel.');
           }}
           handleToggle={tech.handleToggle}
           scannedItemId={tech.scannedItemId}

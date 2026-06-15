@@ -3,7 +3,7 @@ import {
   Calendar, MapPin, Truck as TruckIcon, Users, Phone, Mail,
   MessageSquare, Navigation, QrCode, Check, FileText, Info,
   ChevronRight, AlertCircle, AlertTriangle, Clock, CheckCircle2,
-  Package, Wrench, ClipboardCheck, Camera, Loader2, Trash2, Image as ImageIcon, Plus
+  Package, Wrench, ClipboardCheck, Camera, Loader2, Trash2, Image as ImageIcon, Plus, PenTool
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -23,7 +23,9 @@ interface DrawerTabsProps {
   equipmentDefs: { id: string; name: string }[];
   handleTimeChange: (field: 'start' | 'end', time: string) => void;
   handleToggle: (missionId: string, equipmentId: string) => void;
+  onStatusChange: (mission: any, s: 'Planifiée' | 'En cours' | 'Terminée') => void;
   openScanner: () => void;
+  onOpenSignature: () => void;
   scannedItemId: string | null;
   localReports: Record<string, string>;
   savingStatus: 'idle' | 'saving' | 'saved';
@@ -65,7 +67,7 @@ function CardHeader({ icon, label, right }: { icon: React.ReactNode; label: stri
 /* ══════════════════════════════════════════════════════════════════════════
    GENERAL TAB
    ══════════════════════════════════════════════════════════════════════════ */
-function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab, handleTimeChange }: any) {
+function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab, handleTimeChange, onStatusChange, openScanner, onOpenSignature }: any) {
   const prog = getEquipmentProgress(mission.equipments);
   const user = useAuthStore(state => state.user);
   const technicians = useStore(state => state.technicians);
@@ -224,6 +226,75 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
             <Navigation className="w-3.5 h-3.5" />
             Itinéraire Google Maps
           </a>
+        </div>
+      </InfoCard>
+
+      {/* ── Actions rapides ── */}
+      <InfoCard>
+        <CardHeader
+          icon={<Wrench className="w-3.5 h-3.5" style={{ color: mission.color }} />}
+          label="Actions rapides"
+        />
+        <div className="p-4 grid grid-cols-2 gap-3">
+          <button
+            onClick={() => {
+              triggerVibrate('click');
+              if (mission.status === 'Planifiée') {
+                onStatusChange(mission, 'En cours');
+              } else if (mission.status === 'En cours') {
+                onStatusChange(mission, 'Terminée');
+              }
+            }}
+            disabled={mission.status === 'Terminée'}
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-wider transition-all active:scale-[0.97]"
+            style={{
+              background: mission.status === 'Terminée' ? 'rgba(255,255,255,0.06)' : mission.color,
+              color: '#fff',
+              opacity: mission.status === 'Terminée' ? 0.6 : 1,
+            }}
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            {mission.status === 'Planifiée' ? 'Démarrer' : mission.status === 'En cours' ? 'Terminer' : 'Terminée'}
+          </button>
+
+          <button
+            onClick={() => { triggerVibrate('click'); openScanner(); }}
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-wider transition-all active:scale-[0.97]"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              color: mission.color,
+              border: `1px solid ${mission.color}33`,
+            }}
+          >
+            <QrCode className="w-4 h-4" />
+            Scanner matériel
+          </button>
+
+          <button
+            onClick={() => { triggerVibrate('click'); onOpenSignature(); }}
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-wider transition-all active:scale-[0.97]"
+            style={{
+              background: mission.signatureUrl ? 'rgba(0,229,160,0.12)' : 'rgba(255,255,255,0.05)',
+              color: mission.signatureUrl ? 'var(--tech-accent)' : 'var(--tech-text)',
+              border: `1px solid ${mission.signatureUrl ? 'rgba(0,229,160,0.25)' : 'rgba(255,255,255,0.08)'}`,
+            }}
+          >
+            <PenTool className="w-4 h-4" />
+            {mission.signatureUrl ? 'Signé' : 'Signature'}
+          </button>
+
+          <button
+            onClick={() => { triggerVibrate('click'); setDrawerTab('report'); }}
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-wider transition-all active:scale-[0.97]"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              color: 'var(--tech-text)',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <FileText className="w-4 h-4" />
+            Rapport
+          </button>
         </div>
       </InfoCard>
 
@@ -1480,7 +1551,16 @@ export default function DrawerTabs(props: DrawerTabsProps) {
 
   switch (drawerTab) {
     case 'general':
-      return <GeneralTab mission={mission} getTruckName={props.getTruckName} getEquipmentProgress={props.getEquipmentProgress} setDrawerTab={props.setDrawerTab} handleTimeChange={props.handleTimeChange} />;
+      return <GeneralTab
+        mission={mission}
+        getTruckName={props.getTruckName}
+        getEquipmentProgress={props.getEquipmentProgress}
+        setDrawerTab={props.setDrawerTab}
+        handleTimeChange={props.handleTimeChange}
+        onStatusChange={props.onStatusChange}
+        openScanner={props.openScanner}
+        onOpenSignature={props.onOpenSignature}
+      />;
     case 'client':
       return <ClientTab mission={mission} getClientInfo={props.getClientInfo} />;
     case 'team':
