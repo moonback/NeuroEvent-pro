@@ -15,7 +15,7 @@ interface MissionDrawerProps {
   drawerTab: DrawerTab;
   setDrawerTab: (t: DrawerTab) => void;
   onClose: () => void;
-  onStatusChange: (s: 'Planifiée' | 'En cours' | 'Terminée') => void;
+  onStatusChange: (mission: any, s: 'Planifiée' | 'En cours' | 'Terminée') => void;
   onOpenSignature: () => void;
   dragOffsetY: number;
   isDragging: boolean;
@@ -196,7 +196,7 @@ export default function MissionDrawer(props: MissionDrawerProps) {
                     <button
                       onClick={() => {
                         if (locked) { triggerVibrate('error'); return; }
-                        onStatusChange(step.key as any);
+                        onStatusChange(mission, step.key as any);
                       }}
                       className={`flex items-center justify-center gap-1.5 py-1 px-2.5 rounded-lg transition-all flex-1 ${locked ? 'cursor-not-allowed' : 'cursor-pointer active:scale-95'
                         }`}

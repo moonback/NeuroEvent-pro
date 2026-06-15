@@ -183,13 +183,18 @@ export function useTechDashboard() {
     }
   };
 
-  const handleStatusChange = (newStatus: 'Planifiée' | 'En cours' | 'Terminée') => {
-    if (!selectedMission || selectedMission.status === newStatus) return;
-    if (selectedMission.status === 'Terminée') {
+  const handleStatusChange = (
+    missionArg: typeof missions[0] | null,
+    newStatus: 'Planifiée' | 'En cours' | 'Terminée'
+  ) => {
+    const targetMission = missionArg || selectedMission;
+    if (!targetMission || targetMission.status === newStatus) return;
+    if (targetMission.status === 'Terminée') {
       triggerVibrate('error');
       toast.error("Impossible de modifier le statut d'une mission terminée.");
       return;
     }
+    setSelectedMission(targetMission);
     triggerVibrate('double');
     const pad = (n: number) => String(n).padStart(2, '0');
     const now = new Date();
@@ -202,8 +207,8 @@ export function useTechDashboard() {
       setTimeModal({ type: 'end', targetStatus: 'Terminée', time: defaultTime, loading: false });
       return;
     }
-    setSelectedMission({ ...selectedMission, status: newStatus });
-    updateMission(selectedMission.id, { status: newStatus });
+    setSelectedMission({ ...targetMission, status: newStatus });
+    updateMission(targetMission.id, { status: newStatus });
     toast.success(`Statut mis à jour : ${newStatus}`);
   };
 
