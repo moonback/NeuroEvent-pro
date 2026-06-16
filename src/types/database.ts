@@ -28,6 +28,7 @@ export interface Database {
           first_name: string | null;
           last_name: string | null;
           role: string | null;
+          phone: string | null;
           created_at: string | null;
         };
         Insert: {
@@ -36,6 +37,7 @@ export interface Database {
           first_name?: string | null;
           last_name?: string | null;
           role?: string | null;
+          phone?: string | null;
           created_at?: string | null;
         };
         Update: {
@@ -44,7 +46,38 @@ export interface Database {
           first_name?: string | null;
           last_name?: string | null;
           role?: string | null;
+          phone?: string | null;
           created_at?: string | null;
+        };
+        Relationships: [];
+      };
+      admin_preferences: {
+        Row: {
+          user_id: string;
+          language: string;
+          timezone: string;
+          notifications: string[];
+          is_online: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          language?: string;
+          timezone?: string;
+          notifications?: string[];
+          is_online?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          language?: string;
+          timezone?: string;
+          notifications?: string[];
+          is_online?: boolean;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };

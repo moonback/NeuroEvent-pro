@@ -5,9 +5,12 @@ import { supabase } from '../lib/supabase';
 import {
   Save, User, Lock, ArrowLeft, Calendar, Settings as SettingsIcon,
   LogOut, Wrench, Car, Check, Plus, X,
-  Shield, Award, ChevronRight, KeyRound, Star
+  Shield, Award, ChevronRight, KeyRound, Star,
+  Mail, Phone, BadgeCheck, Sparkles, Globe2, Bell,
+  Activity, Briefcase, MapPin, Clock, AtSign
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useIsMobile } from '../hooks/useMediaQuery';
 
 const SKILL_CATALOG = [
   { id: 'montage_scene',  label: 'Montage scène',      emoji: '🎭' },
@@ -28,6 +31,23 @@ const SKILL_CATALOG = [
 
 const LICENSE_CATEGORIES = ['A','A1','A2','AM','B','BE','B1','C','C1','CE','C1E','D','D1','DE','D1E'];
 
+const PREFERENCES = {
+  languages: [
+    { id: 'fr', label: 'Français', flag: '🇫🇷' },
+    { id: 'en', label: 'English',  flag: '🇬🇧' },
+  ],
+  timezones: [
+    { id: 'Europe/Paris',  label: 'Europe/Paris (UTC+1)' },
+    { id: 'Europe/Brussels', label: 'Europe/Brussels (UTC+1)' },
+    { id: 'Europe/London', label: 'Europe/London (UTC+0)' },
+  ],
+  notifications: [
+    { id: 'missions',     label: 'Nouvelles missions',  sub: 'Quand une mission est créée', icon: Briefcase },
+    { id: 'conflicts',    label: 'Conflits détectés',   sub: 'Surréservations ou erreurs',  icon: Activity },
+    { id: 'updates',      label: 'Mises à jour système', sub: 'Versions et maintenance',     icon: Sparkles },
+  ],
+};
+
 function BottomSheet({
   open,
   onClose,
@@ -46,22 +66,23 @@ function BottomSheet({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center">
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center">
       <div
         className="absolute inset-0"
         style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(5px)' }}
         onClick={onClose}
       />
       <div
-        className="relative w-full max-w-md rounded-t-3xl z-10 flex flex-col tech-animate-slide-up"
+        className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl z-10 flex flex-col tech-animate-slide-up"
         style={{
           background: 'rgba(13,17,28,0.99)',
           backdropFilter: 'blur(32px)',
           borderTop: '1px solid rgba(255,255,255,0.08)',
+          border: '1px solid rgba(255,255,255,0.08)',
           maxHeight: '85dvh',
         }}
       >
-        <div className="pt-4 pb-1 flex justify-center shrink-0">
+        <div className="pt-4 pb-1 flex justify-center shrink-0 sm:hidden">
           <div className="w-9 h-[3px] rounded-full" style={{ background: 'rgba(255,255,255,0.14)' }} />
         </div>
 
@@ -144,7 +165,7 @@ function ProfileRow({
     <button
       type="button"
       onClick={onClick}
-      className="w-full flex items-center gap-3.5 p-4 rounded-2xl transition-all active:scale-[0.97] text-left"
+      className="w-full flex items-center gap-3.5 p-4 rounded-2xl transition-all active:scale-[0.97] text-left min-h-[60px]"
       style={{
         background: 'var(--tech-card)',
         border: '1px solid var(--tech-border)',
@@ -166,7 +187,7 @@ function ProfileRow({
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-bold" style={{ color: 'var(--tech-text)' }}>{label}</div>
-        <div className="text-[10px] font-semibold mt-0.5" style={{ color: 'var(--tech-text-muted)' }}>{sub}</div>
+        <div className="text-[10px] font-semibold mt-0.5 truncate" style={{ color: 'var(--tech-text-muted)' }}>{sub}</div>
       </div>
       <ChevronRight className="w-4 h-4 shrink-0" style={{ color: 'var(--tech-text-muted)' }} />
     </button>
@@ -179,6 +200,7 @@ export default function Settings() {
   const technicians = useStore((s) => s.technicians);
   const updateTechnician = useStore((s) => s.updateTechnician);
   const techProfile = technicians.find((t) => t.id === user?.id);
+  const isMobile = useIsMobile();
 
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -186,6 +208,7 @@ export default function Settings() {
 
   const [firstName, setFirstName] = useState(user?.user_metadata?.first_name || '');
   const [lastName, setLastName]   = useState(user?.user_metadata?.last_name || '');
+  const [phone, setPhone]         = useState(user?.user_metadata?.phone || '');
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -196,9 +219,16 @@ export default function Settings() {
   const [licenseCategories, setLicenseCategories] = useState<string[]>([]);
   const [skillsSaving, setSkillsSaving] = useState<'idle'|'saving'|'saved'>('idle');
 
+  const [language, setLanguage] = useState('fr');
+  const [timezone, setTimezone] = useState('Europe/Paris');
+  const [notifications, setNotifications] = useState<string[]>(['missions', 'conflicts', 'updates']);
+  const [isOnline, setIsOnline] = useState(true);
+  const [profileSaving, setProfileSaving] = useState<'idle'|'saving'|'saved'>('idle');
+
   const [skillsModal, setSkillsModal] = useState(false);
   const [licenseModal, setLicenseModal] = useState(false);
   const [securityModal, setSecurityModal] = useState(false);
+  const [prefsModal, setPrefsModal] = useState(false);
 
   const isTechnician = role !== 'Admin';
 
@@ -211,20 +241,74 @@ export default function Settings() {
     }
   }, [techProfile]);
 
+  // Charger phone depuis profiles + préférences depuis admin_preferences
+  useEffect(() => {
+    if (!user?.id) return;
+
+    let cancelled = false;
+
+    (async () => {
+      // 1) Charger le phone depuis profiles
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('phone')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!cancelled && profile?.phone) {
+        setPhone(profile.phone);
+      }
+
+      // 2) Charger les préférences (1:1 sur user_id)
+      const { data: prefs } = await supabase
+        .from('admin_preferences')
+        .select('language, timezone, notifications, is_online')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!cancelled && prefs) {
+        if (prefs.language) setLanguage(prefs.language);
+        if (prefs.timezone) setTimezone(prefs.timezone);
+        if (Array.isArray(prefs.notifications)) setNotifications(prefs.notifications);
+        if (typeof prefs.is_online === 'boolean') setIsOnline(prefs.is_online);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!successMsg) return;
+    const t = setTimeout(() => setSuccessMsg(null), 4000);
+    return () => clearTimeout(t);
+  }, [successMsg]);
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
-    const { error } = await supabase.auth.updateUser({ data: { first_name: firstName, last_name: lastName } });
+    const { error } = await supabase.auth.updateUser({
+      data: { first_name: firstName, last_name: lastName },
+    });
     if (error) {
       setErrorMsg(error.message);
     } else {
       setSuccessMsg('Profil mis à jour avec succès.');
       if (user?.id) {
-        await supabase.from('profiles').update({ first_name: firstName, last_name: lastName }).eq('id', user.id);
+        const profileUpdate: { first_name: string; last_name: string; phone?: string | null } = {
+          first_name: firstName,
+          last_name: lastName,
+        };
+        if (phone !== (user?.user_metadata?.phone ?? '')) {
+          profileUpdate.phone = phone || null;
+        }
+        await supabase.from('profiles').update(profileUpdate).eq('id', user.id);
         if (role === 'Technicien') {
-          await supabase.from('technicians').update({ first_name: firstName, last_name: lastName }).eq('id', user.id);
+          await supabase.from('technicians').update({
+            first_name: firstName,
+            last_name: lastName,
+          }).eq('id', user.id);
         }
       }
     }
@@ -267,181 +351,389 @@ export default function Settings() {
     setTimeout(() => setSkillsSaving('idle'), 2000);
   };
 
+  const handleSavePrefs = async () => {
+    if (!user?.id) return;
+    setProfileSaving('saving');
+    setErrorMsg(null);
+
+    // Upsert dans admin_preferences (1 ligne par user, RLS "own row only")
+    const { error } = await supabase
+      .from('admin_preferences')
+      .upsert(
+        {
+          user_id: user.id,
+          language,
+          timezone,
+          notifications,
+          is_online: isOnline,
+        },
+        { onConflict: 'user_id' }
+      );
+
+    if (error) {
+      setErrorMsg(`Échec de la sauvegarde : ${error.message}`);
+      setProfileSaving('idle');
+      return;
+    }
+    setProfileSaving('saved');
+    setTimeout(() => setProfileSaving('idle'), 2000);
+    setPrefsModal(false);
+  };
+
   const toggleSkill = (id: string) => setSkills((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]);
   const toggleLicenseCategory = (cat: string) => setLicenseCategories((prev) => prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]);
+  const toggleNotification = (id: string) => setNotifications((prev) => prev.includes(id) ? prev.filter((n) => n !== id) : [...prev, id]);
   const handleSignOut = async () => { await useAuthStore.getState().signOut(); };
 
   const initials = `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || '?';
+  const fullName = `${firstName} ${lastName}`.trim() || user?.email || '—';
+  const roleColor = isTechnician ? '#00e5a0' : '#4d9fff';
+  const roleLabel = isTechnician ? 'Technicien' : 'Administrateur';
+
+  // Stats admin (raccourci visuel)
+  const adminStats = [
+    { label: 'Missions actives',  value: 12, color: '#2563eb' },
+    { label: 'Techniciens',       value: technicians.length, color: '#a78bfa' },
+    { label: 'Alertes en cours',  value: 3, color: '#ff4d6d' },
+  ];
 
   return (
     <div className="flex-1 overflow-auto bg-[#f8fafc]">
-      <div className={`${isTechnician ? 'max-w-md' : 'max-w-3xl'} mx-auto space-y-4`}>
-        <div className={isTechnician ? 'p-3 sm:p-6 pb-32' : 'p-4 sm:p-8'}>
+      <div className={`${isTechnician ? 'max-w-md' : 'max-w-5xl'} mx-auto`}>
+        <div className={isTechnician ? 'p-3 sm:p-6 pb-32' : 'p-4 sm:p-6 lg:p-8 pb-12'}>
 
           {/* Header */}
-          <div className="flex items-center gap-4 mb-2">
+          <div className="flex items-center gap-4 mb-5 sm:mb-6">
             {isTechnician && (
               <Link to="/" className="p-2 text-[#64748b] hover:text-[#0f172a] bg-white border border-[#e2e8f0] rounded-xl transition-colors shadow-xs">
                 <ArrowLeft className="w-5 h-5" />
               </Link>
             )}
-            <div>
-              <h1 className="text-2xl font-black text-[#0f172a]">Mon Profil</h1>
-              <p className="text-[#64748b] mt-0.5 text-sm">Gérez vos informations et compétences.</p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-black text-[#0f172a] tracking-tight">Mon Profil</h1>
+                <span
+                  className="hidden sm:inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider"
+                  style={{
+                    background: isOnline ? 'rgba(16,185,129,0.10)' : 'rgba(100,116,139,0.10)',
+                    color: isOnline ? '#059669' : '#64748b',
+                    border: `1px solid ${isOnline ? 'rgba(16,185,129,0.25)' : 'rgba(100,116,139,0.25)'}`,
+                  }}
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{
+                      background: isOnline ? '#10b981' : '#94a3b8',
+                      animation: isOnline ? 'tech-dot-ping 1.8s infinite' : 'none',
+                    }}
+                  />
+                  {isOnline ? 'En ligne' : 'Hors ligne'}
+                </span>
+              </div>
+              <p className="text-[#64748b] mt-0.5 text-xs sm:text-sm">Gérez vos informations et compétences.</p>
             </div>
+            {!isTechnician && (
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="hidden sm:flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-extrabold text-[#475569] hover:text-red-500 bg-white border border-[#e2e8f0] hover:border-red-200 transition-all active:scale-95 shadow-xs"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Déconnexion</span>
+              </button>
+            )}
           </div>
 
           {successMsg && (
-            <div className="bg-emerald-50 text-emerald-700 p-4 rounded-2xl text-sm border border-emerald-100 font-semibold flex items-center gap-2">
+            <div className="mb-4 bg-emerald-50 text-emerald-700 p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm border border-emerald-100 font-semibold flex items-center gap-2 tech-animate-in">
               <Check className="w-4 h-4 shrink-0" />{successMsg}
             </div>
           )}
           {errorMsg && (
-            <div className="bg-red-50 text-red-500 p-4 rounded-2xl text-sm border border-red-100 font-semibold">
+            <div className="mb-4 bg-red-50 text-red-500 p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm border border-red-100 font-semibold tech-animate-in">
               {errorMsg}
             </div>
           )}
 
-          {/* ── Avatar + identity card ── */}
-          <div className="bg-white rounded-2xl shadow-xs border border-[#e2e8f0] overflow-hidden">
-            <div
-              className="h-20 relative"
-              style={{ background: 'linear-gradient(135deg, #080b12 0%, #131926 60%, #1a2133 100%)' }}
-            >
-              <div
-                className="absolute left-5 -bottom-7 w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black border-2"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(0,229,160,0.18) 0%, rgba(77,159,255,0.18) 100%)',
-                  borderColor: 'rgba(0,229,160,0.30)',
-                  color: 'var(--tech-accent)',
-                }}
-              >
-                {initials}
-              </div>
-              <div
-                className="absolute right-4 top-4 text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider"
-                style={{
-                  background: 'rgba(0,229,160,0.15)',
-                  border: '1px solid rgba(0,229,160,0.25)',
-                  color: '#00e5a0',
-                }}
-              >
-                {role || 'Technicien'}
-              </div>
-            </div>
+          {/* ── Layout grid : 2 colonnes sur desktop, 1 sur mobile ── */}
+          <div className={isTechnician ? 'space-y-4' : 'grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6'}>
 
-            <div className="pt-10 pb-4 px-5">
-              <p className="text-[10px] font-semibold" style={{ color: '#94a3b8' }}>{user?.email}</p>
-              <form onSubmit={handleUpdateProfile} className="mt-3 space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label htmlFor="settings-firstname" className="block text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider mb-1.5">Prénom</label>
-                    <input
-                      id="settings-firstname"
-                      type="text"
-                      autoComplete="given-name"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      className="w-full rounded-xl border border-[#e2e8f0] px-3 py-2.5 focus:ring-2 focus:ring-[#2563eb] focus:border-transparent outline-none text-sm font-semibold bg-[#f8fafc] focus:bg-white transition-all"
-                    />
+            {/* ── Colonne principale : carte identité + identité ── */}
+            <div className={isTechnician ? '' : 'lg:col-span-2 space-y-5 sm:space-y-6'}>
+
+              {/* Carte identité premium */}
+              <div className="bg-white rounded-2xl shadow-xs border border-[#e2e8f0] overflow-hidden">
+                <div
+                  className="h-24 sm:h-28 relative"
+                  style={{ background: 'linear-gradient(135deg, #080b12 0%, #131926 60%, #1a2133 100%)' }}
+                >
+                  {/* Pattern décoratif */}
+                  <div
+                    className="absolute inset-0 opacity-30"
+                    style={{
+                      backgroundImage:
+                        'radial-gradient(circle at 20% 30%, rgba(0,229,160,0.25), transparent 50%), radial-gradient(circle at 80% 70%, rgba(77,159,255,0.25), transparent 50%)',
+                    }}
+                  />
+                  <div
+                    className="absolute left-5 -bottom-8 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-xl sm:text-2xl font-black border-2 sm:border-[3px] shadow-lg"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(0,229,160,0.22) 0%, rgba(77,159,255,0.22) 100%)',
+                      borderColor: 'rgba(0,229,160,0.40)',
+                      color: 'var(--tech-accent)',
+                    }}
+                  >
+                    {initials}
                   </div>
-                  <div>
-                    <label htmlFor="settings-lastname" className="block text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider mb-1.5">Nom</label>
-                    <input
-                      id="settings-lastname"
-                      type="text"
-                      autoComplete="family-name"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      className="w-full rounded-xl border border-[#e2e8f0] px-3 py-2.5 focus:ring-2 focus:ring-[#2563eb] focus:border-transparent outline-none text-sm font-semibold bg-[#f8fafc] focus:bg-white transition-all"
-                    />
+                  <div className="absolute right-4 top-4 flex flex-col sm:flex-row items-end sm:items-center gap-1.5 sm:gap-2">
+                    <span
+                      className="text-[9px] sm:text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider whitespace-nowrap"
+                      style={{
+                        background: roleColor + '22',
+                        border: `1px solid ${roleColor}44`,
+                        color: roleColor,
+                      }}
+                    >
+                      {roleLabel}
+                    </span>
+                    <span className="sm:hidden text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider whitespace-nowrap bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      En ligne
+                    </span>
                   </div>
                 </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 bg-[#0f172a] text-white px-4 py-3 rounded-xl text-sm font-extrabold hover:bg-black transition-colors disabled:opacity-50 active:scale-[0.98] duration-100"
-                >
-                  <Save className="w-4 h-4" /> Sauvegarder le profil
-                </button>
-              </form>
+
+                <div className="pt-10 sm:pt-12 pb-5 px-5 sm:px-6">
+                  <h2 className="text-base sm:text-lg font-black text-[#0f172a] truncate">{fullName}</h2>
+                  <p className="text-[10px] sm:text-xs font-semibold text-[#94a3b8] mt-0.5 flex items-center gap-1.5 truncate">
+                    <Mail className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{user?.email}</span>
+                  </p>
+
+                  <form onSubmit={handleUpdateProfile} className="mt-4 sm:mt-5 space-y-3 sm:space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="settings-firstname" className="block text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider mb-1.5">Prénom</label>
+                        <input
+                          id="settings-firstname"
+                          type="text"
+                          autoComplete="given-name"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          className="w-full rounded-xl border border-[#e2e8f0] px-3 py-2.5 sm:py-3 focus:ring-2 focus:ring-[#2563eb] focus:border-transparent outline-none text-sm font-semibold bg-[#f8fafc] focus:bg-white transition-all min-h-[44px]"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="settings-lastname" className="block text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider mb-1.5">Nom</label>
+                        <input
+                          id="settings-lastname"
+                          type="text"
+                          autoComplete="family-name"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          className="w-full rounded-xl border border-[#e2e8f0] px-3 py-2.5 sm:py-3 focus:ring-2 focus:ring-[#2563eb] focus:border-transparent outline-none text-sm font-semibold bg-[#f8fafc] focus:bg-white transition-all min-h-[44px]"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor="settings-phone" className="block text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider mb-1.5">Téléphone</label>
+                      <input
+                        id="settings-phone"
+                        type="tel"
+                        autoComplete="tel"
+                        placeholder="+33 6 12 34 56 78"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full rounded-xl border border-[#e2e8f0] px-3 py-2.5 sm:py-3 focus:ring-2 focus:ring-[#2563eb] focus:border-transparent outline-none text-sm font-semibold bg-[#f8fafc] focus:bg-white transition-all min-h-[44px]"
+                      />
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="flex-1 flex items-center justify-center gap-2 bg-[#0f172a] text-white px-4 py-3 sm:py-3.5 rounded-xl text-sm font-extrabold hover:bg-black transition-colors disabled:opacity-50 active:scale-[0.98] duration-100 min-h-[44px]"
+                      >
+                        <Save className="w-4 h-4" /> Sauvegarder
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsOnline((v) => !v)}
+                        className="flex items-center justify-center gap-2 bg-white text-[#0f172a] border border-[#e2e8f0] px-4 py-3 sm:py-3.5 rounded-xl text-sm font-extrabold hover:bg-[#f8fafc] transition-colors active:scale-[0.98] duration-100 min-h-[44px]"
+                      >
+                        <Activity className="w-4 h-4" style={{ color: isOnline ? '#10b981' : '#94a3b8' }} />
+                        {isOnline ? 'En ligne' : 'Hors ligne'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+              {/* Section Technicien : compétences, permis, sécurité */}
+              {isTechnician && (
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black uppercase tracking-widest px-1" style={{ color: '#94a3b8' }}>
+                    Compétences & Sécurité
+                  </p>
+
+                  <ProfileRow
+                    icon={<Wrench className="w-4.5 h-4.5" />}
+                    label="Compétences"
+                    sub={skills.length > 0 ? `${skills.length} compétence${skills.length > 1 ? 's' : ''} sélectionnée${skills.length > 1 ? 's' : ''}` : 'Aucune compétence renseignée'}
+                    color="#a78bfa"
+                    onClick={() => setSkillsModal(true)}
+                  />
+
+                  <ProfileRow
+                    icon={<Car className="w-4.5 h-4.5" />}
+                    label="Permis de conduire"
+                    sub={hasLicense ? (licenseCategories.length > 0 ? `Catégories : ${licenseCategories.join(', ')}` : 'Permis renseigné') : 'Non renseigné'}
+                    color="#4d9fff"
+                    onClick={() => setLicenseModal(true)}
+                  />
+
+                  <ProfileRow
+                    icon={<Shield className="w-4.5 h-4.5" />}
+                    label="Sécurité"
+                    sub="Modifier votre mot de passe"
+                    color="#ff4d6d"
+                    onClick={() => setSecurityModal(true)}
+                  />
+                </div>
+              )}
+
+              {/* Section Admin : grille de cartes interactives */}
+              {!isTechnician && (
+                <>
+                  {/* Stats rapides */}
+                  <div>
+                    <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[#94a3b8] mb-2.5 px-1">
+                      Aperçu activité
+                    </p>
+                    <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+                      {adminStats.map((s) => (
+                        <div
+                          key={s.label}
+                          className="bg-white rounded-2xl border border-[#e2e8f0] p-3 sm:p-4 shadow-xs"
+                        >
+                          <div
+                            className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-1"
+                            style={{ color: s.color }}
+                          >
+                            {s.label}
+                          </div>
+                          <div className="text-xl sm:text-2xl font-black text-[#0f172a] tabular-nums">
+                            {s.value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[#94a3b8] mb-2.5 px-1">
+                      Compte & Sécurité
+                    </p>
+                    <div className="space-y-2">
+                      <ProfileRow
+                        icon={<KeyRound className="w-4.5 h-4.5" />}
+                        label="Mot de passe"
+                        sub="Modifier votre mot de passe"
+                        color="#ff4d6d"
+                        onClick={() => setSecurityModal(true)}
+                      />
+                      <ProfileRow
+                        icon={<Bell className="w-4.5 h-4.5" />}
+                        label="Notifications"
+                        sub={`${notifications.length} type${notifications.length > 1 ? 's' : ''} activé${notifications.length > 1 ? 's' : ''} · ${PREFERENCES.languages.find(l => l.id === language)?.label}`}
+                        color="#ffb700"
+                        onClick={() => setPrefsModal(true)}
+                      />
+                      <ProfileRow
+                        icon={<Globe2 className="w-4.5 h-4.5" />}
+                        label="Langue & Fuseau"
+                        sub={`${PREFERENCES.languages.find(l => l.id === language)?.flag} ${PREFERENCES.languages.find(l => l.id === language)?.label} · ${timezone.split('/')[1] || timezone}`}
+                        color="#4d9fff"
+                        onClick={() => setPrefsModal(true)}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
+
+            {/* ── Sidebar admin (desktop uniquement) : identité rapide + déconnexion ── */}
+            {!isTechnician && (
+              <aside className="space-y-5 sm:space-y-6">
+                <div className="bg-white rounded-2xl shadow-xs border border-[#e2e8f0] p-5">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[#94a3b8] mb-3">
+                    Rattachement
+                  </p>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                        <BadgeCheck className="w-4.5 h-4.5 text-blue-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-bold text-[#94a3b8] uppercase">Rôle</div>
+                        <div className="text-sm font-extrabold text-[#0f172a] truncate">{roleLabel}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center shrink-0">
+                        <MapPin className="w-4.5 h-4.5 text-violet-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-bold text-[#94a3b8] uppercase">Organisation</div>
+                        <div className="text-sm font-extrabold text-[#0f172a] truncate">EventPlanner Pro</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                        <Clock className="w-4.5 h-4.5 text-emerald-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-bold text-[#94a3b8] uppercase">Membre depuis</div>
+                        <div className="text-sm font-extrabold text-[#0f172a] truncate">
+                          {user?.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : '—'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                        <AtSign className="w-4.5 h-4.5 text-amber-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-bold text-[#94a3b8] uppercase">Identifiant</div>
+                        <div className="text-sm font-extrabold text-[#0f172a] truncate">{user?.id?.slice(0, 8) || '—'}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
+                  <div
+                    className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-20"
+                    style={{ background: 'radial-gradient(circle, #00e5a0 0%, transparent 70%)' }}
+                  />
+                  <Sparkles className="w-5 h-5 text-emerald-400 mb-2" />
+                  <h3 className="text-sm font-black mb-1">Astuce</h3>
+                  <p className="text-[11px] leading-relaxed text-slate-300">
+                    Activez les notifications de conflits pour être alerté en temps réel quand une ressource est surréservée.
+                  </p>
+                </div>
+              </aside>
+            )}
           </div>
 
-          {isTechnician && (
-            <div className="space-y-2">
-              <p className="text-[9px] font-black uppercase tracking-widest px-1" style={{ color: '#94a3b8' }}>
-                Compétences & Sécurité
-              </p>
-
-              <ProfileRow
-                icon={<Wrench className="w-4.5 h-4.5" />}
-                label="Compétences"
-                sub={skills.length > 0 ? `${skills.length} compétence${skills.length > 1 ? 's' : ''} sélectionnée${skills.length > 1 ? 's' : ''}` : 'Aucune compétence renseignée'}
-                color="#a78bfa"
-                onClick={() => setSkillsModal(true)}
-              />
-
-              <ProfileRow
-                icon={<Car className="w-4.5 h-4.5" />}
-                label="Permis de conduire"
-                sub={hasLicense ? (licenseCategories.length > 0 ? `Catégories : ${licenseCategories.join(', ')}` : 'Permis renseigné') : 'Non renseigné'}
-                color="#4d9fff"
-                onClick={() => setLicenseModal(true)}
-              />
-
-              <ProfileRow
-                icon={<Shield className="w-4.5 h-4.5" />}
-                label="Sécurité"
-                sub="Modifier votre mot de passe"
-                color="#ff4d6d"
-                onClick={() => setSecurityModal(true)}
-              />
-            </div>
-          )}
-
+          {/* Mobile : bouton déconnexion en bas du contenu admin */}
           {!isTechnician && (
-            <div className="bg-white rounded-2xl shadow-xs border border-[#e2e8f0] overflow-hidden">
-              <div className="px-5 py-4 border-b border-[#f1f5f9] flex items-center gap-3">
-                <div className="w-9 h-9 bg-orange-50 rounded-xl flex items-center justify-center">
-                  <Lock className="w-5 h-5 text-orange-500" />
-                </div>
-                <h2 className="text-sm font-extrabold text-[#0f172a]">Sécurité</h2>
-              </div>
-              <form onSubmit={handleUpdatePassword} className="p-5 space-y-4">
-                <div>
-                  <label htmlFor="settings-newpassword" className="block text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider mb-1.5">Nouveau mot de passe</label>
-                  <input
-                    id="settings-newpassword"
-                    type="password"
-                    autoComplete="new-password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full rounded-xl border border-[#e2e8f0] px-3 py-2.5 focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none text-sm bg-[#f8fafc] focus:bg-white transition-all"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="settings-confirmpassword" className="block text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider mb-1.5">Confirmer le mot de passe</label>
-                  <input
-                    id="settings-confirmpassword"
-                    type="password"
-                    autoComplete="new-password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full rounded-xl border border-[#e2e8f0] px-3 py-2.5 focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none text-sm bg-[#f8fafc] focus:bg-white transition-all"
-                  />
-                </div>
-                {newPassword && confirmPassword && newPassword !== confirmPassword && (
-                  <p className="text-xs text-red-500 font-semibold">Les mots de passe ne correspondent pas.</p>
-                )}
-                <button
-                  type="submit"
-                  disabled={loading || !newPassword || !confirmPassword || newPassword !== confirmPassword}
-                  className="w-full flex items-center justify-center gap-2 bg-[#f8fafc] text-[#0f172a] border border-[#e2e8f0] px-4 py-3 rounded-xl text-sm font-extrabold hover:bg-[#f1f5f9] transition-colors disabled:opacity-50 active:scale-[0.98] duration-100"
-                >
-                  <Lock className="w-4 h-4" /> Mettre à jour le mot de passe
-                </button>
-              </form>
+            <div className="mt-6 sm:hidden">
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="w-full flex items-center justify-center gap-2 bg-white text-red-500 border border-red-100 px-4 py-3 rounded-xl text-sm font-extrabold hover:bg-red-50 transition-colors active:scale-[0.98] duration-100 min-h-[44px]"
+              >
+                <LogOut className="w-4 h-4" /> Déconnexion
+              </button>
             </div>
           )}
         </div>
@@ -476,7 +768,7 @@ export default function Settings() {
             type="button"
             onClick={async () => { await handleSaveSkills(); setSkillsModal(false); }}
             disabled={skillsSaving === 'saving'}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm text-black uppercase tracking-wider transition-all active:scale-[0.97] disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm text-black uppercase tracking-wider transition-all active:scale-[0.97] disabled:opacity-60 min-h-[48px]"
             style={{
               background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)',
               boxShadow: '0 4px 20px rgba(167,139,250,0.30)',
@@ -504,7 +796,7 @@ export default function Settings() {
                 key={skill.id}
                 type="button"
                 onClick={() => toggleSkill(skill.id)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold border transition-all active:scale-95"
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold border transition-all active:scale-95 min-h-[40px]"
                 style={{
                   background: selected ? 'rgba(167,139,250,0.12)' : 'rgba(255,255,255,0.04)',
                   border: selected ? '1px solid rgba(167,139,250,0.35)' : '1px solid rgba(255,255,255,0.08)',
@@ -531,7 +823,7 @@ export default function Settings() {
             type="button"
             onClick={async () => { await handleSaveSkills(); setLicenseModal(false); }}
             disabled={skillsSaving === 'saving'}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm text-black uppercase tracking-wider transition-all active:scale-[0.97] disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm text-black uppercase tracking-wider transition-all active:scale-[0.97] disabled:opacity-60 min-h-[48px]"
             style={{
               background: 'linear-gradient(135deg, #4d9fff 0%, #2563eb 100%)',
               boxShadow: '0 4px 20px rgba(77,159,255,0.25)',
@@ -550,7 +842,7 @@ export default function Settings() {
         <button
           type="button"
           onClick={() => setHasLicense((v) => !v)}
-          className="w-full flex items-center justify-between p-4 rounded-2xl transition-all active:scale-[0.97]"
+          className="w-full flex items-center justify-between p-4 rounded-2xl transition-all active:scale-[0.97] min-h-[60px]"
           style={{
             background: hasLicense ? 'rgba(77,159,255,0.10)' : 'rgba(255,255,255,0.04)',
             border: hasLicense ? '1px solid rgba(77,159,255,0.25)' : '1px solid rgba(255,255,255,0.08)',
@@ -656,7 +948,7 @@ export default function Settings() {
             type="button"
             onClick={handleUpdatePassword}
             disabled={loading || !newPassword || !confirmPassword || newPassword !== confirmPassword}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm text-white uppercase tracking-wider transition-all active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm text-white uppercase tracking-wider transition-all active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed min-h-[48px]"
             style={{
               background: 'linear-gradient(135deg, #ff4d6d 0%, #c9184a 100%)',
               boxShadow: (!newPassword || !confirmPassword || newPassword !== confirmPassword)
@@ -746,6 +1038,145 @@ export default function Settings() {
               </span>
             </div>
           )}
+        </div>
+      </BottomSheet>
+
+      {/* Modal Préférences / Langue / Fuseau / Notifications */}
+      <BottomSheet
+        open={prefsModal}
+        onClose={() => setPrefsModal(false)}
+        title="Préférences"
+        subtitle="Langue, fuseau horaire et notifications"
+        footer={
+          <button
+            type="button"
+            onClick={handleSavePrefs}
+            disabled={profileSaving === 'saving'}
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-sm text-white uppercase tracking-wider transition-all active:scale-[0.97] disabled:opacity-60 min-h-[48px]"
+            style={{
+              background: 'linear-gradient(135deg, #ffb700 0%, #f59e0b 100%)',
+              boxShadow: '0 4px 20px rgba(255,183,0,0.30)',
+            }}
+          >
+            {profileSaving === 'saving' ? (
+              <span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" />
+            ) : profileSaving === 'saved' ? (
+              <>
+                <Check className="w-4 h-4" /> Sauvegardé !
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" /> Enregistrer les préférences
+              </>
+            )}
+          </button>
+        }
+      >
+        {/* Langue */}
+        <div>
+          <label className="block text-[9px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--tech-text-muted)' }}>
+            Langue de l'interface
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {PREFERENCES.languages.map((l) => {
+              const selected = language === l.id;
+              return (
+                <button
+                  key={l.id}
+                  type="button"
+                  onClick={() => setLanguage(l.id)}
+                  className="flex items-center gap-2.5 p-3 rounded-2xl border transition-all active:scale-95 min-h-[52px]"
+                  style={{
+                    background: selected ? 'rgba(77,159,255,0.10)' : 'rgba(255,255,255,0.04)',
+                    border: selected ? '1px solid rgba(77,159,255,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                  }}
+                >
+                  <span className="text-2xl">{l.flag}</span>
+                  <div className="text-left min-w-0">
+                    <div className="text-sm font-extrabold truncate" style={{ color: 'var(--tech-text)' }}>
+                      {l.label}
+                    </div>
+                  </div>
+                  {selected && <Check className="w-4 h-4 ml-auto shrink-0" style={{ color: 'var(--tech-blue)' }} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Fuseau */}
+        <div>
+          <label className="block text-[9px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--tech-text-muted)' }}>
+            Fuseau horaire
+          </label>
+          <div className="space-y-1.5">
+            {PREFERENCES.timezones.map((tz) => {
+              const selected = timezone === tz.id;
+              return (
+                <button
+                  key={tz.id}
+                  type="button"
+                  onClick={() => setTimezone(tz.id)}
+                  className="w-full flex items-center justify-between p-3 rounded-2xl border transition-all active:scale-[0.98] min-h-[48px]"
+                  style={{
+                    background: selected ? 'rgba(77,159,255,0.10)' : 'rgba(255,255,255,0.04)',
+                    border: selected ? '1px solid rgba(77,159,255,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                  }}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Globe2 className="w-4 h-4" style={{ color: selected ? 'var(--tech-blue)' : 'var(--tech-text-muted)' }} />
+                    <span className="text-sm font-bold" style={{ color: 'var(--tech-text)' }}>{tz.label}</span>
+                  </div>
+                  {selected && <Check className="w-4 h-4" style={{ color: 'var(--tech-blue)' }} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Notifications */}
+        <div>
+          <label className="block text-[9px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--tech-text-muted)' }}>
+            Notifications
+          </label>
+          <div className="space-y-1.5">
+            {PREFERENCES.notifications.map((n) => {
+              const selected = notifications.includes(n.id);
+              const Icon = n.icon;
+              return (
+                <button
+                  key={n.id}
+                  type="button"
+                  onClick={() => toggleNotification(n.id)}
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl border transition-all active:scale-[0.98] text-left min-h-[56px]"
+                  style={{
+                    background: selected ? 'rgba(255,183,0,0.08)' : 'rgba(255,255,255,0.04)',
+                    border: selected ? '1px solid rgba(255,183,0,0.30)' : '1px solid rgba(255,255,255,0.08)',
+                  }}
+                >
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: selected ? 'rgba(255,183,0,0.15)' : 'rgba(255,255,255,0.06)' }}
+                  >
+                    <Icon className="w-4 h-4" style={{ color: selected ? '#ffb700' : 'var(--tech-text-muted)' }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-extrabold" style={{ color: 'var(--tech-text)' }}>{n.label}</div>
+                    <div className="text-[10px] font-semibold mt-0.5" style={{ color: 'var(--tech-text-muted)' }}>{n.sub}</div>
+                  </div>
+                  <div
+                    className="w-10 h-5 rounded-full relative transition-all duration-200 shrink-0"
+                    style={{ background: selected ? '#ffb700' : 'rgba(255,255,255,0.10)' }}
+                  >
+                    <div
+                      className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-200"
+                      style={{ left: selected ? '1.25rem' : '0.125rem' }}
+                    />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </BottomSheet>
     </div>
