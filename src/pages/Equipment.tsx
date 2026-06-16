@@ -314,7 +314,7 @@ export default function Equipment() {
             allDaySlot={false}
             eventContent={(info) => (
               <div className="flex flex-col overflow-hidden text-xs px-0.5 py-0.5">
-                <div className="font-bold truncate">{info.event.title}</div>
+                <div className="font-semibold truncate">{info.event.title}</div>
                 <div className="opacity-85 truncate text-[10px]">
                   {info.event.extendedProps.eqList.slice(0, 2).join(' · ')}
                   {info.event.extendedProps.eqList.length > 2 && ` +${info.event.extendedProps.eqList.length - 2}`}
@@ -325,6 +325,16 @@ export default function Equipment() {
         ) : viewMode === 'grid' ? (
           <GridView
             equipment={filteredEquipment}
+            missions={missions}
+            onEdit={openEdit}
+            onQR={openQR}
+          />
+        ) : isMobile ? (
+          <MobileCardView
+            equipment={filteredEquipment.map((item) => ({
+              ...item,
+              reservedCount: computeReserved(item.id, missions),
+            }))}
             missions={missions}
             onEdit={openEdit}
             onQR={openQR}
@@ -542,6 +552,125 @@ function GridView({
               })}
             </div>
           </div>
+        );
+      })}
+    </div>
+  );
+}
+
+type ExtendedEquipmentType = EquipmentType & {
+  reservedCount?: number;
+};
+
+function MobileCardView({
+  equipment,
+  missions,
+  onEdit,
+  onQR,
+}: {
+  equipment: ExtendedEquipmentType[];
+  missions: Mission[];
+  onEdit: (item: ExtendedEquipmentType | undefined) => void;
+  onQR: (e: React.MouseEvent, id: string, name: string) => void;
+}) {
+  if (equipment.length === 0) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center text-[#94a3b8] gap-3 rounded-2xl border border-[#e2e8f0] bg-white p-6 text-center">
+        <Package className="w-10 h-10 opacity-40" />
+        <p className="text-sm font-semibold text-[#64748b]">Aucun matériel ne correspond à votre recherche</p>
+      </div>
+    );
+  }
+
+  const grouped = CATEGORIES.reduce<Record<string, ExtendedEquipmentType[]>>((acc, cat) => {
+    const items = equipment.filter((e) => e.category === cat);
+    if (items.length > 0) acc[cat] = items;
+    return acc;
+  }, {});
+
+  const categoryContext: Record<
+    string,
+    { bg: string; text: string; border: string; dot: string }
+  > = CATEGORY_COLORS;
+
+  return (
+    <div className="h-full overflow-y-auto pr-1 space-y-6 rounded-2xl border border-[#e2e8f0] bg-white p-3">
+      {Object.entries(grouped).map(([cat, items]) => {
+        const colors = categoryContext[cat] ?? categoryContext['Autre'];
+        return (
+          <section key={cat} className="space-y-2">
+            <div className={`flex items-center gap-2 pb-2 border-b ${colors.border}`}>
+              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: colors.dot }} />
+              <h3 className={`text-xs font-extrabold uppercase tracking-widest ${colors.text}`}>{cat}</h3>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f1f5f9] text-[#475569]">{items.length}</span>
+            </div>
+
+            <div className="space-y-3">
+              {items.map((item) => {
+                const reserved = item.reservedCount ?? computeReserved(item.id, missions);
+                const available = item.totalQuantity - reserved;
+                const isOverbooked = available < 0;
+                const statusLabel = isOverbooked
+                  ? `Surréservé +${Math.abs(available)}`
+                  : `Disponible +${available}`;
+                const statusClass = isOverbooked
+                  ? 'border-red-200 bg-red-50 text-red-700'
+                  : available === 0
+                    ? 'border-amber-200 bg-amber-50 text-amber-700'
+                    : 'border-emerald-200 bg-emerald-50 text-emerald-700';
+
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onEdit(item)}
+                    className="w-full text-left rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-sm transition-all active:scale-[0.98] hover:shadow-md"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#475569]">{item.category}</span>
+                        </div>
+                        <p className="font-extrabold text-sm text-[#0f172a] truncate">{item.name}</p>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        <span
+                          className={`inline-flex flex-col items-center rounded-2xl border px-2 py-1 text-[10px] font-bold ${statusClass}`}
+                        >
+                          <span className="text-sm font-black">{item.totalQuantity}</span>
+                          <span className="text-[9px] font-extrabold uppercase tracking-wider leading-tight text-center">{statusLabel}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold text-[#2563eb]">Détails</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit(item);
+                          }}
+                          className="inline-flex items-center gap-1 rounded-xl border border-[#e2e8f0] px-2 py-1.5 text-[10px] font-bold text-[#2563eb]"
+                        >
+                          Modifier
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => onQR(e, item.id, item.name)}
+                          className="inline-flex items-center gap-1 rounded-xl border border-[#e2e8f0] px-2 py-1.5 text-[10px] font-bold"
+                        >
+                          QR Code
+                        </button>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
         );
       })}
     </div>
