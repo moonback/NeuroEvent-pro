@@ -7,10 +7,18 @@ import {
   LogOut, Wrench, Car, Check, Plus, X,
   Shield, Award, ChevronRight, KeyRound, Star,
   Mail, Phone, BadgeCheck, Sparkles, Globe2, Bell,
-  Activity, Briefcase, MapPin, Clock, AtSign
+  Activity, Briefcase, MapPin, Clock, AtSign,
+  Camera, Trash2, Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import {
+  uploadAvatar,
+  removeAvatar,
+  persistAvatarUrl,
+  pathFromPublicUrl,
+} from '../lib/avatar';
+import { toast } from '../store/toast';
 
 const SKILL_CATALOG = [
   { id: 'montage_scene',  label: 'Montage scène',      emoji: '🎭' },
@@ -210,6 +218,10 @@ export default function Settings() {
   const [lastName, setLastName]   = useState(user?.user_metadata?.last_name || '');
   const [phone, setPhone]         = useState(user?.user_metadata?.phone || '');
 
+  const [avatarUrl, setAvatarUrl]           = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -248,15 +260,16 @@ export default function Settings() {
     let cancelled = false;
 
     (async () => {
-      // 1) Charger le phone depuis profiles
+      // 1) Charger le phone + avatar_url depuis profiles
       const { data: profile } = await supabase
         .from('profiles')
-        .select('phone')
+        .select('phone, avatar_url')
         .eq('id', user.id)
         .maybeSingle();
 
-      if (!cancelled && profile?.phone) {
-        setPhone(profile.phone);
+      if (!cancelled) {
+        if (profile?.phone) setPhone(profile.phone);
+        if (profile?.avatar_url !== undefined) setAvatarUrl(profile.avatar_url);
       }
 
       // 2) Charger les préférences (1:1 sur user_id)
@@ -383,6 +396,42 @@ export default function Settings() {
   const toggleSkill = (id: string) => setSkills((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]);
   const toggleLicenseCategory = (cat: string) => setLicenseCategories((prev) => prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]);
   const toggleNotification = (id: string) => setNotifications((prev) => prev.includes(id) ? prev.filter((n) => n !== id) : [...prev, id]);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset la value pour permettre de re-uploader le même fichier
+    e.target.value = '';
+    if (!file || !user?.id) return;
+
+    setAvatarUploading(true);
+    try {
+      const oldPath = pathFromPublicUrl(avatarUrl);
+      const { url } = await uploadAvatar(user.id, file, oldPath);
+      await persistAvatarUrl(user.id, url);
+      setAvatarUrl(url);
+      toast.success('Photo de profil mise à jour.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Échec de l\'upload.');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!user?.id || !avatarUrl) return;
+    if (!window.confirm('Supprimer votre photo de profil ?')) return;
+    setAvatarUploading(true);
+    try {
+      await removeAvatar(user.id, avatarUrl);
+      setAvatarUrl(null);
+      toast.success('Photo de profil supprimée.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Échec de la suppression.');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
   const handleSignOut = async () => { await useAuthStore.getState().signOut(); };
 
   const initials = `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || '?';
@@ -475,15 +524,58 @@ export default function Settings() {
                         'radial-gradient(circle at 20% 30%, rgba(0,229,160,0.25), transparent 50%), radial-gradient(circle at 80% 70%, rgba(77,159,255,0.25), transparent 50%)',
                     }}
                   />
-                  <div
-                    className="absolute left-5 -bottom-8 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-xl sm:text-2xl font-black border-2 sm:border-[3px] shadow-lg"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(0,229,160,0.22) 0%, rgba(77,159,255,0.22) 100%)',
-                      borderColor: 'rgba(0,229,160,0.40)',
-                      color: 'var(--tech-accent)',
-                    }}
-                  >
-                    {initials}
+                  {/* Avatar : image uploadée ou initiales, avec bouton caméra */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                    aria-hidden="true"
+                  />
+                  <div className="absolute left-5 -bottom-8 group">
+                    <div
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-xl sm:text-2xl font-black border-2 sm:border-[3px] shadow-lg overflow-hidden relative"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(0,229,160,0.22) 0%, rgba(77,159,255,0.22) 100%)',
+                        borderColor: 'rgba(0,229,160,0.40)',
+                        color: 'var(--tech-accent)',
+                      }}
+                    >
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={`Photo de ${fullName}`}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span>{initials}</span>
+                      )}
+                      {avatarUploading && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                          <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-white animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={avatarUploading}
+                      aria-label="Changer la photo de profil"
+                      className="absolute -bottom-1 -right-1 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#0f172a] text-white flex items-center justify-center shadow-lg ring-2 ring-white hover:bg-black transition-all active:scale-90 disabled:opacity-50"
+                    >
+                      <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </button>
+                    {avatarUrl && !avatarUploading && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveAvatar}
+                        aria-label="Supprimer la photo de profil"
+                        className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md ring-2 ring-white hover:bg-red-600 transition-all active:scale-90"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
                   <div className="absolute right-4 top-4 flex flex-col sm:flex-row items-end sm:items-center gap-1.5 sm:gap-2">
                     <span

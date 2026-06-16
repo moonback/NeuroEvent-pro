@@ -29,6 +29,7 @@ export interface Database {
           last_name: string | null;
           role: string | null;
           phone: string | null;
+          avatar_url: string | null;
           created_at: string | null;
         };
         Insert: {
@@ -38,6 +39,7 @@ export interface Database {
           last_name?: string | null;
           role?: string | null;
           phone?: string | null;
+          avatar_url?: string | null;
           created_at?: string | null;
         };
         Update: {
@@ -47,6 +49,7 @@ export interface Database {
           last_name?: string | null;
           role?: string | null;
           phone?: string | null;
+          avatar_url?: string | null;
           created_at?: string | null;
         };
         Relationships: [];
