@@ -29,7 +29,14 @@ const typeColors: Record<MissionType, string> = {
   'Événement complet': '#8b5cf6',
 };
 
-function renderTechCard(tech: any, isChecked: boolean, toggleTech: (id: string) => void, triggerVibrate: () => void) {
+interface RenderTechCardProps {
+  tech: any;
+  isChecked: boolean;
+  toggleTech: (id: string) => void;
+  triggerVibrate: () => void;
+}
+
+function renderTechCard({ tech, isChecked, toggleTech, triggerVibrate }: RenderTechCardProps) {
   return (
     <label
       key={tech.id}
@@ -51,6 +58,336 @@ function renderTechCard(tech: any, isChecked: boolean, toggleTech: (id: string) 
     </label>
   );
 }
+
+interface TabGeneralProps {
+  readonly inputClass: string;
+  readonly labelClass: string;
+  readonly title: string;
+  readonly setTitle: (v: string) => void;
+  readonly clients: { id: string; name: string }[];
+  readonly client: string;
+  readonly clientId: string;
+  readonly setClientId: (v: string) => void;
+  readonly setClient: (v: string) => void;
+  readonly type: MissionType;
+  readonly setType: (v: MissionType) => void;
+  readonly address: string;
+  readonly setAddress: (v: string) => void;
+  readonly startDate: string;
+  readonly setStartDate: (v: string) => void;
+  readonly endDate: string;
+  readonly setEndDate: (v: string) => void;
+  readonly deliveryDate: string;
+  readonly setDeliveryDate: (v: string) => void;
+  readonly pickupDate: string;
+  readonly setPickupDate: (v: string) => void;
+  readonly setupDuration: string;
+  readonly setSetupDuration: (v: string) => void;
+  readonly status: MissionStatus;
+  readonly setStatus: (v: MissionStatus) => void;
+}
+
+const TabGeneral = ({
+  inputClass, labelClass,
+  title, setTitle,
+  clients, client, clientId, setClientId, setClient,
+  type, setType,
+  address, setAddress,
+  startDate, setStartDate, endDate, setEndDate,
+  deliveryDate, setDeliveryDate, pickupDate, setPickupDate,
+  setupDuration, setSetupDuration,
+  status, setStatus,
+}: TabGeneralProps) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="sm:col-span-2">
+      <label htmlFor="mission-title" className={labelClass}>Titre de la mission</label>
+      <input id="mission-title" required type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="ex: Soirée annuelle Acme Corp" className={inputClass} />
+    </div>
+
+    <div>
+      <label htmlFor="mission-client-select" className={labelClass}>Client</label>
+      {clients.length > 0 ? (
+        <div className="space-y-2">
+          <select id="mission-client-select" value={clientId} onChange={(e) => { const id = e.target.value; setClientId(id); const c = clients.find((cl) => cl.id === id); if (c) setClient(c.name); }} className={inputClass}>
+            <option value="">— Saisie libre —</option>
+            {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          {!clientId && (
+            <input id="mission-client" required type="text" value={client} onChange={(e) => setClient(e.target.value)} placeholder="Nom du client" aria-label="Nom du client (saisie libre)" className={inputClass} />
+          )}
+        </div>
+      ) : (
+        <input id="mission-client" required type="text" value={client} onChange={(e) => setClient(e.target.value)} placeholder="Nom du client" className={inputClass} />
+      )}
+    </div>
+
+    <div>
+      <label htmlFor="mission-type" className={labelClass}>Type</label>
+      <select id="mission-type" value={type} onChange={(e) => setType(e.target.value as MissionType)} className={inputClass}>
+        <option value="Livraison">Livraison</option>
+        <option value="Montage">Montage</option>
+        <option value="Démontage">Démontage</option>
+        <option value="Événement complet">Événement complet</option>
+      </select>
+    </div>
+
+    <div className="sm:col-span-2">
+      <label htmlFor="mission-address" className={labelClass}>Adresse de livraison</label>
+      <div className="relative">
+        <MapPin className="w-4 h-4 absolute left-3 top-3.5 text-[#94a3b8]" />
+        <input id="mission-address" required type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="ex: 12 rue des Fêtes, 75019 Paris" className={`${inputClass} pl-9`} />
+      </div>
+    </div>
+
+    <div>
+      <label htmlFor="mission-start" className={labelClass}>Date de début évent</label>
+      <input id="mission-start" required type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputClass} />
+    </div>
+
+    <div>
+      <label htmlFor="mission-end" className={labelClass}>Date de fin évent</label>
+      <input id="mission-end" required type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={inputClass} />
+    </div>
+
+    <div className="col-span-1 sm:col-span-2 border-t border-[#e2e8f0] pt-4 mt-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div>
+        <label htmlFor="mission-delivery" className={labelClass}>Livraison (Date & Heure)</label>
+        <input id="mission-delivery" type="datetime-local" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} className={inputClass} />
+      </div>
+      <div>
+        <label htmlFor="mission-pickup" className={labelClass}>Reprise (Date & Heure)</label>
+        <input id="mission-pickup" type="datetime-local" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className={inputClass} />
+      </div>
+      <div>
+        <label htmlFor="mission-setup" className={labelClass}>Temps installation</label>
+        <input id="mission-setup" type="number" min="0" placeholder="Durée en minutes" value={setupDuration} onChange={(e) => setSetupDuration(e.target.value)} className={inputClass} />
+      </div>
+    </div>
+
+    <div className="sm:col-span-2">
+      <label className={labelClass}>Statut de la mission</label>
+      <div className="flex items-center gap-2 mt-1">
+        {([
+          { key: 'Planifiée', label: 'Planifiée', color: '#2563eb', bg: '#eff6ff', done: ['En cours', 'Terminée'].includes(status), active: status === 'Planifiée' },
+          { key: 'En cours', label: 'En cours', color: '#d97706', bg: '#fffbeb', done: status === 'Terminée', active: status === 'En cours' },
+          { key: 'Terminée', label: 'Terminée', color: '#059669', bg: '#ecfdf5', done: false, active: status === 'Terminée' },
+        ] as const).map((step, i, arr) => (
+          <React.Fragment key={step.key}>
+            <button type="button" onClick={() => setStatus(step.key as MissionStatus)} className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all cursor-pointer active:scale-95 duration-100 ${step.active ? 'shadow-sm' : step.done ? 'opacity-60 hover:opacity-100' : 'border-[#e2e8f0] bg-white text-[#94a3b8]'}`}
+              style={step.active ? { borderColor: step.color, backgroundColor: step.bg, color: step.color } : step.done ? { borderColor: step.color + '60', backgroundColor: step.bg, color: step.color } : {}}>
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 ${step.active || step.done ? 'text-white' : 'bg-slate-100 text-slate-400'}`}
+                style={step.active || step.done ? { backgroundColor: step.color } : {}}>
+                {step.done ? <Check className="w-3 h-3 stroke-[3]" /> : i + 1}
+              </div>
+              {step.label}
+            </button>
+            {i < arr.length - 1 && <div className={`flex-1 h-px rounded ${step.done || step.active ? 'bg-[#e2e8f0]' : 'bg-[#e2e8f0]'}`} />}
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+interface TabResourcesProps {
+  readonly inputClass: string;
+  readonly labelClass: string;
+  readonly trucks: { id: string; name: string; volume?: number | string }[];
+  readonly selectedTruck: string;
+  readonly setSelectedTruck: (v: string) => void;
+  readonly requiredSkills: string[];
+  readonly setRequiredSkills: (v: string[]) => void;
+  readonly equipment: { id: string; name: string; totalQuantity?: number }[];
+  readonly selectedEquipments: { equipmentId: string; quantity: number }[];
+  readonly addEquipmentSelection: () => void;
+  readonly updateEquipmentSelection: (index: number, id: string, qty: number) => void;
+  readonly removeEquipmentSelection: (index: number) => void;
+  readonly categorizedTechs: {
+    recommended: any[];
+    available: any[];
+    unavailable: any[];
+  };
+  readonly technicians: any[];
+  readonly selectedTechs: string[];
+  readonly toggleTech: (id: string) => void;
+  readonly triggerVibrate: () => void;
+  readonly toggleRequiredSkill: (id: string) => void;
+}
+
+const TabResources = ({
+  inputClass, labelClass,
+  trucks, selectedTruck, setSelectedTruck,
+  requiredSkills, setRequiredSkills,
+  equipment, selectedEquipments,
+  addEquipmentSelection, updateEquipmentSelection, removeEquipmentSelection,
+  categorizedTechs, technicians, selectedTechs, toggleTech, triggerVibrate, toggleRequiredSkill,
+}: TabResourcesProps) => (
+  <div className="space-y-5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label htmlFor="mission-truck" className={labelClass}>Camion assigné</label>
+        <select id="mission-truck" value={selectedTruck} onChange={(e) => setSelectedTruck(e.target.value)} className={inputClass}>
+          <option value="">Aucun camion</option>
+          {trucks.map((truck) => <option key={truck.id} value={truck.id}>{truck.name} ({truck.volume}m³)</option>)}
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label className={labelClass}>Compétences requises</label>
+      <div className="flex flex-wrap gap-2">
+        {SKILL_CATALOG.map((skill) => {
+          const isSelected = requiredSkills.includes(skill.id);
+          return (
+            <button key={skill.id} type="button" onClick={() => { triggerVibrate(); toggleRequiredSkill(skill.id); }} className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors border active:scale-95 duration-100 ${isSelected ? 'bg-violet-100 text-violet-800 border-violet-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
+              {skill.emoji} {skill.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+
+    <div>
+      <label className={labelClass}>Techniciens assignés</label>
+      {technicians.length === 0 ? (
+        <p className="text-xs text-[#64748b] italic">Aucun technicien enregistré.</p>
+      ) : (
+        <div className="space-y-4">
+          {categorizedTechs.recommended.length > 0 && (
+            <div>
+              <h5 className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Disponibles & Qualifiés</h5>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                {categorizedTechs.recommended.map((tech) => renderTechCard({ tech, isChecked: selectedTechs.includes(tech.id), toggleTech, triggerVibrate }))}
+              </div>
+            </div>
+          )}
+          {categorizedTechs.available.length > 0 && (
+            <div>
+              <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">{requiredSkills.length > 0 ? 'Disponibles (Compétences manquantes)' : 'Disponibles'}</h5>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                {categorizedTechs.available.map((tech) => renderTechCard({ tech, isChecked: selectedTechs.includes(tech.id), toggleTech, triggerVibrate }))}
+              </div>
+            </div>
+          )}
+          {categorizedTechs.unavailable.length > 0 && (
+            <div>
+              <h5 className="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> Indisponibles / Déjà pris</h5>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 opacity-60 hover:opacity-100 transition-opacity">
+                {categorizedTechs.unavailable.map((tech) => renderTechCard({ tech, isChecked: selectedTechs.includes(tech.id), toggleTech, triggerVibrate }))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+
+    <div>
+      <div className="flex justify-between items-center mb-2">
+        <label className={labelClass}>Matériel requis</label>
+        <button type="button" onClick={() => { triggerVibrate(); addEquipmentSelection(); }} className="flex items-center gap-1 text-[11px] font-extrabold text-[#2563eb] hover:text-blue-700 transition-colors active:scale-95 duration-100"><Plus className="w-3.5 h-3.5" /><span>Ajouter une ligne</span></button>
+      </div>
+      {selectedEquipments.length === 0 ? (
+        <div className="p-6 border border-dashed border-[#e2e8f0] rounded-2xl text-center text-xs text-[#94a3b8] italic">Aucun matériel sélectionné. Cliquez sur &quot;Ajouter une ligne&quot; ci-dessus.</div>
+      ) : (
+        <div className="space-y-2 max-h-60 overflow-y-auto pr-1 no-scrollbar">
+          {selectedEquipments.map((eq, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <select value={eq.equipmentId} onChange={(e) => updateEquipmentSelection(index, e.target.value, eq.quantity)} aria-label="Matériel" className="flex-1 rounded-xl border border-[#e2e8f0] px-3.5 py-2.5 focus:ring-2 focus:ring-[#2563eb]/20 focus:border-[#2563eb] outline-none text-xs bg-[#f8fafc] text-slate-700 transition-all">
+                <option value="">Sélectionner un équipement...</option>
+                {equipment.map((e) => <option key={e.id} value={e.id}>{e.name} (Max: {e.totalQuantity})</option>)}
+              </select>
+              <div className="flex items-center border border-[#e2e8f0] bg-white rounded-xl overflow-hidden shrink-0">
+                <button type="button" onClick={() => { triggerVibrate(); updateEquipmentSelection(index, eq.equipmentId, Math.max(1, eq.quantity - 1)); }} className="px-2.5 py-2 hover:bg-slate-50 text-slate-500 font-bold active:scale-95 duration-100">-</button>
+                <input type="number" min="1" value={eq.quantity} onChange={(e) => updateEquipmentSelection(index, eq.equipmentId, parseInt(e.target.value, 10) || 1)} aria-label="Quantité" className="w-12 text-center text-xs font-bold border-none outline-none focus:ring-0 select-all p-0 text-slate-800" />
+                <button type="button" onClick={() => { triggerVibrate(); updateEquipmentSelection(index, eq.equipmentId, eq.quantity + 1); }} className="px-2.5 py-2 hover:bg-slate-50 text-slate-500 font-bold active:scale-95 duration-100">+</button>
+              </div>
+              <button type="button" onClick={() => { triggerVibrate(); removeEquipmentSelection(index); }} aria-label="Retirer ce matériel" className="p-2.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all cursor-pointer active:scale-90"><Trash2 className="w-4 h-4" /></button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+interface TabReportProps {
+  readonly existingMission: {
+    photos?: any[];
+    photoBeforeUrl?: string | null;
+    photoAfterUrl?: string | null;
+    report?: string | null;
+    signatureUrl?: string | null;
+  } | null;
+  readonly setAdminLightbox: (url: string | null) => void;
+}
+
+const TabReport = ({ existingMission, setAdminLightbox }: TabReportProps) => {
+  if (!existingMission) return null;
+  const allPhotos = existingMission.photos || [];
+  const before = allPhotos.filter((photo) => photo.type === 'before');
+  const after = allPhotos.filter((photo) => photo.type === 'after');
+  const hasPhotos = allPhotos.length > 0;
+
+  if (!hasPhotos && !existingMission.photoBeforeUrl && !existingMission.photoAfterUrl && !existingMission.report && !existingMission.signatureUrl) {
+    return (
+      <div className="py-10 flex flex-col items-center justify-center text-center gap-3">
+        <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center"><Camera className="w-6 h-6 text-slate-300" /></div>
+        <p className="text-sm font-semibold text-slate-400">Aucun rapport technicien disponible</p>
+        <p className="text-xs text-slate-300">Le rapport apparaîtra ici une fois la mission terminée par le technicien.</p>
+      </div>
+    );
+  }
+
+  const renderGrid = (photos: any[], legacyUrl: string | null | undefined, label: string, accent: string) => {
+    const items = [...photos.map((p: any) => p.url), ...(legacyUrl && !photos.length ? [legacyUrl] : [])];
+    if (!items.length) return null;
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full" style={{ background: accent }} />
+          <span className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: accent }}>{label} — {items.length} photo{items.length > 1 ? 's' : ''}</span>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {items.map((url: string, i: number) => (
+            <button key={i} type="button" onClick={() => setAdminLightbox(url)} className="aspect-square rounded-xl overflow-hidden border border-slate-200 hover:border-blue-400 transition-all group relative">
+              <img src={url} alt={label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center"><Image className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" /></div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <label className={labelClass}><Camera className="w-3.5 h-3.5 inline mr-1" />Photos terrain</label>
+        <div className="mt-2 space-y-4 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+          {renderGrid(before, existingMission.photoBeforeUrl, 'Avant Montage', '#2563eb')}
+          {renderGrid(after, existingMission.photoAfterUrl, 'Après Montage', '#059669')}
+        </div>
+      </div>
+
+      {existingMission.report && (
+        <div>
+          <label className={labelClass}><FileText className="w-3.5 h-3.5 inline mr-1" />Rapport de fin de mission</label>
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap max-h-52 overflow-y-auto">{existingMission.report}</div>
+        </div>
+      )}
+
+      {existingMission.signatureUrl && (
+        <div>
+          <label className={labelClass}>Signature du client (Bon de Livraison)</label>
+          <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col items-center justify-center gap-2">
+            <img src={existingMission.signatureUrl} alt="Signature" className="max-h-[150px] object-contain" />
+            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1"><Check className="w-3 h-3" /> Signé</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function MissionModal({ isOpen, onClose, missionId, initialDates }: MissionModalProps) {
   const missions = useStore((state) => state.missions);
@@ -219,255 +556,6 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
     return { recommended, available, unavailable };
   }, [startDate, endDate, technicians, missions, unavailabilities, requiredSkills, missionId]);
 
-  const TabGeneral = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div className="sm:col-span-2">
-        <label htmlFor="mission-title" className={labelClass}>Titre de la mission</label>
-        <input id="mission-title" required type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="ex: Soirée annuelle Acme Corp" className={inputClass} />
-      </div>
-
-      <div>
-        <label htmlFor="mission-client-select" className={labelClass}>Client</label>
-        {clients.length > 0 ? (
-          <div className="space-y-2">
-            <select id="mission-client-select" value={clientId} onChange={(e) => { const id = e.target.value; setClientId(id); const c = clients.find((cl) => cl.id === id); if (c) setClient(c.name); }} className={inputClass}>
-              <option value="">— Saisie libre —</option>
-              {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            {!clientId && (
-              <input id="mission-client" required type="text" value={client} onChange={(e) => setClient(e.target.value)} placeholder="Nom du client" aria-label="Nom du client (saisie libre)" className={inputClass} />
-            )}
-          </div>
-        ) : (
-          <input id="mission-client" required type="text" value={client} onChange={(e) => setClient(e.target.value)} placeholder="Nom du client" className={inputClass} />
-        )}
-      </div>
-
-      <div>
-        <label htmlFor="mission-type" className={labelClass}>Type</label>
-        <select id="mission-type" value={type} onChange={(e) => setType(e.target.value as MissionType)} className={inputClass}>
-          <option value="Livraison">Livraison</option>
-          <option value="Montage">Montage</option>
-          <option value="Démontage">Démontage</option>
-          <option value="Événement complet">Événement complet</option>
-        </select>
-      </div>
-
-      <div className="sm:col-span-2">
-        <label htmlFor="mission-address" className={labelClass}>Adresse de livraison</label>
-        <div className="relative">
-          <MapPin className="w-4 h-4 absolute left-3 top-3.5 text-[#94a3b8]" />
-          <input id="mission-address" required type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="ex: 12 rue des Fêtes, 75019 Paris" className={`${inputClass} pl-9`} />
-        </div>
-      </div>
-
-      <div>
-        <label htmlFor="mission-start" className={labelClass}>Date de début évent</label>
-        <input id="mission-start" required type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputClass} />
-      </div>
-
-      <div>
-        <label htmlFor="mission-end" className={labelClass}>Date de fin évent</label>
-        <input id="mission-end" required type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={inputClass} />
-      </div>
-
-      <div className="col-span-1 sm:col-span-2 border-t border-[#e2e8f0] pt-4 mt-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
-          <label htmlFor="mission-delivery" className={labelClass}>Livraison (Date & Heure)</label>
-          <input id="mission-delivery" type="datetime-local" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label htmlFor="mission-pickup" className={labelClass}>Reprise (Date & Heure)</label>
-          <input id="mission-pickup" type="datetime-local" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label htmlFor="mission-setup" className={labelClass}>Temps installation</label>
-          <input id="mission-setup" type="number" min="0" placeholder="Durée en minutes" value={setupDuration} onChange={(e) => setSetupDuration(e.target.value)} className={inputClass} />
-        </div>
-      </div>
-
-      <div className="sm:col-span-2">
-        <label className={labelClass}>Statut de la mission</label>
-        <div className="flex items-center gap-2 mt-1">
-          {([
-            { key: 'Planifiée', label: 'Planifiée', color: '#2563eb', bg: '#eff6ff', done: ['En cours', 'Terminée'].includes(status), active: status === 'Planifiée' },
-            { key: 'En cours', label: 'En cours', color: '#d97706', bg: '#fffbeb', done: status === 'Terminée', active: status === 'En cours' },
-            { key: 'Terminée', label: 'Terminée', color: '#059669', bg: '#ecfdf5', done: false, active: status === 'Terminée' },
-          ] as const).map((step, i, arr) => (
-            <React.Fragment key={step.key}>
-              <button type="button" onClick={() => setStatus(step.key as MissionStatus)} className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all cursor-pointer active:scale-95 duration-100 ${step.active ? 'shadow-sm' : step.done ? 'opacity-60 hover:opacity-100' : 'border-[#e2e8f0] bg-white text-[#94a3b8]'}`}
-                style={step.active ? { borderColor: step.color, backgroundColor: step.bg, color: step.color } : step.done ? { borderColor: step.color + '60', backgroundColor: step.bg, color: step.color } : {}}>
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 ${step.active || step.done ? 'text-white' : 'bg-slate-100 text-slate-400'}`}
-                  style={step.active || step.done ? { backgroundColor: step.color } : {}}>
-                  {step.done ? <Check className="w-3 h-3 stroke-[3]" /> : i + 1}
-                </div>
-                {step.label}
-              </button>
-              {i < arr.length - 1 && <div className={`flex-1 h-px rounded ${step.done || step.active ? 'bg-[#e2e8f0]' : 'bg-[#e2e8f0]'}`} />}
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const TabResources = () => (
-    <div className="space-y-5">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="mission-truck" className={labelClass}>Camion assigné</label>
-          <select id="mission-truck" value={selectedTruck} onChange={(e) => setSelectedTruck(e.target.value)} className={inputClass}>
-            <option value="">Aucun camion</option>
-            {trucks.map((truck) => <option key={truck.id} value={truck.id}>{truck.name} ({truck.volume}m³)</option>)}
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label className={labelClass}>Compétences requises</label>
-        <div className="flex flex-wrap gap-2">
-          {SKILL_CATALOG.map((skill) => {
-            const isSelected = requiredSkills.includes(skill.id);
-            return (
-              <button key={skill.id} type="button" onClick={() => { triggerVibrate(); toggleRequiredSkill(skill.id); }} className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors border active:scale-95 duration-100 ${isSelected ? 'bg-violet-100 text-violet-800 border-violet-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
-                {skill.emoji} {skill.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div>
-        <label className={labelClass}>Techniciens assignés</label>
-        {technicians.length === 0 ? (
-          <p className="text-xs text-[#64748b] italic">Aucun technicien enregistré.</p>
-        ) : (
-          <div className="space-y-4">
-            {categorizedTechs.recommended.length > 0 && (
-              <div>
-                <h5 className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Disponibles & Qualifiés</h5>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {categorizedTechs.recommended.map((tech) => renderTechCard(tech, selectedTechs.includes(tech.id), toggleTech, triggerVibrate))}
-                </div>
-              </div>
-            )}
-            {categorizedTechs.available.length > 0 && (
-              <div>
-                <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">{requiredSkills.length > 0 ? 'Disponibles (Compétences manquantes)' : 'Disponibles'}</h5>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {categorizedTechs.available.map((tech) => renderTechCard(tech, selectedTechs.includes(tech.id), toggleTech, triggerVibrate))}
-                </div>
-              </div>
-            )}
-            {categorizedTechs.unavailable.length > 0 && (
-              <div>
-                <h5 className="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> Indisponibles / Déjà pris</h5>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 opacity-60 hover:opacity-100 transition-opacity">
-                  {categorizedTechs.unavailable.map((tech) => renderTechCard(tech, selectedTechs.includes(tech.id), toggleTech, triggerVibrate))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div>
-        <div className="flex justify-between items-center mb-2">
-          <label className={labelClass}>Matériel requis</label>
-          <button type="button" onClick={() => { triggerVibrate(); addEquipmentSelection(); }} className="flex items-center gap-1 text-[11px] font-extrabold text-[#2563eb] hover:text-blue-700 transition-colors active:scale-95 duration-100"><Plus className="w-3.5 h-3.5" /><span>Ajouter une ligne</span></button>
-        </div>
-        {selectedEquipments.length === 0 ? (
-          <div className="p-6 border border-dashed border-[#e2e8f0] rounded-2xl text-center text-xs text-[#94a3b8] italic">Aucun matériel sélectionné. Cliquez sur &quot;Ajouter une ligne&quot; ci-dessus.</div>
-        ) : (
-          <div className="space-y-2 max-h-60 overflow-y-auto pr-1 no-scrollbar">
-            {selectedEquipments.map((eq, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <select value={eq.equipmentId} onChange={(e) => updateEquipmentSelection(index, e.target.value, eq.quantity)} aria-label="Matériel" className="flex-1 rounded-xl border border-[#e2e8f0] px-3.5 py-2.5 focus:ring-2 focus:ring-[#2563eb]/20 focus:border-[#2563eb] outline-none text-xs bg-[#f8fafc] text-slate-700 transition-all">
-                  <option value="">Sélectionner un équipement...</option>
-                  {equipment.map((e) => <option key={e.id} value={e.id}>{e.name} (Max: {e.totalQuantity})</option>)}
-                </select>
-                <div className="flex items-center border border-[#e2e8f0] bg-white rounded-xl overflow-hidden shrink-0">
-                  <button type="button" onClick={() => { triggerVibrate(); updateEquipmentSelection(index, eq.equipmentId, Math.max(1, eq.quantity - 1)); }} className="px-2.5 py-2 hover:bg-slate-50 text-slate-500 font-bold active:scale-95 duration-100">-</button>
-                  <input type="number" min="1" value={eq.quantity} onChange={(e) => updateEquipmentSelection(index, eq.equipmentId, parseInt(e.target.value, 10) || 1)} aria-label="Quantité" className="w-12 text-center text-xs font-bold border-none outline-none focus:ring-0 select-all p-0 text-slate-800" />
-                  <button type="button" onClick={() => { triggerVibrate(); updateEquipmentSelection(index, eq.equipmentId, eq.quantity + 1); }} className="px-2.5 py-2 hover:bg-slate-50 text-slate-500 font-bold active:scale-95 duration-100">+</button>
-                </div>
-                <button type="button" onClick={() => { triggerVibrate(); removeEquipmentSelection(index); }} aria-label="Retirer ce matériel" className="p-2.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all cursor-pointer active:scale-90"><Trash2 className="w-4 h-4" /></button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  const TabReport = () => {
-    if (!existingMission) return null;
-    const allPhotos = existingMission.photos || [];
-    const before = allPhotos.filter((photo) => photo.type === 'before');
-    const after = allPhotos.filter((photo) => photo.type === 'after');
-    const hasPhotos = allPhotos.length > 0;
-
-    if (!hasPhotos && !existingMission.photoBeforeUrl && !existingMission.photoAfterUrl && !existingMission.report && !existingMission.signatureUrl) {
-      return (
-        <div className="py-10 flex flex-col items-center justify-center text-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center"><Camera className="w-6 h-6 text-slate-300" /></div>
-          <p className="text-sm font-semibold text-slate-400">Aucun rapport technicien disponible</p>
-          <p className="text-xs text-slate-300">Le rapport apparaîtra ici une fois la mission terminée par le technicien.</p>
-        </div>
-      );
-    }
-
-    const renderGrid = (photos: any[], legacyUrl: string | null | undefined, label: string, accent: string) => {
-      const items = [...photos.map((p: any) => p.url), ...(legacyUrl && !photos.length ? [legacyUrl] : [])];
-      if (!items.length) return null;
-      return (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full" style={{ background: accent }} />
-            <span className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: accent }}>{label} — {items.length} photo{items.length > 1 ? 's' : ''}</span>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {items.map((url: string, i: number) => (
-              <button key={i} type="button" onClick={() => setAdminLightbox(url)} className="aspect-square rounded-xl overflow-hidden border border-slate-200 hover:border-blue-400 transition-all group relative">
-                <img src={url} alt={label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center"><Image className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" /></div>
-              </button>
-            ))}
-          </div>
-        </div>
-      );
-    };
-
-    return (
-      <div className="space-y-5">
-        <div>
-          <label className={labelClass}><Camera className="w-3.5 h-3.5 inline mr-1" />Photos terrain</label>
-          <div className="mt-2 space-y-4 bg-slate-50 border border-slate-200 rounded-2xl p-4">
-            {renderGrid(before, existingMission.photoBeforeUrl, 'Avant Montage', '#2563eb')}
-            {renderGrid(after, existingMission.photoAfterUrl, 'Après Montage', '#059669')}
-          </div>
-        </div>
-
-        {existingMission.report && (
-          <div>
-            <label className={labelClass}><FileText className="w-3.5 h-3.5 inline mr-1" />Rapport de fin de mission</label>
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap max-h-52 overflow-y-auto">{existingMission.report}</div>
-          </div>
-        )}
-
-        {existingMission.signatureUrl && (
-          <div>
-            <label className={labelClass}>Signature du client (Bon de Livraison)</label>
-            <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col items-center justify-center gap-2">
-              <img src={existingMission.signatureUrl} alt="Signature" className="max-h-[150px] object-contain" />
-              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1"><Check className="w-3 h-3" /> Signé</span>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <Modal
       isOpen={isOpen}
@@ -541,11 +629,60 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
       )}
 
       <form id="mission-form" onSubmit={handleSubmit} className="space-y-4">
-        {currentView === 'general' && <TabGeneral />}
-        {currentView === 'resources' && <TabResources />}
+        {currentView === 'general' && (
+          <TabGeneral
+            inputClass={inputClass}
+            labelClass={labelClass}
+            title={title}
+            setTitle={setTitle}
+            clients={clients}
+            client={client}
+            clientId={clientId}
+            setClientId={setClientId}
+            setClient={setClient}
+            type={type}
+            setType={setType}
+            address={address}
+            setAddress={setAddress}
+            startDate={startDate}
+            setStartDate={setStartDate}
+            endDate={endDate}
+            setEndDate={setEndDate}
+            deliveryDate={deliveryDate}
+            setDeliveryDate={setDeliveryDate}
+            pickupDate={pickupDate}
+            setPickupDate={setPickupDate}
+            setupDuration={setupDuration}
+            setSetupDuration={setSetupDuration}
+            status={status}
+            setStatus={setStatus}
+          />
+        )}
+        {currentView === 'resources' && (
+          <TabResources
+            inputClass={inputClass}
+            labelClass={labelClass}
+            trucks={trucks}
+            selectedTruck={selectedTruck}
+            setSelectedTruck={setSelectedTruck}
+            requiredSkills={requiredSkills}
+            setRequiredSkills={setRequiredSkills}
+            equipment={equipment}
+            selectedEquipments={selectedEquipments}
+            addEquipmentSelection={addEquipmentSelection}
+            updateEquipmentSelection={updateEquipmentSelection}
+            removeEquipmentSelection={removeEquipmentSelection}
+            categorizedTechs={categorizedTechs}
+            technicians={technicians}
+            selectedTechs={selectedTechs}
+            toggleTech={toggleTech}
+            triggerVibrate={triggerVibrate}
+            toggleRequiredSkill={toggleRequiredSkill}
+          />
+        )}
         {currentView === 'report' && existingMission && (
           <div className="animate-fade-in">
-            <TabReport />
+            <TabReport existingMission={existingMission} setAdminLightbox={setAdminLightbox} />
           </div>
         )}
       </form>
