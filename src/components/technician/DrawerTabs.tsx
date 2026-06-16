@@ -33,6 +33,7 @@ interface DrawerTabsProps {
   photoUploading: { missionId: string; type: 'before' | 'after' } | null;
   handlePhotoUpload: (missionId: string, type: 'before' | 'after', file: File) => Promise<void>;
   handlePhotoDelete: (missionId: string, photoId: string) => void;
+  isLocked: boolean;
 }
 
 /* ── Shared card wrapper ──────────────────────────────────────────────────── */
@@ -67,7 +68,7 @@ function CardHeader({ icon, label, right }: { icon: React.ReactNode; label: stri
 /* ══════════════════════════════════════════════════════════════════════════
    GENERAL TAB
    ══════════════════════════════════════════════════════════════════════════ */
-function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab, handleTimeChange, onStatusChange }: any) {
+function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab, handleTimeChange, onStatusChange, isLocked }: any) {
   const prog = getEquipmentProgress(mission.equipments);
   const user = useAuthStore(state => state.user);
   const role = useAuthStore(state => state.role);
@@ -75,6 +76,7 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
   const currentTech = technicians.find(t => t.id === user?.id);
   const isChecklistEnabled = currentTech?.checklistEnabled ?? false;
   const isTechnician = role === 'Technicien';
+  const locked = isLocked || mission.status === 'Terminée';
 
   const [checkedItems, setCheckedItems] = React.useState<Record<string, boolean>>({});
 
@@ -93,7 +95,6 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
 
   return (
     <div className="space-y-3 tech-stagger">
-
       {/* ── Schedule ── */}
       <InfoCard>
         <CardHeader
@@ -117,8 +118,8 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
                 onChange={(e) => handleTimeChange('start', e.target.value)}
                 className="text-sm font-black bg-transparent outline-none cursor-pointer w-full"
                 style={{ color: mission.color }}
-                disabled={isTechnician}
-                aria-disabled={isTechnician}
+                disabled={isTechnician || locked}
+                aria-disabled={isTechnician || locked}
               />
             </div>
             {/* End */}
@@ -136,8 +137,8 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
                 onChange={(e) => handleTimeChange('end', e.target.value)}
                 className="text-sm font-black bg-transparent outline-none cursor-pointer w-full"
                 style={{ color: mission.color }}
-                disabled={isTechnician}
-                aria-disabled={isTechnician}
+                disabled={isTechnician || locked}
+                aria-disabled={isTechnician || locked}
               />
             </div>
           </div>
