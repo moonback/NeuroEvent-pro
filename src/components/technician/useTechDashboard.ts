@@ -194,6 +194,11 @@ export function useTechDashboard() {
       toast.error("Impossible de modifier le statut d'une mission terminée.");
       return;
     }
+    if (newStatus === 'En cours' && !isSameDay(targetMission.start, new Date()) && !(targetMission.deliveryDate ? isSameDay(targetMission.deliveryDate, new Date()) : false)) {
+      triggerVibrate('error');
+      toast.error('Vous ne pouvez démarrer une mission que le jour même de l’événement ou de la livraison.');
+      return;
+    }
     setSelectedMission(targetMission);
     triggerVibrate('double');
     const pad = (n: number) => String(n).padStart(2, '0');

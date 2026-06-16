@@ -184,7 +184,7 @@ export default function TechFAB({
         style={{
           // Au-dessus de la bottom nav (60px) + safe area + 16px d'air
           bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))',
-          right: 'max(16px, env(safe-area-inset-right, 0px))',
+          right: 'max(160px, env(safe-area-inset-right, 0px))',
         }}
       >
         {/* Actions en éventail (en bas du bouton, vers le haut) */}

@@ -20,8 +20,11 @@ import {
   AlertTriangle,
   FileText,
   Image as LucideImage,
+  Lock,
+  ZoomIn,
 } from 'lucide-react';
 import { UserAvatar } from '../components/ui/UserAvatar';
+import ImageLightbox from '../components/ui/ImageLightbox';
 import MissionModal from '../components/MissionModal';
 
 const getStatusConfig = (status: string) => {
@@ -43,6 +46,7 @@ export default function MissionDetail() {
   const fetchMissionPhotos = useStore(state => state.fetchMissionPhotos);
   const deleteMission = useStore(state => state.deleteMission);
   const [editOpen, setEditOpen] = useState(false);
+  const [lightbox, setLightbox] = useState<{ open: boolean; urls: string[]; index: number }>({ open: false, urls: [], index: 0 });
   const navigate = useNavigate();
 
   const mission = useMemo(
@@ -54,7 +58,7 @@ export default function MissionDetail() {
     if (mission && !Array.isArray(mission.photos)) {
       fetchMissionPhotos(mission.id).catch(() => undefined);
     }
-  }, [mission, fetchMissionPhotos]);
+  }, [mission?.id, mission?.photos, fetchMissionPhotos]);
 
   if (!mission) {
     return (
@@ -92,6 +96,10 @@ export default function MissionDetail() {
     }
   };
 
+  const openLightbox = (urls: string[], index: number) =>
+    setLightbox({ open: true, urls, index });
+  const closeLightbox = () => setLightbox((prev) => ({ ...prev, open: false }));
+
   return (
     <div className="h-full overflow-y-auto p-6">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -112,14 +120,24 @@ export default function MissionDetail() {
           <button
             type="button"
             onClick={() => setEditOpen(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+            disabled={mission.status === 'Terminée'}
+            className={mission.status === 'Terminée' ? 'inline-flex items-center gap-2 rounded-full bg-[#94a3b8] px-4 py-2 text-sm font-semibold text-white shadow-sm cursor-not-allowed' : 'inline-flex items-center gap-2 rounded-full bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors'}
           >
-            <Edit3 className="w-4 h-4" /> Modifier
+            {mission.status === 'Terminée' ? (
+              <>
+                <Lock className="w-4 h-4" /> Mission verrouillée
+              </>
+            ) : (
+              <>
+                <Edit3 className="w-4 h-4" /> Modifier
+              </>
+            )}
           </button>
           <button
             type="button"
             onClick={handleDelete}
-            className="inline-flex items-center gap-2 rounded-full border border-[#f1f5f9] bg-white px-4 py-2 text-sm font-semibold text-[#dc2626] hover:bg-[#fef2f2] transition-colors"
+            disabled={mission.status === 'Terminée'}
+            className={mission.status === 'Terminée' ? 'inline-flex items-center gap-2 rounded-full border border-[#f1f5f9] bg-white px-4 py-2 text-sm font-semibold text-[#cbd5e1] cursor-not-allowed' : 'inline-flex items-center gap-2 rounded-full border border-[#f1f5f9] bg-white px-4 py-2 text-sm font-semibold text-[#dc2626] hover:bg-[#fef2f2] transition-colors'}
           >
             <Trash2 className="w-4 h-4" /> Supprimer
           </button>
@@ -266,10 +284,20 @@ export default function MissionDetail() {
                   <div>
                     <div className="mb-3 text-xs uppercase tracking-[0.18em] text-[#94a3b8]">Avant</div>
                     <div className="grid grid-cols-2 gap-3">
-                      {beforePhotos.map((photo) => (
-                        <div key={photo.id} className="overflow-hidden rounded-3xl border border-[#e2e8f0] bg-[#f8fafc]">
-                          <img src={photo.url} alt="Photo avant" className="h-40 w-full object-cover" />
-                        </div>
+                      {beforePhotos.map((photo, idx) => (
+                        <button
+                          key={photo.id}
+                          type="button"
+                          onClick={() => openLightbox(beforePhotos.map(p => p.url), idx)}
+                          className="group overflow-hidden rounded-3xl border border-[#e2e8f0] bg-[#f8fafc] text-left"
+                        >
+                          <div className="relative">
+                            <img src={photo.url} alt="Photo avant" className="h-40 w-full object-cover transition-transform group-hover:scale-[1.03]" />
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
+                              <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
+                            </span>
+                          </div>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -278,10 +306,20 @@ export default function MissionDetail() {
                   <div>
                     <div className="mb-3 text-xs uppercase tracking-[0.18em] text-[#94a3b8]">Après</div>
                     <div className="grid grid-cols-2 gap-3">
-                      {afterPhotos.map((photo) => (
-                        <div key={photo.id} className="overflow-hidden rounded-3xl border border-[#e2e8f0] bg-[#f8fafc]">
-                          <img src={photo.url} alt="Photo après" className="h-40 w-full object-cover" />
-                        </div>
+                      {afterPhotos.map((photo, idx) => (
+                        <button
+                          key={photo.id}
+                          type="button"
+                          onClick={() => openLightbox(afterPhotos.map(p => p.url), idx)}
+                          className="group overflow-hidden rounded-3xl border border-[#e2e8f0] bg-[#f8fafc] text-left"
+                        >
+                          <div className="relative">
+                            <img src={photo.url} alt="Photo après" className="h-40 w-full object-cover transition-transform group-hover:scale-[1.03]" />
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
+                              <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
+                            </span>
+                          </div>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -351,25 +389,6 @@ export default function MissionDetail() {
               </div>
             </div>
           </section>
-
-          <section className="rounded-3xl border border-[#e2e8f0] bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-2 text-[#0f172a]">
-              <ClipboardList className="w-5 h-5 text-[#2563eb]" />
-              <h3 className="text-lg font-bold">Liens rapides</h3>
-            </div>
-            <div className="mt-5 space-y-3 text-sm">
-              <Link to="/missions" className="flex items-center justify-between gap-2 rounded-2xl border border-[#e2e8f0] px-4 py-3 text-[#2563eb] hover:bg-[#eff6ff]">
-                Retour à la liste <ChevronRight className="w-4 h-4" />
-              </Link>
-              <button
-                type="button"
-                onClick={() => setEditOpen(true)}
-                className="w-full rounded-2xl bg-[#2563eb] px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-              >
-                Modifier cette mission
-              </button>
-            </div>
-          </section>
         </aside>
       </div>
 
@@ -378,6 +397,18 @@ export default function MissionDetail() {
           isOpen={editOpen}
           onClose={() => setEditOpen(false)}
           missionId={mission.id}
+        />
+      )}
+
+      {lightbox.open && (
+        <ImageLightbox
+          isOpen={lightbox.open}
+          onClose={closeLightbox}
+          index={lightbox.index}
+          urls={lightbox.urls}
+          onIndexChange={(next) =>
+            setLightbox((prev) => ({ ...prev, index: next }))
+          }
         />
       )}
     </div>
