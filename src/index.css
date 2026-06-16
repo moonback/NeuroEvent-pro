@@ -326,6 +326,24 @@ body {
   animation: tech-float 3s ease-in-out infinite;
 }
 
+/* FAB menu radial — backdrop fade-in */
+@keyframes tech-fab-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* FAB mission en cours — pulse subtil pour signaler l'action critique */
+@keyframes tech-fab-pulse {
+  0%, 100% {
+    box-shadow: 0 8px 24px rgba(255,77,109,0.45), 0 0 20px rgba(255,77,109,0.30);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 8px 32px rgba(255,77,109,0.65), 0 0 28px rgba(255,77,109,0.45);
+    transform: scale(1.05);
+  }
+}
+
 /* Stagger children */
 .tech-stagger > * {
   animation: tech-fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;

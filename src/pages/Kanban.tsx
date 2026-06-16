@@ -91,7 +91,7 @@ export default function Kanban() {
               key={status}
               className="flex flex-col rounded-3xl border border-[#e2e8f0] bg-[#f8fafc] p-4 overflow-hidden"
               onDragOver={(event) => event.preventDefault()}
-              onDrop={(event) => handleDrop(event, status)}
+              onDrop={(event: any) => handleDrop(event, status)}
             >
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div className="flex flex-col">

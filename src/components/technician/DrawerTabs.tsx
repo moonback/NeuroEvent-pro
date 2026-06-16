@@ -67,7 +67,7 @@ function CardHeader({ icon, label, right }: { icon: React.ReactNode; label: stri
 /* ══════════════════════════════════════════════════════════════════════════
    GENERAL TAB
    ══════════════════════════════════════════════════════════════════════════ */
-function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab, handleTimeChange, onStatusChange, openScanner, onOpenSignature }: any) {
+function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab, handleTimeChange, onStatusChange }: any) {
   const prog = getEquipmentProgress(mission.equipments);
   const user = useAuthStore(state => state.user);
   const role = useAuthStore(state => state.role);
@@ -261,32 +261,6 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
           >
             <CheckCircle2 className="w-4 h-4" />
             {mission.status === 'Planifiée' ? 'Démarrer' : mission.status === 'En cours' ? 'Terminer' : 'Terminée'}
-          </button>
-
-          <button
-            onClick={() => { triggerVibrate('click'); openScanner(); }}
-            className="flex flex-col items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-wider transition-all active:scale-[0.97]"
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              color: mission.color,
-              border: `1px solid ${mission.color}33`,
-            }}
-          >
-            <QrCode className="w-4 h-4" />
-            Scanner matériel
-          </button>
-
-          <button
-            onClick={() => { triggerVibrate('click'); onOpenSignature(); }}
-            className="flex flex-col items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-wider transition-all active:scale-[0.97]"
-            style={{
-              background: mission.signatureUrl ? 'rgba(0,229,160,0.12)' : 'rgba(255,255,255,0.05)',
-              color: mission.signatureUrl ? 'var(--tech-accent)' : 'var(--tech-text)',
-              border: `1px solid ${mission.signatureUrl ? 'rgba(0,229,160,0.25)' : 'rgba(255,255,255,0.08)'}`,
-            }}
-          >
-            <PenTool className="w-4 h-4" />
-            {mission.signatureUrl ? 'Signé' : 'Signature'}
           </button>
 
           <button

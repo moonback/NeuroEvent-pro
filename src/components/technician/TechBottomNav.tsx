@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Clock, CalendarX2, Settings as SettingsIcon, LogOut } from 'lucide-react';
+import { Calendar, Clock, CalendarX2, Settings as SettingsIcon, LogOut, Lock } from 'lucide-react';
 import { triggerVibrate, type MainTab } from './useTechDashboard';
 
 interface TechBottomNavProps {
@@ -8,9 +8,21 @@ interface TechBottomNavProps {
   hasSelectedMission: boolean;
   clearSelection: () => void;
   onSignOut: () => void;
+  /**
+   * True si une mission est "En cours" → on bloque la navigation
+   * et on grise les onglets non-autorisés (Heures / Absences / Profil).
+   */
+  isLocked?: boolean;
 }
 
-export default function TechBottomNav({ activeTab, setActiveTab, hasSelectedMission, clearSelection, onSignOut }: TechBottomNavProps) {
+export default function TechBottomNav({
+  activeTab,
+  setActiveTab,
+  hasSelectedMission,
+  clearSelection,
+  onSignOut,
+  isLocked = false,
+}: TechBottomNavProps) {
   const items: { id: MainTab; label: string; icon: React.ElementType }[] = [
     { id: 'active', label: 'Missions', icon: Calendar },
     { id: 'mes_heures', label: 'Heures', icon: Clock },
@@ -34,17 +46,28 @@ export default function TechBottomNav({ activeTab, setActiveTab, hasSelectedMiss
           const isActive =
             (activeTab === item.id || (item.id === 'active' && activeTab === 'history')) &&
             !hasSelectedMission;
+          // Onglets bloqués par le verrou de mission "En cours"
+          const isItemLocked = isLocked && item.id !== 'active' && item.id !== 'history';
 
           return (
             <button
               key={item.id}
               onClick={() => {
+                if (isItemLocked) {
+                  triggerVibrate('error');
+                  return; // le parent (safeSetActiveTab) refusera de toute façon
+                }
                 triggerVibrate('click');
                 clearSelection();
                 setActiveTab(item.id);
               }}
+              aria-disabled={isItemLocked}
               className="relative flex flex-col items-center justify-center flex-1 gap-1 transition-all active:scale-90"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                opacity: isItemLocked ? 0.35 : 1,
+                cursor: isItemLocked ? 'not-allowed' : 'pointer',
+              }}
             >
               {/* Active pill indicator at top */}
               <span
@@ -77,12 +100,15 @@ export default function TechBottomNav({ activeTab, setActiveTab, hasSelectedMiss
               </div>
 
               <span
-                className="text-[9px] font-black tracking-wide transition-colors"
+                className="text-[9px] font-black tracking-wide transition-colors flex items-center gap-1"
                 style={{
                   color: isActive ? 'var(--tech-accent)' : 'var(--tech-text-muted)',
                 }}
               >
                 {item.label}
+                {isItemLocked && (
+                  <Lock className="w-2.5 h-2.5" style={{ opacity: 0.8 }} />
+                )}
               </span>
             </button>
           );

@@ -6,6 +6,8 @@ import MissionCard from '../components/technician/MissionCard';
 import MissionFilters from '../components/technician/MissionFilters';
 import MissionDrawer from '../components/technician/MissionDrawer';
 import { TimeModal } from '../components/technician/TimeModal';
+import PullToRefreshIndicator from '../components/technician/PullToRefreshIndicator';
+import { usePullToRefresh } from '../hooks/useSwipeGestures';
 
 // Existing components
 import { QRScannerModal } from '../components/QRScannerModal';
@@ -15,7 +17,7 @@ import TechnicianUnavailabilities from '../components/TechnicianUnavailabilities
 import Settings from './Settings';
 
 import { toast } from '../store/toast';
-import { Calendar, Sparkles } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 export default function TechnicianDashboard() {
   const tech = useTechDashboard();
@@ -23,42 +25,14 @@ export default function TechnicianDashboard() {
     ? tech.displayedMissions.find((mission) => mission.status !== 'Terminée')
     : null;
 
-  // Gestes & Micro-interactions
-  const [pullDistance, setPullDistance] = React.useState(0);
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
-  const touchStartRef = React.useRef({ x: 0, y: 0 });
-  const isAtTopRef = React.useRef(true);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-    isAtTopRef.current = window.scrollY === 0;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (isRefreshing) return;
-    const touch = e.touches[0];
-    const deltaX = touch.clientX - touchStartRef.current.x;
-    const deltaY = touch.clientY - touchStartRef.current.y;
-
-    if (isAtTopRef.current && deltaY > 0 && Math.abs(deltaY) > Math.abs(deltaX)) {
-      const distance = Math.min(80, Math.pow(deltaY, 0.85));
-      setPullDistance(distance);
-      if (e.cancelable) {
-        e.preventDefault();
-      }
-    }
-  };
-
-  const handleTouchEnd = async (e: React.TouchEvent) => {
-    if (isRefreshing) return;
-    const touch = e.changedTouches[0];
-    const deltaX = touch.clientX - touchStartRef.current.x;
-    const deltaY = touch.clientY - touchStartRef.current.y;
-
-    if (pullDistance > 55) {
-      setIsRefreshing(true);
-      setPullDistance(60);
+  // ── Pull-to-refresh (scroll body/window) ────────────────────────────
+  // On ne binde pas le `bind()` sur un élément React — la page scrolle
+  // directement le body, donc on attache les listeners natifs sur window.
+  const pullToRefresh = usePullToRefresh({
+    threshold: 60,
+    maxPull: 100,
+    resistance: 0.4,
+    onRefresh: async () => {
       triggerVibrate('success');
       try {
         await tech.initialize();
@@ -66,55 +40,69 @@ export default function TechnicianDashboard() {
       } catch (err) {
         console.error(err);
         toast.error("Erreur lors de l'actualisation");
-      } finally {
-        setIsRefreshing(false);
-        setPullDistance(0);
       }
-    } else {
-      setPullDistance(0);
-    }
+    },
+  });
 
-    if (Math.abs(deltaY) < 50 && Math.abs(deltaX) > 100) {
-      const filters: ('all' | 'today' | 'week')[] = ['all', 'today', 'week'];
-      const currentIndex = filters.indexOf(tech.dateFilter);
-      if (deltaX < -100) {
-        if (currentIndex < filters.length - 1) {
-          const nextFilter = filters[currentIndex + 1];
-          tech.setDateFilter(nextFilter);
-          triggerVibrate('click');
-          toast.success(
-            `Filtre : ${
-              nextFilter === 'today'
-                ? "Aujourd'hui"
-                : nextFilter === 'week'
-                ? 'Cette semaine'
-                : 'Tous les jours'
-            }`
-          );
-        }
-      } else if (deltaX > 100) {
-        if (currentIndex > 0) {
-          const nextFilter = filters[currentIndex - 1];
-          tech.setDateFilter(nextFilter);
-          triggerVibrate('click');
-          toast.success(
-            `Filtre : ${
-              nextFilter === 'today'
-                ? "Aujourd'hui"
-                : nextFilter === 'week'
-                ? 'Cette semaine'
-                : 'Tous les jours'
-            }`
-          );
-        }
-      }
-    }
-  };
+  // Branchement des listeners natifs sur window (le body scrolle, pas un conteneur).
+  React.useEffect(() => {
+    const { onTouchStart, onTouchMove, onTouchEnd } = pullToRefresh.bind();
+    const opts = { passive: true } as AddEventListenerOptions;
+    window.addEventListener('touchstart', onTouchStart, opts);
+    window.addEventListener('touchmove', onTouchMove, opts);
+    window.addEventListener('touchend', onTouchEnd, opts);
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart, opts);
+      window.removeEventListener('touchmove', onTouchMove, opts);
+      window.removeEventListener('touchend', onTouchEnd, opts);
+    };
+  }, [pullToRefresh]);
 
   const currentTech = tech.technicians.find((t) => t.id === tech.user?.id);
   const userName = currentTech
     ? currentTech.firstName
     : tech.user?.user_metadata?.first_name || '';
+
+  // ── Verrouillage : la première mission "En cours" bloque toute navigation.
+  // On la sélectionne automatiquement pour que le drawer soit ouvert.
+  const myMissionsLocal = React.useMemo(
+    () =>
+      tech.missions
+        .filter((m) => m.technicianIds.includes(tech.user?.id || ''))
+        .sort((a, b) => a.start.getTime() - b.start.getTime()),
+    [tech.missions, tech.user?.id]
+  );
+  const lockedMissionResolved = React.useMemo(
+    () => myMissionsLocal.find((m) => m.status === 'En cours') ?? null,
+    [myMissionsLocal]
+  );
+
+  // Auto-open : si une mission est en cours, on force son ouverture.
+  React.useEffect(() => {
+    if (
+      lockedMissionResolved &&
+      (!tech.selectedMission || tech.selectedMission.id !== lockedMissionResolved.id)
+    ) {
+      tech.setSelectedMission(lockedMissionResolved);
+      tech.setDrawerTab('general');
+    }
+  }, [lockedMissionResolved, tech.selectedMission, tech]);
+
+  // Wrapper sécurisé : bloque le changement d'onglet si une mission est en cours.
+  const safeSetActiveTab = React.useCallback(
+    (tab: typeof tech.activeTab) => {
+      if (lockedMissionResolved && tab !== 'active' && tab !== 'history') {
+        triggerVibrate('error');
+        toast.error('Terminez d\'abord votre mission en cours pour changer d\'onglet.');
+        return;
+      }
+      tech.setActiveTab(tab);
+    },
+    [lockedMissionResolved, tech]
+  );
+
+  // Lock global : true si une mission est en cours (drawer forcé ouvert).
+  const isLocked = !!lockedMissionResolved;
 
   return (
     <div className="tech-dark min-h-screen bg-black text-[#f0f4ff] font-sans pb-24 overflow-x-hidden">
@@ -125,7 +113,7 @@ export default function TechnicianDashboard() {
         syncCount={tech.syncQueue.length}
         todayCount={tech.todayCount}
         activeCount={tech.activeCount}
-        onSettingsClick={() => tech.setActiveTab('profil')}
+        onSettingsClick={() => safeSetActiveTab('profil')}
       />
 
       {/* Main Tab Routing */}
@@ -208,32 +196,13 @@ export default function TechnicianDashboard() {
           <Settings />
         </div>
       ) : (
-        <div 
-          className="max-w-md mx-auto space-y-3 pt-3 pb-6"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          {/* Pull-to-refresh indicator */}
-          <div 
-            style={{ 
-              height: `${pullDistance}px`, 
-              opacity: pullDistance > 0 ? 1 : 0,
-              transition: isRefreshing ? 'height 0.2s, opacity 0.2s' : 'none'
-            }}
-            className="w-full flex items-center justify-center overflow-hidden bg-black/20 border-b border-[rgba(0,229,160,0.05)] rounded-2xl relative"
-          >
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--tech-accent)]">
-              <Sparkles 
-                className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} 
-                style={{ 
-                  transform: isRefreshing ? 'none' : `rotate(${pullDistance * 4.5}deg)`,
-                  transition: isRefreshing ? 'none' : 'transform 0.05s' 
-                }}
-              />
-              <span>{isRefreshing ? 'Synchronisation...' : pullDistance > 55 ? 'Relâchez' : 'Tirer pour actualiser'}</span>
-            </div>
-          </div>
+        <div className="max-w-md mx-auto space-y-3 pt-3 pb-6">
+          {/* Pull-to-refresh indicator (piloté par usePullToRefresh) */}
+          <PullToRefreshIndicator
+            pullDistance={pullToRefresh.pullDistance}
+            threshold={60}
+            isRefreshing={pullToRefresh.isRefreshing}
+          />
           {/* Segmented picker */}
           <div className="px-4">
             <div
@@ -333,13 +302,21 @@ export default function TechnicianDashboard() {
         </div>
       )}
 
-      {/* Bottom Nav bar */}
+      {/* Bottom Nav bar — bloque la navigation si une mission est en cours */}
       <TechBottomNav
         activeTab={tech.activeTab}
-        setActiveTab={tech.setActiveTab}
+        setActiveTab={safeSetActiveTab}
         hasSelectedMission={!!tech.selectedMission}
-        clearSelection={() => tech.setSelectedMission(null)}
+        clearSelection={() => {
+          if (isLocked) {
+            triggerVibrate('error');
+            toast.error('Terminez d\'abord votre mission en cours.');
+            return;
+          }
+          tech.setSelectedMission(null);
+        }}
         onSignOut={tech.signOut}
+        isLocked={isLocked}
       />
 
       {/* Mission details bottom sheet drawer */}
