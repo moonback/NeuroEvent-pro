@@ -1,0 +1,11 @@
+-- ============================================================================
+-- Migration : ajout de `avatar_url` à `technicians`
+--
+-- Permet aux administrateurs d'uploader une photo de profil pour chaque
+-- technicien depuis l'UI (Technicians → modal édition). Le bucket `avatars`
+-- existe déjà, avec les mêmes policies RLS Storage.
+--
+-- NOTE : un technicien n'ayant pas de compte `auth.users`, on autorise un
+-- upload "public-like" : n'importe quel admin authentifié peut écrire dans
+-- `{technician_id}/...`. Pour ça, on assouplit la policy Storage existante
+-- ...[truncated]

@@ -93,6 +93,7 @@ export interface Database {
           color: string;
           skills: string[] | null;
           driver_license: any | null;
+          avatar_url: string | null;
         };
         Insert: {
           id?: string;
@@ -102,6 +103,7 @@ export interface Database {
           color: string;
           skills?: string[] | null;
           driver_license?: any | null;
+          avatar_url?: string | null;
         };
         Update: {
           id?: string;
@@ -111,6 +113,7 @@ export interface Database {
           color?: string;
           skills?: string[] | null;
           driver_license?: any | null;
+          avatar_url?: string | null;
         };
         Relationships: [];
       };

@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/auth';
 import { toast } from '../store/toast';
 import { Profile, UserRole } from '../types';
 import { ShieldCheck, AlertTriangle, RefreshCw, Info } from 'lucide-react';
+import { UserAvatar } from '../components/ui/UserAvatar';
 
 export default function Users() {
   const me = useAuthStore(state => state.user);
@@ -30,7 +31,8 @@ export default function Users() {
         firstName: p.first_name || '',
         lastName: p.last_name || '',
         role: p.role === 'Admin' ? 'Admin' : 'Technicien',
-        createdAt: p.created_at
+        createdAt: p.created_at,
+        avatarUrl: p.avatar_url ?? null,
       })));
     }
     setLoading(false);
@@ -110,9 +112,13 @@ export default function Users() {
                     <tr key={profile.id} className="border-b border-[#f1f5f9] last:border-0 hover:bg-[#f8fafc] transition-colors">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 shrink-0 rounded-full bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center text-xs font-bold text-[#0f172a] uppercase">
-                            {displayName.charAt(0)}
-                          </div>
+                          <UserAvatar
+                            src={profile.avatarUrl}
+                            name={displayName}
+                            size="sm"
+                            shape="circle"
+                            variant={profile.role === 'Admin' ? 'blue' : 'emerald'}
+                          />
                           <div className="flex flex-col">
                             <span className="font-semibold text-[#0f172a]">{displayName}</span>
                             {isSelf && <span className="text-[10px] text-[#2563eb] font-bold">Vous</span>}
