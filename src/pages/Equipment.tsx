@@ -17,7 +17,6 @@ import EquipmentTable from '../components/EquipmentTable';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { useFullscreen } from '../hooks/useFullscreen';
 
-// ── Palette couleur par catégorie ──────────────────────────────────────────
 const CATEGORY_COLORS: Record<EquipmentCategory | string, { bg: string; text: string; border: string; dot: string }> = {
   Arcade:        { bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-200', dot: '#7c3aed' },
   Sonorisation:  { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200',   dot: '#1d4ed8' },
@@ -29,7 +28,6 @@ const CATEGORY_COLORS: Record<EquipmentCategory | string, { bg: string; text: st
 
 const CATEGORIES: EquipmentCategory[] = ['Arcade', 'Sonorisation', 'Éclairage', 'Scène', 'Décoration', 'Autre'];
 
-// Calcule la quantité réservée (toutes missions confondues) pour un équipement
 function computeReserved(equipmentId: string, missions: Mission[]): number {
   return missions.reduce((sum, mission) => {
     const eq = mission.equipments.find(e => e.equipmentId === equipmentId);
@@ -103,7 +101,7 @@ export default function Equipment() {
           .filter(eq => filteredEqIds.has(eq.equipmentId))
           .map(eq => {
             const item = equipment.find(e => e.id === eq.equipmentId);
-            return item ? `${item.name}\u00a0\u00d7${eq.quantity}` : '';
+            return item ? `${item.name}\u00a0×${eq.quantity}` : '';
           })
           .filter(Boolean);
         return {
@@ -144,13 +142,12 @@ export default function Equipment() {
             Allocation et disponibilité du matériel — {filteredEquipment.length} produit{filteredEquipment.length > 1 ? 's' : ''} affiché{filteredEquipment.length > 1 ? 's' : ''}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Toggle vue */}
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center bg-[#f1f5f9] rounded-lg p-1 gap-1">
             <button
               onClick={() => setViewMode('calendar')}
               title="Vue Calendrier"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
                 viewMode === 'calendar'
                   ? 'bg-white text-[#0f172a] shadow-sm'
                   : 'text-[#64748b] hover:text-[#0f172a]'
@@ -162,7 +159,7 @@ export default function Equipment() {
             <button
               onClick={() => setViewMode('grid')}
               title="Vue Grille"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
                 viewMode === 'grid'
                   ? 'bg-white text-[#0f172a] shadow-sm'
                   : 'text-[#64748b] hover:text-[#0f172a]'
@@ -174,7 +171,7 @@ export default function Equipment() {
             <button
               onClick={() => setViewMode('table')}
               title="Vue Liste"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
                 viewMode === 'table'
                   ? 'bg-white text-[#0f172a] shadow-sm'
                   : 'text-[#64748b] hover:text-[#0f172a]'
@@ -184,7 +181,6 @@ export default function Equipment() {
               <span className="hidden sm:inline">Liste</span>
             </button>
           </div>
-          {/* Plein écran */}
           <button
             onClick={toggleFullscreen}
             title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
@@ -195,14 +191,14 @@ export default function Equipment() {
           </button>
           <button
             onClick={() => setImportModalOpen(true)}
-            className="flex items-center justify-center gap-2 border border-[#cbd5e1] text-[#0f172a] hover:bg-[#f8fafc] px-4 py-2 rounded-md text-sm font-medium transition-colors shrink-0 cursor-pointer"
+            className="flex items-center justify-center gap-2 border border-[#cbd5e1] text-[#0f172a] hover:bg-[#f8fafc] px-4 py-2 rounded-md text-sm font-bold transition-colors shrink-0 cursor-pointer"
           >
             <Upload className="w-4 h-4" />
             Importer CSV
           </button>
           <button
             onClick={openCreate}
-            className="flex items-center justify-center gap-2 bg-[#0f172a] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-black transition-colors shrink-0 cursor-pointer"
+            className="flex items-center justify-center gap-2 bg-[#0f172a] text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-black transition-colors shrink-0 cursor-pointer"
           >
             + Nouveau
           </button>
@@ -236,7 +232,7 @@ export default function Equipment() {
               <button
                 key={cat}
                 onClick={() => toggleCategory(cat)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${
                   isActive
                     ? `${c.bg} ${c.text} ${c.border} shadow-sm`
                     : 'bg-white text-[#64748b] border-[#e2e8f0] hover:border-[#cbd5e1]'
@@ -253,7 +249,7 @@ export default function Equipment() {
           {activeCategories.size > 0 && (
             <button
               onClick={() => setActiveCategories(new Set())}
-              className="px-2.5 py-1 rounded-full text-xs font-semibold text-[#64748b] hover:text-red-600 transition-colors"
+              className="px-2.5 py-1 rounded-full text-xs font-bold text-[#64748b] hover:text-red-600 transition-colors"
             >
               Effacer
             </button>
@@ -272,7 +268,7 @@ export default function Equipment() {
           <span><strong>{stats.fullyAvailable}</strong> disponibles</span>
         </div>
         {stats.overbooked > 0 && (
-          <div className="flex items-center gap-1.5 text-red-600 font-semibold animate-pulse">
+          <div className="flex items-center gap-1.5 text-red-600 font-bold animate-pulse">
             <AlertTriangle className="w-3.5 h-3.5" />
             <span>{stats.overbooked} surréservé{stats.overbooked > 1 ? 's' : ''}</span>
           </div>
@@ -318,7 +314,7 @@ export default function Equipment() {
             allDaySlot={false}
             eventContent={(info) => (
               <div className="flex flex-col overflow-hidden text-xs px-0.5 py-0.5">
-                <div className="font-semibold truncate">{info.event.title}</div>
+                <div className="font-bold truncate">{info.event.title}</div>
                 <div className="opacity-85 truncate text-[10px]">
                   {info.event.extendedProps.eqList.slice(0, 2).join(' · ')}
                   {info.event.extendedProps.eqList.length > 2 && ` +${info.event.extendedProps.eqList.length - 2}`}
@@ -397,41 +393,17 @@ function ResourceRow({
   return (
     <div className="flex items-center justify-between w-full pr-2 py-0.5 gap-2 min-w-0">
       <div className="flex items-center gap-2 min-w-0">
-        {/* Dot catégorie */}
-        <span
-          className="w-2.5 h-2.5 rounded-full shrink-0"
-          style={{ backgroundColor: colors.dot }}
-        />
-        <button
-          type="button"
-          onClick={() => onEdit(item)}
-          className="font-semibold text-[#0f172a] text-sm truncate text-left hover:text-[#2563eb] transition-colors flex items-center gap-1 group min-w-0"
-          title="Modifier ce matériel"
-        >
+        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: colors.dot }} />
+        <button type="button" onClick={() => onEdit(item)} className="font-bold text-[#0f172a] text-sm truncate text-left hover:text-[#2563eb] transition-colors flex items-center gap-1 group min-w-0">
           <span className="truncate">{arg.resource.title}</span>
           <Pencil className="w-3 h-3 text-[#94a3b8] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
         </button>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
-        {/* Quantité disponible */}
-        <span
-          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
-            isOverbooked
-              ? 'bg-red-100 text-red-700 border border-red-200'
-              : available === 0
-              ? 'bg-amber-50 text-amber-700 border border-amber-200'
-              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-          }`}
-          title={`${reserved} réservé(s) · ${item?.totalQuantity ?? 0} total`}
-        >
+        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ${isOverbooked ? 'bg-red-100 text-red-700 border border-red-200' : available === 0 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
           {isOverbooked ? `−${Math.abs(available)}` : `+${available}`}/{item?.totalQuantity ?? 0}
         </span>
-        {/* Bouton QR */}
-        <button
-          onClick={(e) => item && onQR(e, item.id, item.name)}
-          className="p-1 text-[#94a3b8] hover:text-[#2563eb] hover:bg-[#eff6ff] rounded transition-colors"
-          title="Générer QR Code"
-        >
+        <button onClick={(e) => item && onQR(e, item.id, item.name)} className="p-1 text-[#94a3b8] hover:text-[#2563eb] hover:bg-[#eff6ff] rounded transition-colors" title="Générer QR Code">
           <QrCode className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -457,7 +429,6 @@ function GridView({
     );
   }
 
-  // Grouper par catégorie
   const grouped = CATEGORIES.reduce<Record<string, EquipmentType[]>>((acc, cat) => {
     const items = equipment.filter(e => e.category === cat);
     if (items.length > 0) acc[cat] = items;
@@ -470,7 +441,6 @@ function GridView({
         const colors = CATEGORY_COLORS[cat] ?? CATEGORY_COLORS['Autre'];
         return (
           <div key={cat}>
-            {/* En-tête de groupe */}
             <div className={`flex items-center gap-2 mb-3 pb-2 border-b ${colors.border}`}>
               <span className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.dot }} />
               <h3 className={`text-xs font-bold uppercase tracking-widest ${colors.text}`}>{cat}</h3>
@@ -478,7 +448,6 @@ function GridView({
                 {items.length}
               </span>
             </div>
-            {/* Grille de cartes */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {items.map(item => {
                 const reserved = computeReserved(item.id, missions);
@@ -496,7 +465,6 @@ function GridView({
                     }`}
                     onClick={() => onEdit(item)}
                   >
-                    {/* Badge catégorie */}
                     <div className="flex items-start justify-between gap-2">
                       <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${colors.bg} ${colors.text} ${colors.border}`}>
                         <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors.dot }} />
@@ -504,20 +472,17 @@ function GridView({
                       </span>
                       {isOverbooked && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
-                          <AlertTriangle className="w-2.5 h-2.5" />
-                          Surréservé
+                          <AlertTriangle className="w-2.5 h-2.5" /> Surréservé
                         </span>
                       )}
                     </div>
 
-                    {/* Nom */}
                     <div>
-                      <p className="font-bold text-[#0f172a] text-sm leading-tight truncate group-hover:text-[#2563eb] transition-colors">
+                      <p className="font-bold text-[#0f172a] text-sm leading-snug truncate group-hover:text-[#2563eb] transition-colors">
                         {item.name}
                       </p>
                     </div>
 
-                    {/* Barre de disponibilité */}
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-[10px] font-semibold text-[#64748b]">
                         <span>Disponible</span>
@@ -535,7 +500,6 @@ function GridView({
                       </div>
                     </div>
 
-                    {/* Missions actives */}
                     {usedMissions.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {usedMissions.slice(0, 3).map(m => (
@@ -556,7 +520,6 @@ function GridView({
                       </div>
                     )}
 
-                    {/* Actions */}
                     <div className="flex items-center gap-2 pt-1 border-t border-[#f1f5f9]">
                       <button
                         type="button"
