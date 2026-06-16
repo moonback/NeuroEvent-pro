@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   Calendar, Users, Truck, Package, Settings, Menu, Printer, LogOut,
@@ -7,6 +7,8 @@ import {
 import { cn } from '../../lib/utils';
 import MissionModal from '../MissionModal';
 import { useAuthStore } from '../../store/auth';
+import { supabase } from '../../lib/supabase';
+import { UserAvatar } from '../ui/UserAvatar';
 
 interface NavItem {
   name: string;
@@ -43,8 +45,28 @@ const toolsNavigation: NavItem[] = [
 export function Layout() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [myAvatarUrl, setMyAvatarUrl] = useState<string | null>(null);
   const user = useAuthStore(state => state.user);
   const role = useAuthStore(state => state.role);
+  const fullName = user?.user_metadata?.first_name
+    ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`
+    : (user?.email || 'Utilisateur');
+
+  // Charge l'avatar de l'admin connecté depuis la table `profiles` (RLS: sa propre ligne)
+  useEffect(() => {
+    if (!user?.id) { setMyAvatarUrl(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (!cancelled) setMyAvatarUrl(data?.avatar_url ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
   const signOut = useAuthStore(state => state.signOut);
 
   const handlePrint = () => {
@@ -154,12 +176,16 @@ export function Layout() {
           <div className="p-3 border-t border-[#e2e8f0] bg-white">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-8 h-8 shrink-0 rounded-full bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center text-xs font-bold text-[#0f172a] uppercase">
-                  {user?.user_metadata?.first_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
-                </div>
+                <UserAvatar
+                  src={myAvatarUrl}
+                  name={fullName}
+                  size="sm"
+                  shape="circle"
+                  variant="blue"
+                />
                 <div className="flex flex-col overflow-hidden">
                   <span className="text-[11px] font-bold text-[#0f172a] truncate">
-                    {user?.user_metadata?.first_name ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}` : (user?.email || 'Utilisateur')}
+                    {fullName}
                   </span>
                   <span className="text-[10px] text-[#64748b]">{role || 'Authentifié'}</span>
                 </div>

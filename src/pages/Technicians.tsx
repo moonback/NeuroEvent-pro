@@ -8,6 +8,7 @@ import { useStore } from '../store';
 import { Technician } from '../types';
 import TechnicianModal from '../components/TechnicianModal';
 import MissionModal from '../components/MissionModal';
+import { UserAvatar } from '../components/ui/UserAvatar';
 import { toast } from '../store/toast';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { useFullscreen } from '../hooks/useFullscreen';
@@ -100,10 +101,20 @@ export default function Technicians() {
               className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[#e2e8f0] bg-white hover:bg-[#f8fafc] hover:border-[#cbd5e1] transition-all group"
               title={`Modifier ${tech.firstName} ${tech.lastName}`}
             >
-              <span
-                className="w-2.5 h-2.5 rounded-full shrink-0"
-                style={{ backgroundColor: tech.color }}
-              />
+              {tech.avatarUrl ? (
+                <UserAvatar
+                  src={tech.avatarUrl}
+                  name={`${tech.firstName} ${tech.lastName}`}
+                  size="xs"
+                  shape="circle"
+                  className="w-5 h-5 text-[9px]"
+                />
+              ) : (
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: tech.color }}
+                />
+              )}
               <span className="text-xs font-semibold text-[#0f172a]">
                 {tech.firstName} {tech.lastName}
               </span>

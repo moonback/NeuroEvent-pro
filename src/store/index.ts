@@ -201,7 +201,8 @@ export const useStore = create<AppState>()(
         color: t.color,
         skills: t.skills || [],
         driverLicense: t.driver_license || { hasLicense: false, since: '', categories: [] },
-        checklistEnabled: !!t.driver_license?.checklistEnabled
+        checklistEnabled: !!t.driver_license?.checklistEnabled,
+        avatarUrl: t.avatar_url ?? null,
       })) || [];
 
       const trucks: Truck[] = trucksRes.data?.map(t => ({

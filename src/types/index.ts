@@ -15,6 +15,8 @@ export interface Profile {
   lastName: string;
   role: UserRole;
   createdAt?: string;
+  /** URL publique de l'avatar (Storage bucket `avatars`), null si pas d'avatar */
+  avatarUrl?: string | null;
 }
 
 export interface DriverLicense {
@@ -32,6 +34,8 @@ export interface Technician {
   skills?: string[];
   driverLicense?: DriverLicense;
   checklistEnabled?: boolean;
+  /** URL publique de l'avatar (Storage bucket `avatars`), null si pas d'avatar */
+  avatarUrl?: string | null;
 }
 
 export interface TechnicianUnavailability {
