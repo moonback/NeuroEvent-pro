@@ -7,8 +7,10 @@ import { format, isSameDay, differenceInMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { triggerVibrate, DRAWER_TABS, type DrawerTab } from './useTechDashboard';
 import DrawerTabs from './DrawerTabs';
+import TechFAB from './TechFAB';
 import { useStore } from '../../store';
 import { useAuthStore } from '../../store/auth';
+import type { Client } from '../../types';
 
 interface MissionDrawerProps {
   mission: any;
@@ -73,6 +75,9 @@ export default function MissionDrawer(props: MissionDrawerProps) {
 
   const stepIndex = STATUS_STEPS.findIndex(s => s.key === mission.status);
   const activeTabs = TAB_CONFIG.filter(t => t.id !== 'checklist' || isChecklistEnabled);
+
+  // Client associé à la mission, pour le FAB (appel, etc.)
+  const selectedClient: Client | null = props.getClientInfo(mission.clientId) ?? null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
@@ -325,6 +330,14 @@ export default function MissionDrawer(props: MissionDrawerProps) {
 
         {/* Bottom safe area */}
         <div className="h-3 shrink-0" style={{ background: 'var(--tech-bg)' }} />
+
+        {/* FAB — boîte à outils rapide visible UNIQUEMENT quand ce drawer est ouvert */}
+        <TechFAB
+          selectedMission={mission}
+          selectedClient={selectedClient}
+          onOpenScanner={props.openScanner}
+          onOpenSignature={onOpenSignature}
+        />
       </div>
     </div>
   );
