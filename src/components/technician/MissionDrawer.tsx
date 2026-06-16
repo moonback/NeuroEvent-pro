@@ -74,7 +74,9 @@ export default function MissionDrawer(props: MissionDrawerProps) {
   const isChecklistEnabled = currentTech?.checklistEnabled ?? false;
 
   const stepIndex = STATUS_STEPS.findIndex(s => s.key === mission.status);
-  const activeTabs = TAB_CONFIG.filter(t => t.id !== 'checklist' || isChecklistEnabled);
+  const activeTabs = TAB_CONFIG.filter(
+    t => (t.id !== 'checklist' || isChecklistEnabled) && (t.id !== 'hours' || mission.status === 'En cours')
+  );
 
   // Client associé à la mission, pour le FAB (appel, etc.)
   const selectedClient: Client | null = props.getClientInfo(mission.clientId) ?? null;
@@ -416,14 +418,16 @@ export default function MissionDrawer(props: MissionDrawerProps) {
         {/* Bottom safe area */}
         <div className="h-3 shrink-0" style={{ background: 'var(--tech-bg)' }} />
 
-        {/* FAB — boîte à outils rapide visible UNIQUEMENT quand ce drawer est ouvert */}
-        <TechFAB
-          selectedMission={mission}
-          selectedClient={selectedClient}
-          onOpenScanner={props.openScanner}
-          onOpenSignature={onOpenSignature}
-          onTerminateMission={() => onStatusChange(mission, 'Terminée')}
-        />
+        {/* FAB — boîte à outils rapide visible UNIQUEMENT pour une mission active */}
+        {mission.status === 'En cours' && (
+          <TechFAB
+            selectedMission={mission}
+            selectedClient={selectedClient}
+            onOpenScanner={props.openScanner}
+            onOpenSignature={onOpenSignature}
+            onTerminateMission={() => onStatusChange(mission, 'Terminée')}
+          />
+        )}
       </div>
     </div>
   );

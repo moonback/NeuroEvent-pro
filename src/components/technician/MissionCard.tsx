@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, MapPin, Truck as TruckIcon, Users, ChevronRight, CheckCircle2, Play, Info } from 'lucide-react';
+import { Clock, MapPin, Truck as TruckIcon, Users, ChevronRight, CheckCircle2, Play, Info, ChevronLeft } from 'lucide-react';
 import { format, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { triggerVibrate } from './useTechDashboard';
@@ -202,6 +202,12 @@ export default function MissionCard({ mission, truckName, colleagueCount, onClic
       className="relative overflow-hidden rounded-2xl"
       style={{ touchAction: 'pan-y' /* laisse le scroll vertical libre */ }}
     >
+      {/* ── COUCHE 0 : indicateurs de swipe permanents ── */}
+      <div className="absolute inset-0 pointer-events-none flex items-center justify-between px-2 z-10" aria-hidden>
+        <ChevronLeft className="w-5 h-5 text-white/90" />
+        <ChevronRight className="w-5 h-5 text-white/90" />
+      </div>
+
       {/* ── COUCHE 1 : fond révélé au swipe ─────────────────────────── */}
       <div
         className="absolute inset-0 flex items-center justify-between pointer-events-none"
