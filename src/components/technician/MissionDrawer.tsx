@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   X, Check, Clock, MapPin, Info, Phone, Users, QrCode, FileText, Timer, PenTool,
-  Sparkles, ClipboardCheck, Truck, Wrench, Camera
+  Sparkles, ClipboardCheck, Truck, Wrench, Camera, Lock
 } from 'lucide-react';
 import { format, isSameDay, differenceInMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -79,13 +79,28 @@ export default function MissionDrawer(props: MissionDrawerProps) {
   // Client associé à la mission, pour le FAB (appel, etc.)
   const selectedClient: Client | null = props.getClientInfo(mission.clientId) ?? null;
 
+  // Verrouillage : une mission "En cours" ne peut pas être quittée.
+  // Le technicien doit explicitement la terminer pour retrouver la navigation.
+  const isLocked = mission.status === 'En cours';
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       {/* Backdrop */}
       <div
         className="absolute inset-0"
-        style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
-        onClick={() => { triggerVibrate('click'); onClose(); }}
+        style={{
+          background: 'rgba(0,0,0,0.75)',
+          backdropFilter: 'blur(6px)',
+          cursor: isLocked ? 'default' : 'pointer',
+        }}
+        onClick={() => {
+          if (isLocked) {
+            triggerVibrate('error');
+            return;
+          }
+          triggerVibrate('click');
+          onClose();
+        }}
       />
 
       {/* Bottom sheet */}
@@ -102,12 +117,16 @@ export default function MissionDrawer(props: MissionDrawerProps) {
       >
         {/* ── Drag handle ── */}
         <div
-          onTouchStart={props.handleDragStart}
-          onTouchMove={props.handleDragMove}
-          onTouchEnd={props.handleDragEnd}
-          className="w-full pt-3 pb-2 flex justify-center cursor-grab select-none shrink-0"
+          onTouchStart={isLocked ? undefined : props.handleDragStart}
+          onTouchMove={isLocked ? undefined : props.handleDragMove}
+          onTouchEnd={isLocked ? undefined : props.handleDragEnd}
+          className="w-full pt-3 pb-2 flex justify-center select-none shrink-0"
+          style={{ cursor: isLocked ? 'default' : 'grab' }}
         >
-          <div className="w-10 h-[3px] rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} />
+          <div
+            className="w-10 h-[3px] rounded-full"
+            style={{ background: isLocked ? 'rgba(255,183,0,0.5)' : 'rgba(255,255,255,0.15)' }}
+          />
         </div>
 
         {/* ── Hero Header ── */}
@@ -123,14 +142,42 @@ export default function MissionDrawer(props: MissionDrawerProps) {
           <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full opacity-20 pointer-events-none"
             style={{ background: 'rgba(0,0,0,0.5)', filter: 'blur(20px)' }} />
 
-          {/* Close button */}
-          <button
-            onClick={() => { triggerVibrate('click'); onClose(); }}
-            className="absolute top-3 right-3 p-1.5 rounded-full transition-all active:scale-90 z-30 cursor-pointer"
-            style={{ background: 'rgba(0,0,0,0.25)' }}
-          >
-            <X className="w-3.5 h-3.5 text-white" />
-          </button>
+          {/* Close button — caché tant que la mission est en cours (verrou) */}
+          {!isLocked && (
+            <button
+              onClick={() => { triggerVibrate('click'); onClose(); }}
+              className="absolute top-3 right-3 p-1.5 rounded-full transition-all active:scale-90 z-30 cursor-pointer"
+              style={{ background: 'rgba(0,0,0,0.25)' }}
+            >
+              <X className="w-3.5 h-3.5 text-white" />
+            </button>
+          )}
+          {/* Indicateur de verrou (à la place du X) */}
+          {isLocked && (
+            <div
+              className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full z-30"
+              style={{
+                background: 'rgba(255,183,0,0.20)',
+                border: '1px solid rgba(255,183,0,0.35)',
+              }}
+              title="Mission en cours — terminez-la pour continuer"
+            >
+              <div
+                className="w-1.5 h-1.5 rounded-full"
+                style={{
+                  background: '#ffb700',
+                  boxShadow: '0 0 6px #ffb700',
+                  animation: 'tech-dot-ping 1.5s cubic-bezier(0,0,0.2,1) infinite',
+                }}
+              />
+              <span
+                className="text-[9px] font-black uppercase tracking-widest"
+                style={{ color: '#ffb700' }}
+              >
+                Verrouillé
+              </span>
+            </div>
+          )}
 
           <div className="px-3.5 pt-3 pb-3 relative z-10 text-white">
             {/* Top row: Tags & Title */}
@@ -246,6 +293,44 @@ export default function MissionDrawer(props: MissionDrawerProps) {
           </div>
         </div>
 
+        {/* ── Lock banner — visible uniquement quand la mission est en cours ── */}
+        {isLocked && (
+          <div
+            className="mx-2 mt-2 px-3 py-2 rounded-xl flex items-center gap-2.5 shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255,183,0,0.12) 0%, rgba(255,183,0,0.05) 100%)',
+              border: '1px solid rgba(255,183,0,0.30)',
+              boxShadow: '0 0 12px rgba(255,183,0,0.10) inset',
+            }}
+            role="alert"
+            aria-live="polite"
+          >
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+              style={{
+                background: 'rgba(255,183,0,0.20)',
+                border: '1px solid rgba(255,183,0,0.35)',
+              }}
+            >
+              <Lock className="w-3.5 h-3.5" style={{ color: '#ffb700' }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p
+                className="text-[10px] font-black uppercase tracking-widest"
+                style={{ color: '#ffb700' }}
+              >
+                Mission en cours
+              </p>
+              <p
+                className="text-[11px] font-semibold leading-snug mt-0.5"
+                style={{ color: 'var(--tech-text-secondary)' }}
+              >
+                Terminez cette mission pour retrouver la navigation.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ── Tab Bar ── */}
         <div
           className="px-2 py-2 flex justify-between items-center shrink-0 select-none no-scrollbar w-full"
@@ -337,6 +422,7 @@ export default function MissionDrawer(props: MissionDrawerProps) {
           selectedClient={selectedClient}
           onOpenScanner={props.openScanner}
           onOpenSignature={onOpenSignature}
+          onTerminateMission={() => onStatusChange(mission, 'Terminée')}
         />
       </div>
     </div>

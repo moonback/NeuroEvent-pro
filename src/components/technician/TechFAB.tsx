@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, QrCode, PenTool, Phone, Navigation, X, Zap } from 'lucide-react';
+import { Plus, QrCode, PenTool, Phone, Navigation, X, Zap, CheckCircle2 } from 'lucide-react';
 import type { Client, Mission } from '../../types';
 import { triggerVibrate } from './useTechDashboard';
 
@@ -12,10 +12,12 @@ interface TechFABProps {
   onOpenScanner: () => void;
   /** Ouvre le pad de signature. */
   onOpenSignature: () => void;
+  /** Déclenche la clôture de la mission (ouvre le TimeModal de fin). */
+  onTerminateMission: () => void;
 }
 
 interface FabAction {
-  id: 'scanner' | 'signature' | 'call' | 'directions';
+  id: 'scanner' | 'signature' | 'call' | 'directions' | 'terminate';
   label: string;
   icon: React.ElementType;
   color: string;
@@ -42,6 +44,7 @@ export default function TechFAB({
   selectedClient,
   onOpenScanner,
   onOpenSignature,
+  onTerminateMission,
 }: TechFABProps) {
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -62,8 +65,24 @@ export default function TechFAB({
 
   const clientPhone = selectedClient?.phone?.trim() || null;
   const missionAddress = selectedMission?.address?.trim() || null;
+  // Action "Terminer" visible uniquement quand la mission est active.
+  const isMissionInProgress = selectedMission?.status === 'En cours';
 
   const actions: FabAction[] = [
+    {
+      // En tête d'éventail (idx 0) : action principale, affichée en haut.
+      // Visible uniquement quand la mission est "En cours".
+      id: 'terminate',
+      label: 'Terminer mission',
+      icon: CheckCircle2,
+      color: '#ff4d6d',
+      enabled: isMissionInProgress,
+      disabledReason: 'Démarrez la mission pour pouvoir la terminer',
+      onTrigger: () => {
+        onTerminateMission();
+        setIsOpen(false);
+      },
+    },
     {
       id: 'scanner',
       label: 'Scanner QR',
@@ -132,6 +151,13 @@ export default function TechFAB({
     setIsOpen((v) => !v);
   };
 
+  // On retire "Terminer" si la mission n'est pas en cours (évite un bouton
+  // grisé sans valeur). Les autres actions restent affichées même désactivées
+  // pour la découvrabilité.
+  const visibleActions = actions.filter(
+    (a) => a.id !== 'terminate' || isMissionInProgress
+  );
+
   return (
     <>
       {/* Backdrop (uniquement quand ouvert) */}
@@ -163,10 +189,10 @@ export default function TechFAB({
       >
         {/* Actions en éventail (en bas du bouton, vers le haut) */}
         <div className="flex flex-col items-end gap-3 mb-3">
-          {actions.map((action, idx) => {
+          {visibleActions.map((action, idx) => {
             const Icon = action.icon;
-            // Délai d'apparition en cascade (du bas vers le haut : 0, 40, 80, 120ms)
-            const delay = (actions.length - 1 - idx) * 40;
+            // Délai d'apparition en cascade (du bas vers le haut)
+            const delay = (visibleActions.length - 1 - idx) * 40;
             return (
               <div
                 key={action.id}
@@ -236,18 +262,27 @@ export default function TechFAB({
           aria-expanded={isOpen}
           className="w-14 h-14 rounded-2xl flex items-center justify-center cursor-pointer transition-all active:scale-90"
           style={{
+            // 3 états : menu ouvert (rouge danger) > mission en cours (rouge/orange pulsant) > repos (vert tech)
             background: isOpen
               ? 'linear-gradient(135deg, rgba(255,77,109,0.95) 0%, rgba(255,77,109,0.8) 100%)'
-              : 'linear-gradient(135deg, var(--tech-accent) 0%, var(--tech-accent-dim, #00b882) 100%)',
+              : isMissionInProgress
+                ? 'linear-gradient(135deg, #ff4d6d 0%, #ff7a3d 100%)'
+                : 'linear-gradient(135deg, var(--tech-accent) 0%, var(--tech-accent-dim, #00b882) 100%)',
             color: '#fff',
             border: isOpen
               ? '1px solid rgba(255,77,109,0.4)'
-              : '1px solid rgba(0,229,160,0.4)',
+              : isMissionInProgress
+                ? '1px solid rgba(255,77,109,0.55)'
+                : '1px solid rgba(0,229,160,0.4)',
             boxShadow: isOpen
               ? '0 8px 24px rgba(255,77,109,0.4), 0 0 16px rgba(255,77,109,0.25)'
-              : '0 8px 24px rgba(0,229,160,0.35), 0 0 16px rgba(0,229,160,0.2)',
+              : isMissionInProgress
+                ? '0 8px 24px rgba(255,77,109,0.45), 0 0 20px rgba(255,77,109,0.30)'
+                : '0 8px 24px rgba(0,229,160,0.35), 0 0 16px rgba(0,229,160,0.2)',
+            // Pulse subtil quand mission en cours et menu fermé (attire l'œil).
+            animation: !isOpen && isMissionInProgress ? 'tech-fab-pulse 1.8s ease-in-out infinite' : 'none',
             transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)',
-            transition: 'transform 0.3s cubic-bezier(0.16,1,0.3,1), background 0.2s, box-shadow 0.2s',
+            transition: 'transform 0.3s cubic-bezier(0.16,1,0.3,1), background 0.25s, box-shadow 0.25s',
           }}
         >
           {isOpen ? (

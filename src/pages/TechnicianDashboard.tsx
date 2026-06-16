@@ -63,6 +63,47 @@ export default function TechnicianDashboard() {
     ? currentTech.firstName
     : tech.user?.user_metadata?.first_name || '';
 
+  // ── Verrouillage : la première mission "En cours" bloque toute navigation.
+  // On la sélectionne automatiquement pour que le drawer soit ouvert.
+  const myMissionsLocal = React.useMemo(
+    () =>
+      tech.missions
+        .filter((m) => m.technicianIds.includes(tech.user?.id || ''))
+        .sort((a, b) => a.start.getTime() - b.start.getTime()),
+    [tech.missions, tech.user?.id]
+  );
+  const lockedMissionResolved = React.useMemo(
+    () => myMissionsLocal.find((m) => m.status === 'En cours') ?? null,
+    [myMissionsLocal]
+  );
+
+  // Auto-open : si une mission est en cours, on force son ouverture.
+  React.useEffect(() => {
+    if (
+      lockedMissionResolved &&
+      (!tech.selectedMission || tech.selectedMission.id !== lockedMissionResolved.id)
+    ) {
+      tech.setSelectedMission(lockedMissionResolved);
+      tech.setDrawerTab('general');
+    }
+  }, [lockedMissionResolved, tech.selectedMission, tech]);
+
+  // Wrapper sécurisé : bloque le changement d'onglet si une mission est en cours.
+  const safeSetActiveTab = React.useCallback(
+    (tab: typeof tech.activeTab) => {
+      if (lockedMissionResolved && tab !== 'active' && tab !== 'history') {
+        triggerVibrate('error');
+        toast.error('Terminez d\'abord votre mission en cours pour changer d\'onglet.');
+        return;
+      }
+      tech.setActiveTab(tab);
+    },
+    [lockedMissionResolved, tech]
+  );
+
+  // Lock global : true si une mission est en cours (drawer forcé ouvert).
+  const isLocked = !!lockedMissionResolved;
+
   return (
     <div className="tech-dark min-h-screen bg-black text-[#f0f4ff] font-sans pb-24 overflow-x-hidden">
       {/* Header */}
@@ -72,7 +113,7 @@ export default function TechnicianDashboard() {
         syncCount={tech.syncQueue.length}
         todayCount={tech.todayCount}
         activeCount={tech.activeCount}
-        onSettingsClick={() => tech.setActiveTab('profil')}
+        onSettingsClick={() => safeSetActiveTab('profil')}
       />
 
       {/* Main Tab Routing */}
@@ -261,13 +302,21 @@ export default function TechnicianDashboard() {
         </div>
       )}
 
-      {/* Bottom Nav bar */}
+      {/* Bottom Nav bar — bloque la navigation si une mission est en cours */}
       <TechBottomNav
         activeTab={tech.activeTab}
-        setActiveTab={tech.setActiveTab}
+        setActiveTab={safeSetActiveTab}
         hasSelectedMission={!!tech.selectedMission}
-        clearSelection={() => tech.setSelectedMission(null)}
+        clearSelection={() => {
+          if (isLocked) {
+            triggerVibrate('error');
+            toast.error('Terminez d\'abord votre mission en cours.');
+            return;
+          }
+          tech.setSelectedMission(null);
+        }}
         onSignOut={tech.signOut}
+        isLocked={isLocked}
       />
 
       {/* Mission details bottom sheet drawer */}
