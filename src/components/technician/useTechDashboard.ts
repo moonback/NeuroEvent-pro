@@ -59,7 +59,7 @@ export function useTechDashboard() {
   const [scannerOpen, setScannerOpen] = React.useState(false);
   const [activeMissionIdForScanner, setActiveMissionIdForScanner] = React.useState<string | null>(null);
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [dateFilter, setDateFilter] = React.useState<DateFilter>('all');
+  const [dateFilter, setDateFilter] = React.useState<DateFilter>('today');
   const [statusFilter, setStatusFilter] = React.useState<StatusFilter>('all');
   const [selectedMission, setSelectedMission] = React.useState<typeof missions[0] | null>(null);
   const [drawerTab, setDrawerTab] = React.useState<DrawerTab>('general');
