@@ -10,16 +10,18 @@ import {
   Calendar,
   MapPin,
   Users,
-  Truck,
-  Package,
-  Camera,
-  FileText,
-  Image,
   CheckCircle2,
   Clock,
   ClipboardList,
-  ChevronRight
+  ChevronRight,
+  Truck,
+  Package,
+  Camera,
+  AlertTriangle,
+  FileText,
+  Image as LucideImage,
 } from 'lucide-react';
+import { UserAvatar } from '../components/ui/UserAvatar';
 import MissionModal from '../components/MissionModal';
 
 const getStatusConfig = (status: string) => {
@@ -161,10 +163,22 @@ export default function MissionDetail() {
                   <Users className="w-5 h-5 text-[#475569] mt-0.5" />
                   <div>
                     <div className="text-xs uppercase tracking-[0.2em] text-[#94a3b8]">Techniciens</div>
-                    <div className="mt-1 text-sm text-[#0f172a] space-y-1">
+                    <div className="mt-1 text-sm text-[#0f172a] space-y-1.5">
                       {techList.length > 0 ? (
                         techList.map((tech) => (
-                          <div key={tech!.id}>{tech!.firstName} {tech!.lastName}</div>
+                          <div key={tech!.id} className="flex items-center gap-2">
+                            <UserAvatar
+                              src={tech!.avatarUrl}
+                              name={`${tech!.firstName} ${tech!.lastName}`}
+                              size="xs"
+                              shape="circle"
+                              variant="emerald"
+                              className="w-5 h-5 text-[9px]"
+                            />
+                            <span>
+                              {tech!.firstName} {tech!.lastName}
+                            </span>
+                          </div>
                         ))
                       ) : (
                         <div className="text-[#64748b] italic">Aucun technicien assigné</div>
@@ -280,7 +294,7 @@ export default function MissionDetail() {
 
             <div className="rounded-3xl border border-[#e2e8f0] bg-white p-6 shadow-sm">
               <div className="flex items-center gap-2 text-[#0f172a]">
-                <Image className="w-5 h-5" />
+                <LucideImage className="w-5 h-5" />
                 <h3 className="text-lg font-bold">Signature</h3>
               </div>
               <div className="mt-4 min-h-[10rem] rounded-3xl border border-dashed border-[#e2e8f0] bg-[#f8fafc] p-6 flex items-center justify-center">
