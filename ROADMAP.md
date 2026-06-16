@@ -64,9 +64,9 @@
 
 | Fonctionnalité | Détail | Statut |
 |----------------|--------|--------|
-| 📋 Remplacer le re-fetch global par des mutations ciblées | Chaque `store.mutation()` recharge les 7 tables → remplacer par un `set()` partial + invalidation fine | 📋 Planifié |
-| 📋 Durcir les politiques RLS Supabase | Actuellement permissives (`true`) — un technicien ne doit lire que ses missions | 📋 Planifié |
-| 📋 Normaliser le stock matériel | Pas de notion de disponible vs réservé à date ; calcul de disponibilité croisée missions | 📋 Planifié |
+| ✅ Mutations ciblées (fin du re-fetch global) | 6 fetchers par table + mappers extraits, `set()` partiels sur les 18 mutations, realtime limité à `missions`+`equipment` | ✅ Livré |
+| ✅ RLS durcies Supabase | Technicien = SELECT filtré sur ses affectations via helpers `SECURITY DEFINER` ; UPDATE mission/equipment = trigger qui ne laisse passer que `status`/`signature_url`/`checked` ; écriture sur les liaisons = admin only | ✅ Livré |
+| ✅ Stock matériel normalisé | Module pur `src/lib/stock.ts` : `computeReservedByWindow`, `computeReservedAt`, `reservedQuantityFor`, `availableQuantityFor`, `stockOverviewAt`, `checkStockShortages`. Vocabulaire `ACTIVE_STATUSES` (`Planifiée`+`En cours` réservent / `Terminée` libère). `lib/conflicts.ts` délègue désormais à ce module. | ✅ Livré |
 
 ### Terrain (P1)
 
