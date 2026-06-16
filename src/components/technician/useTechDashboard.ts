@@ -201,12 +201,12 @@ export function useTechDashboard() {
     const defaultTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
     if (newStatus === 'En cours') {
       setTimeModal({ type: 'start', targetStatus: 'En cours', time: defaultTime, loading: false });
-      toast.info('Définissez l’heure de début pour démarrer la mission.');
+      // toast.info('Définissez l’heure de début pour démarrer la mission.');
       return;
     }
     if (newStatus === 'Terminée') {
       setTimeModal({ type: 'end', targetStatus: 'Terminée', time: defaultTime, loading: false });
-      toast.info('Définissez l’heure de fin pour terminer la mission.');
+      // toast.info('Définissez l’heure de fin pour terminer la mission.');
       return;
     }
     setSelectedMission({ ...targetMission, status: newStatus });
