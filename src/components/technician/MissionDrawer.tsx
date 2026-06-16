@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   X, Check, Clock, MapPin, Info, Phone, Users, QrCode, FileText, Timer,
-  Sparkles, ClipboardCheck, Truck, Wrench, Camera, Lock
+  Sparkles, ClipboardCheck, Truck, Wrench, Camera, Lock, Sun
 } from 'lucide-react';
 import { format, isSameDay, differenceInMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -41,6 +41,9 @@ interface MissionDrawerProps {
   photoUploading: { missionId: string; type: 'before' | 'after' } | null;
   handlePhotoUpload: (missionId: string, type: 'before' | 'after', file: File) => Promise<void>;
   handlePhotoDelete: (missionId: string, photoId: string) => Promise<void> | void;
+  isLastMissionToday?: boolean;
+  isDayEnded?: boolean;
+  onEndDay?: () => void;
 }
 
 const TAB_CONFIG: { id: DrawerTab; label: string; icon: React.ElementType }[] = [
@@ -61,7 +64,7 @@ const STATUS_STEPS = [
 ] as const;
 
 export default function MissionDrawer(props: MissionDrawerProps) {
-  const { mission, drawerTab, setDrawerTab, onClose, onStatusChange, onOpenSignature } = props;
+  const { mission, drawerTab, setDrawerTab, onClose, onStatusChange, onOpenSignature, isLastMissionToday, isDayEnded, onEndDay } = props;
   const isToday = isSameDay(mission.start, new Date());
   const durationMins = differenceInMinutes(mission.end, mission.start);
   const durationLabel = durationMins >= 60
@@ -243,6 +246,62 @@ export default function MissionDrawer(props: MissionDrawerProps) {
               <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#ffb700' }}>Mission en cours</p>
               <p className="text-[11px] font-semibold leading-snug mt-0.5" style={{ color: 'var(--tech-text-secondary)' }}>
                 Terminez cette mission pour retrouver la navigation.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Carte "Terminer ma journée" — dernière mission du jour terminée */}
+        {mission.status === 'Terminée' && isLastMissionToday && !isDayEnded && onEndDay && (
+          <div className="mx-3 mt-2 shrink-0">
+            <button
+              onClick={() => {
+                triggerVibrate('success');
+                onEndDay();
+              }}
+              className="w-full p-3 rounded-xl flex items-center gap-3 transition-all active:scale-[0.98]"
+              style={{
+                background: 'linear-gradient(135deg, rgba(0,229,160,0.14) 0%, rgba(0,229,160,0.05) 100%)',
+                border: '1px solid rgba(0,229,160,0.25)',
+              }}
+            >
+              <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(0,229,160,0.15)', border: '1px solid rgba(0,229,160,0.30)' }}>
+                <Sun className="w-4 h-4" style={{ color: 'var(--tech-accent)' }} />
+              </span>
+              <div className="min-w-0 flex-1 text-left">
+                <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--tech-accent)' }}>
+                  Dernière mission terminée
+                </p>
+                <p className="text-[13px] font-black leading-tight" style={{ color: 'var(--tech-text)' }}>
+                  Terminer ma journée
+                </p>
+              </div>
+              <span
+                className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide shrink-0"
+                style={{ background: 'var(--tech-accent)', color: '#000' }}
+              >
+                Terminer
+              </span>
+            </button>
+          </div>
+        )}
+
+        {/* Carte "Journée déjà terminée" */}
+        {mission.status === 'Terminée' && isLastMissionToday && isDayEnded && (
+          <div
+            className="mx-3 mt-2 px-3 py-2.5 rounded-xl flex items-center gap-2.5 shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, rgba(0,229,160,0.06) 0%, rgba(0,229,160,0.02) 100%)',
+              border: '1px solid rgba(0,229,160,0.10)',
+            }}
+          >
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(0,229,160,0.08)', border: '1px solid rgba(0,229,160,0.15)' }}>
+              <Sun className="w-3.5 h-3.5" style={{ color: 'var(--tech-accent)' }} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--tech-accent)' }}>Journée terminée</p>
+              <p className="text-[11px] font-semibold leading-snug mt-0.5" style={{ color: 'var(--tech-text-secondary)' }}>
+                Votre journée est clôturée. Bonne soirée !
               </p>
             </div>
           </div>

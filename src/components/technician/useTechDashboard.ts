@@ -13,8 +13,8 @@ export type StatusFilter = 'all' | 'Planifiée' | 'En cours';
 export const DRAWER_TABS: DrawerTab[] = ['general', 'client', 'team', 'equipment', 'photos', 'hours', 'checklist', 'report'];
 
 export interface TimeModalState {
-  type: 'start' | 'end';
-  targetStatus: 'En cours' | 'Terminée';
+  type: 'start' | 'end' | 'dayEnd';
+  targetStatus: 'En cours' | 'Terminée' | 'dayEnd';
   time: string;
   loading: boolean;
 }
@@ -47,6 +47,9 @@ export function useTechDashboard() {
   const addTimeLog = useStore(state => state.addTimeLog);
   const timeLogs = useStore(state => state.timeLogs);
   const updateTimeLog = useStore(state => state.updateTimeLog);
+  const endDay = useStore(state => state.endDay);
+  const dayLogs = useStore(state => state.dayLogs);
+  const fetchDayLogs = useStore(state => state.fetchDayLogs);
   const syncQueue = useStore(state => state.syncQueue);
   const processSyncQueue = useStore(state => state.processSyncQueue);
   const initializeStore = useStore(state => state.initialize);
@@ -95,15 +98,26 @@ export function useTechDashboard() {
       if (saved) {
         try { setLocalReports(JSON.parse(saved)); } catch {}
       }
+      fetchDayLogs(user.id).catch(console.error);
     }
-  }, [user?.id]);
+  }, [user?.id, fetchDayLogs]);
 
   // ── Sync selectedMission when global store list is updated ──
+  // On préserve le statut local s'il est plus avancé que celui du store
+  // (ex: on vient de terminer la mission, mais initialize() n'a pas encore re-fetché)
   React.useEffect(() => {
     if (selectedMission) {
       const updated = missions.find(m => m.id === selectedMission.id);
       if (updated && updated !== selectedMission) {
-        setSelectedMission(updated);
+        // Ne jamais régresser le statut : si le local est 'Terminée' et le store 'En cours',
+        // on garde 'Terminée' mais on sync le reste des champs.
+        const statusOrder = { 'Planifiée': 0, 'En cours': 1, 'Terminée': 2 } as const;
+        const localRank = statusOrder[selectedMission.status as keyof typeof statusOrder] ?? -1;
+        const storeRank = statusOrder[updated.status as keyof typeof statusOrder] ?? -1;
+        const merged = localRank > storeRank
+          ? { ...updated, status: selectedMission.status }
+          : updated;
+        setSelectedMission(merged);
       }
     }
   }, [missions, selectedMission]);
@@ -206,12 +220,10 @@ export function useTechDashboard() {
     const defaultTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
     if (newStatus === 'En cours') {
       setTimeModal({ type: 'start', targetStatus: 'En cours', time: defaultTime, loading: false });
-      // toast.info('Définissez l’heure de début pour démarrer la mission.');
       return;
     }
     if (newStatus === 'Terminée') {
       setTimeModal({ type: 'end', targetStatus: 'Terminée', time: defaultTime, loading: false });
-      // toast.info('Définissez l’heure de fin pour terminer la mission.');
       return;
     }
     setSelectedMission({ ...targetMission, status: newStatus });
@@ -219,16 +231,29 @@ export function useTechDashboard() {
     toast.success(`Statut mis à jour : ${newStatus}`);
   };
 
+  const openDayEndModal = () => {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const now = new Date();
+    const defaultTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    setTimeModal({ type: 'dayEnd', targetStatus: 'dayEnd', time: defaultTime, loading: false });
+  };
+
   const handleTimeModalConfirm = async () => {
-    if (!timeModal || !selectedMission || !user?.id) return;
+    if (!timeModal || !user?.id) return;
     setTimeModal(prev => prev ? { ...prev, loading: true } : null);
     const [h, m] = timeModal.time.split(':').map(Number);
     const logTime = new Date();
     logTime.setHours(h, m, 0, 0);
     try {
       if (timeModal.type === 'start') {
+        if (!selectedMission) return;
         await addTimeLog({ missionId: selectedMission.id, technicianId: user.id, startTime: logTime, endTime: null });
-      } else {
+        const newStatus = 'En cours';
+        setSelectedMission(prev => prev ? { ...prev, status: newStatus } : null);
+        await updateMission(selectedMission.id, { status: newStatus });
+        toast.success(`Statut mis à jour : ${newStatus}`);
+      } else if (timeModal.type === 'end') {
+        if (!selectedMission) return;
         const openLog = timeLogs.find(
           l => l.missionId === selectedMission.id && l.technicianId === user.id && !l.endTime
         );
@@ -239,11 +264,36 @@ export function useTechDashboard() {
           start.setHours(start.getHours() - 1);
           await addTimeLog({ missionId: selectedMission.id, technicianId: user.id, startTime: start, endTime: logTime });
         }
+        const newStatus = 'Terminée';
+        setSelectedMission(prev => prev ? { ...prev, status: newStatus } : null);
+        await updateMission(selectedMission.id, { status: newStatus });
+        toast.success(`Statut mis à jour : ${newStatus}`);
+      } else if (timeModal.type === 'dayEnd') {
+        // Fin de journée : insertion dans technician_day_logs
+        const todayMissions = missions
+          .filter(m => m.technicianIds.includes(user.id) && isSameDay(m.start, new Date()))
+          .sort((a, b) => a.start.getTime() - b.start.getTime());
+        const firstMission = todayMissions[0];
+        if (!firstMission) {
+          toast.error('Aucune mission trouvée pour aujourd\'hui.');
+          return;
+        }
+        const dayStart = new Date(firstMission.start);
+        dayStart.setHours(dayStart.getHours(), dayStart.getMinutes(), 0, 0);
+        // Sécurité : on ne clôture pas si la fin est avant le début.
+        if (logTime.getTime() <= dayStart.getTime()) {
+          triggerVibrate('error');
+          toast.error('L\'heure de fin doit être après le début de la première mission.');
+          return;
+        }
+        const todayStr = new Date().toISOString().slice(0, 10);
+        await endDay({
+          technicianId: user.id,
+          date: todayStr,
+          firstMissionStart: dayStart,
+          dayEndTime: logTime,
+        });
       }
-      const newStatus = timeModal.targetStatus;
-      setSelectedMission(prev => prev ? { ...prev, status: newStatus } : null);
-      await updateMission(selectedMission.id, { status: newStatus });
-      toast.success(`Statut mis à jour : ${newStatus}`);
     } finally {
       setTimeModal(null);
     }
@@ -354,7 +404,7 @@ export function useTechDashboard() {
     // Auth
     user, signOut,
     // Data
-    missions, trucks, technicians, equipmentDefs, clients, timeLogs,
+    missions, trucks, technicians, equipmentDefs, clients, timeLogs, dayLogs,
     // UI State
     activeTab, setActiveTab,
     searchTerm, setSearchTerm,
@@ -379,6 +429,7 @@ export function useTechDashboard() {
     handleScan, handleToggle, handleStatusChange, handleTimeModalConfirm, handleTimeChange,
     handleReportChange,
     openMissionDetails,
+    openDayEndModal,
     updateMission,
     initialize: initializeStore,
     // Helpers

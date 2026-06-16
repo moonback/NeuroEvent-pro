@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, CheckCircle } from 'lucide-react';
+import { Play, CheckCircle, Sun } from 'lucide-react';
 import { TimeModalState } from './useTechDashboard';
 
 interface TimeModalProps {
@@ -8,7 +8,7 @@ interface TimeModalProps {
     title: string;
     client: string;
     color: string;
-  };
+  } | null;
   onClose: () => void;
   onConfirm: () => void;
   setTimeModal: React.Dispatch<React.SetStateAction<TimeModalState | null>>;
@@ -21,6 +21,11 @@ export const TimeModal: React.FC<TimeModalProps> = ({
   onConfirm,
   setTimeModal,
 }) => {
+  const isDayEnd = timeModal.type === 'dayEnd';
+  const headerColor = isDayEnd ? '#00e5a0' : (selectedMission?.color || '#64748b');
+  const title = isDayEnd ? 'Fin de journée' : (selectedMission?.title || 'Mission');
+  const subtitle = isDayEnd ? 'Pointage global de la journée' : (selectedMission?.client || '');
+
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center">
       {/* Overlay */}
@@ -34,7 +39,7 @@ export const TimeModal: React.FC<TimeModalProps> = ({
         {/* Colored header band */}
         <div
           className="px-6 pt-6 pb-5 relative"
-          style={{ backgroundColor: selectedMission.color }}
+          style={{ backgroundColor: headerColor }}
         >
           {/* Notch */}
           <div className="w-10 h-1 bg-white/30 rounded-full mx-auto mb-4 sm:hidden" />
@@ -43,16 +48,22 @@ export const TimeModal: React.FC<TimeModalProps> = ({
             <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0 backdrop-blur-sm">
               {timeModal.type === 'start' ? (
                 <Play className="w-6 h-6 text-white fill-white" />
-              ) : (
+              ) : timeModal.type === 'end' ? (
                 <CheckCircle className="w-6 h-6 text-white" />
+              ) : (
+                <Sun className="w-6 h-6 text-white" />
               )}
             </div>
             <div>
               <div className="text-[10px] font-extrabold uppercase tracking-widest text-white/70">
-                {timeModal.type === 'start' ? 'Démarrage de la mission' : 'Clôture de la mission'}
+                {timeModal.type === 'start'
+                  ? 'Démarrage de la mission'
+                  : timeModal.type === 'end'
+                  ? 'Clôture de la mission'
+                  : 'Terminer la journée'}
               </div>
-              <div className="font-black text-lg leading-tight">{selectedMission.title}</div>
-              <div className="text-xs font-semibold text-white/80 mt-0.5">{selectedMission.client}</div>
+              <div className="font-black text-lg leading-tight">{title}</div>
+              {subtitle && <div className="text-xs font-semibold text-white/80 mt-0.5">{subtitle}</div>}
             </div>
           </div>
         </div>
@@ -63,7 +74,9 @@ export const TimeModal: React.FC<TimeModalProps> = ({
             <p className="text-sm font-semibold text-slate-300 leading-relaxed">
               {timeModal.type === 'start'
                 ? 'Indiquez votre heure de prise de poste. Cette heure sera enregistrée comme début de votre créneau.'
-                : 'Indiquez votre heure de fin de mission. Votre créneau de travail sera clôturé.'}
+                : timeModal.type === 'end'
+                ? 'Indiquez votre heure de fin de mission. Votre créneau de travail sera clôturé.'
+                : 'Quand avez-vous fini votre journée ? Un créneau sera créé du début de votre première mission jusqu’à cette heure.'}
             </p>
           </div>
 
@@ -105,7 +118,7 @@ export const TimeModal: React.FC<TimeModalProps> = ({
               onClick={onConfirm}
               disabled={timeModal.loading || !timeModal.time}
               className="flex-[2] py-3.5 rounded-2xl text-sm font-extrabold text-white transition-all active:scale-95 duration-100 disabled:opacity-50 shadow-sm flex items-center justify-center gap-2"
-              style={{ backgroundColor: selectedMission.color }}
+              style={{ backgroundColor: headerColor }}
             >
               {timeModal.loading ? (
                 <span className="animate-pulse">Enregistrement…</span>
@@ -113,10 +126,12 @@ export const TimeModal: React.FC<TimeModalProps> = ({
                 <>
                   {timeModal.type === 'start' ? (
                     <Play className="w-4 h-4 fill-white" />
-                  ) : (
+                  ) : timeModal.type === 'end' ? (
                     <CheckCircle className="w-4 h-4" />
+                  ) : (
+                    <Sun className="w-4 h-4" />
                   )}
-                  {timeModal.type === 'start' ? 'Démarrer' : 'Terminer'}
+                  {timeModal.type === 'start' ? 'Démarrer' : timeModal.type === 'end' ? 'Terminer' : 'Valider la fin de journée'}
                 </>
               )}
             </button>

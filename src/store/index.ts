@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Mission, Technician, Truck, Equipment, Client, MissionType, MissionStatus, EquipmentCategory, TimeLog, TechnicianUnavailability, UnavailabilityType, MissionPhoto } from '../types';
+import { Mission, Technician, Truck, Equipment, Client, MissionType, MissionStatus, EquipmentCategory, TimeLog, TechnicianUnavailability, UnavailabilityType, MissionPhoto, TechnicianDayLog } from '../types';
 import { TableRow, TableInsert, TableUpdate } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { toast } from './toast';
@@ -22,6 +22,7 @@ interface AppState {
   equipment: Equipment[];
   clients: Client[];
   timeLogs: TimeLog[];
+  dayLogs: TechnicianDayLog[];
   unavailabilities: TechnicianUnavailability[];
   missionPhotos: MissionPhoto[];
 
@@ -67,6 +68,10 @@ interface AppState {
   addTimeLog: (log: Omit<TimeLog, 'id' | 'createdAt' | 'updatedAt'>) => Promise<TimeLog | null>;
   updateTimeLog: (id: string, fields: Partial<Pick<TimeLog, 'startTime' | 'endTime' | 'note'>>) => Promise<void>;
   deleteTimeLog: (id: string) => Promise<void>;
+
+  // Day Logs
+  fetchDayLogs: (technicianId?: string) => Promise<void>;
+  endDay: (params: { technicianId: string; date: string; firstMissionStart: Date; dayEndTime: Date }) => Promise<TechnicianDayLog | null>;
 
   // Mission Photos
   fetchMissionPhotos: (missionId: string) => Promise<MissionPhoto[]>;
@@ -133,6 +138,7 @@ export const useStore = create<AppState>()(
       equipment: [],
       clients: [],
       timeLogs: [],
+      dayLogs: [],
       unavailabilities: [],
       missionPhotos: [],
       loading: true,
@@ -729,6 +735,65 @@ export const useStore = create<AppState>()(
     if (reportError('Suppression du créneau', error)) return;
     set((state) => ({ timeLogs: state.timeLogs.filter((l) => l.id !== id) }));
     toast.success('Créneau supprimé.');
+  },
+
+  // ── DAY LOGS ──────────────────────────────────────────────
+  fetchDayLogs: async (technicianId?: string) => {
+    let query = supabase
+      .from('technician_day_logs')
+      .select('*')
+      .order('date', { ascending: false });
+
+    if (technicianId) query = query.eq('technician_id', technicianId) as typeof query;
+
+    const { data, error } = await query;
+    if (reportError('Chargement des journées', error) || !data) return;
+
+    const logs: TechnicianDayLog[] = data.map((r) => ({
+      id: r.id,
+      technicianId: r.technician_id,
+      date: new Date(r.date + 'T00:00:00'),
+      firstMissionStart: new Date(r.first_mission_start),
+      dayEndTime: new Date(r.day_end_time),
+      totalMinutes: r.total_minutes,
+      createdAt: new Date(r.created_at),
+      updatedAt: new Date(r.updated_at),
+    }));
+
+    set({ dayLogs: logs });
+  },
+
+  endDay: async ({ technicianId, date, firstMissionStart, dayEndTime }) => {
+    const totalMinutes = Math.max(0, Math.floor((dayEndTime.getTime() - firstMissionStart.getTime()) / 60000));
+
+    const { data, error } = await supabase
+      .from('technician_day_logs')
+      .insert({
+        technician_id: technicianId,
+        date,
+        first_mission_start: firstMissionStart.toISOString(),
+        day_end_time: dayEndTime.toISOString(),
+        total_minutes: totalMinutes,
+      })
+      .select()
+      .single();
+
+    if (reportError('Clôture de la journée', error) || !data) return null;
+
+    const newLog: TechnicianDayLog = {
+      id: data.id,
+      technicianId: data.technician_id,
+      date: new Date(data.date + 'T00:00:00'),
+      firstMissionStart: new Date(data.first_mission_start),
+      dayEndTime: new Date(data.day_end_time),
+      totalMinutes: data.total_minutes,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+    };
+
+    set((state) => ({ dayLogs: [newLog, ...state.dayLogs] }));
+    toast.success(`Journée terminée — ${Math.floor(totalMinutes / 60)}h${String(totalMinutes % 60).padStart(2, '0')} enregistrées.`);
+    return newLog;
   },
 
   // ── MISSION PHOTOS ─────────────────────────────────────────

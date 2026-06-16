@@ -21,7 +21,7 @@ interface MissionCardProps {
     truckId?: string;
     technicianIds: string[];
     equipments: { equipmentId: string; quantity: number; checked?: boolean }[];
-    signatureUrl?: string;
+    signatureUrl?: string | null;
   };
   truckName: string;
   colleagueCount: number;

@@ -129,3 +129,14 @@ export interface TimeLog {
   updatedAt: Date;
 }
 
+export interface TechnicianDayLog {
+  id: string;
+  technicianId: string;
+  date: Date;
+  firstMissionStart: Date;
+  dayEndTime: Date;
+  totalMinutes: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+

@@ -366,6 +366,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      technician_day_logs: {
+        Row: {
+          id: string;
+          technician_id: string;
+          date: string;
+          first_mission_start: string;
+          day_end_time: string;
+          total_minutes: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          technician_id: string;
+          date: string;
+          first_mission_start: string;
+          day_end_time: string;
+          total_minutes: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          technician_id?: string;
+          date?: string;
+          first_mission_start?: string;
+          day_end_time?: string;
+          total_minutes?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: Record<never, never>;
