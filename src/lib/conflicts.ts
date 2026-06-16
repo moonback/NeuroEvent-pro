@@ -1,4 +1,5 @@
 import { Mission, Technician, Truck, Equipment, TechnicianUnavailability } from '../types';
+import { checkStockShortages } from './stock';
 
 export interface MissionDraft {
   id?: string | null;
@@ -18,6 +19,10 @@ export function rangesOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date
  * Détecte les conflits d'une mission (brouillon ou existante) contre le reste
  * du planning : double affectation technicien, camion déjà pris, et
  * sur-allocation de matériel sur les créneaux qui se chevauchent.
+ *
+ * Remarque P0-3 : le calcul de stock est délégué à `lib/stock.ts#reservedQuantityFor`
+ * qui filtre désormais sur les statuts de mission actifs (les missions "Terminée"
+ * ne consomment plus de stock).
  */
 export function getDraftConflicts(
   draft: MissionDraft,
@@ -79,21 +84,14 @@ export function getDraftConflicts(
     }
   }
 
-  for (const req of draft.equipments) {
-    if (!req.equipmentId) continue;
-    const def = equipment.find(e => e.id === req.equipmentId);
-    if (!def) continue;
-    const usedElsewhere = overlapping.reduce(
-      (acc, m) => acc + (m.equipments.find(e => e.equipmentId === req.equipmentId)?.quantity || 0),
-      0
-    );
-    const available = def.totalQuantity - usedElsewhere;
-    if (req.quantity > available) {
-      messages.push(
-        `Stock insuffisant pour « ${def.name} » : demandé ${req.quantity}, disponible ${Math.max(available, 0)} (total dépôt : ${def.totalQuantity}).`
-      );
-    }
-  }
+  // Stock — délègue au module dédié (filtre P0-3 sur les missions actives).
+  messages.push(
+    ...checkStockShortages(
+      { id: draft.id, start: draft.start, end: draft.end, equipments: draft.equipments },
+      missions,
+      equipment
+    )
+  );
 
   return messages;
 }
