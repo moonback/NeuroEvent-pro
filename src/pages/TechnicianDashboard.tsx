@@ -17,19 +17,11 @@ import TechnicianUnavailabilities from '../components/TechnicianUnavailabilities
 import Settings from './Settings';
 
 import { toast } from '../store/toast';
-import { Calendar, Sun } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { isSameDay } from 'date-fns';
 
 export default function TechnicianDashboard() {
   const tech = useTechDashboard();
-  // Prochaine mission à faire aujourd'hui (pour la carte "Prochaine mission")
-  const nextTodayMission = tech.activeTab === 'active'
-    ? tech.displayedMissions.find((mission) => mission.status !== 'Terminée' && isSameDay(mission.start, new Date()))
-    : null;
-  // Prochaine mission hors aujourd'hui (on l'affiche aussi, mais après la carte journée)
-  const nextFutureMission = tech.activeTab === 'active'
-    ? tech.displayedMissions.find((mission) => mission.status !== 'Terminée' && !isSameDay(mission.start, new Date()))
-    : null;
 
   // ── Pull-to-refresh (scroll body/window) ────────────────────────────
   // On ne binde pas le `bind()` sur un élément React — la page scrolle
@@ -69,7 +61,6 @@ export default function TechnicianDashboard() {
     ? currentTech.firstName
     : tech.user?.user_metadata?.first_name || '';
 
-  // Missions du technician connecté pour aujourd'hui
   const todayMissions = React.useMemo(
     () =>
       tech.missions
@@ -82,22 +73,12 @@ export default function TechnicianDashboard() {
     [todayMissions]
   );
   const canEndDay = todayMissions.length > 0 && todayPendingMissions.length === 0;
-  const todayStr = new Date().toISOString().slice(0, 10);
   const todayDayLog = tech.dayLogs.find(
-    (d) => d.technicianId === tech.user?.id && isSameDay(d.date, new Date())
+    (d: any) => d.technicianId === tech.user?.id && isSameDay(new Date(d.date), new Date())
   );
   const isDayEnded = !!todayDayLog;
-  // La mission sélectionnée dans le drawer est la dernière mission d'aujourd'hui
-  // On se base sur selectedMission.status (mis à jour immédiatement par setSelectedMission)
-  // et non sur tech.missions (store qui se met à jour plus tard via updateMission)
-  const isLastMissionToday = !!tech.selectedMission
-    && isSameDay(tech.selectedMission.start, new Date())
-    && tech.selectedMission.status === 'Terminée'
-    // Plus aucune mission d'aujourd'hui non-terminée dans le store OU dans selectedMission
-    && todayMissions.filter(m => m.status !== 'Terminée' && m.id !== tech.selectedMission!.id).length === 0;
 
-  // ── Verrouillage : la première mission "En cours" bloque toute navigation.
-  // On la sélectionne automatiquement pour que le drawer soit ouvert.
+  // Missions du technician connecté
   const myMissionsLocal = React.useMemo(
     () =>
       tech.missions
@@ -105,6 +86,8 @@ export default function TechnicianDashboard() {
         .sort((a, b) => a.start.getTime() - b.start.getTime()),
     [tech.missions, tech.user?.id]
   );
+
+  // Verrouillage : la première mission "En cours" bloque toute navigation.
   const lockedMissionResolved = React.useMemo(
     () => myMissionsLocal.find((m) => m.status === 'En cours') ?? null,
     [myMissionsLocal]
@@ -150,133 +133,62 @@ export default function TechnicianDashboard() {
       />
 
       {/* Main Tab Routing */}
-      {nextTodayMission && tech.activeTab === 'active' && (
-        <div className="max-w-md mx-auto px-4 pt-3">
-          <div className="tech-card p-4 mb-3 rounded-3xl overflow-hidden">
-            <div className="flex items-start justify-between gap-3">
+      {tech.activeTab === 'active' && !isLocked ? (
+        <div className="max-w-md mx-auto px-4 pt-2 pb-6">
+          <div
+            className="tech-card p-3 rounded-3xl"
+            style={{
+              background: isDayEnded
+                ? 'rgba(0,229,160,0.06)'
+                : 'rgba(255,255,255,0.025)',
+              border: '1px solid var(--tech-border)',
+            }}
+          >
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.25em] font-black mb-2" style={{ color: 'var(--tech-text-muted)' }}>
-                  Prochaine mission
+                <p
+                  className="text-[10px] uppercase tracking-[0.25em] font-black"
+                  style={{ color: 'var(--tech-text-muted)' }}
+                >
+                  {isDayEnded ? "Aujourd'hui terminé" : 'Travail du jour'}
                 </p>
-                <h2 className="text-base font-black leading-tight" style={{ color: 'var(--tech-text)' }}>
-                  {nextTodayMission.title}
-                </h2>
-                <p className="text-[11px] mt-2 text-[var(--tech-text-secondary)]">
-                  {nextTodayMission.client} · {nextTodayMission.status}
+                <p
+                  className="text-sm font-black mt-0.5"
+                  style={{ color: 'var(--tech-text)' }}
+                >
+                  {isDayEnded
+                    ? 'Journée terminée'
+                    : `${todayPendingMissions.length} mission(s) restante(s)`}
                 </p>
               </div>
-              <div className="flex flex-col gap-2 shrink-0">
+              {!isDayEnded && canEndDay && (
                 <button
-                  onClick={() => tech.openMissionDetails(nextTodayMission)}
-                  className="px-4 py-2 rounded-2xl text-[11px] font-black uppercase tracking-wide transition-all active:scale-95"
+                  onClick={() => {
+                    triggerVibrate('success');
+                    tech.openDayEndModal();
+                  }}
+                  className="px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-wide transition-all active:scale-95"
+                  style={{ background: 'var(--tech-accent)', color: '#000' }}
+                >
+                  Terminer
+                </button>
+              )}
+              {isDayEnded && todayDayLog && (
+                <span
+                  className="text-xs font-black tabular-nums px-2.5 py-2 rounded-2xl"
                   style={{
-                    background: 'rgba(255,255,255,0.08)',
-                    color: 'var(--tech-text)',
-                    border: '1px solid rgba(255,255,255,0.10)',
+                    background: 'rgba(0,229,160,0.12)',
+                    color: 'var(--tech-accent)',
+                    border: '1px solid rgba(0,229,160,0.18)',
                   }}
                 >
-                  Voir
-                </button>
-                {nextTodayMission.status !== 'Terminée' && (
-                  <button
-                    onClick={() => tech.handleStatusChange(nextTodayMission, nextTodayMission.status === 'Planifiée' ? 'En cours' : 'Terminée')}
-                    className="px-4 py-2 rounded-2xl text-[11px] font-black uppercase tracking-wide transition-all active:scale-95"
-                    style={{
-                      background: nextTodayMission.status === 'Planifiée' ? nextTodayMission.color : 'var(--tech-accent)',
-                      color: '#fff',
-                    }}
-                  >
-                    {nextTodayMission.status === 'Planifiée' ? 'Démarrer' : 'Terminer'}
-                  </button>
-                )}
-              </div>
+                  {Math.floor(todayDayLog.totalMinutes / 60)}h{String(todayDayLog.totalMinutes % 60).padStart(2, '0')}
+                </span>
+              )}
             </div>
           </div>
         </div>
-      )}
-
-      {/* Carte "Terminer ma journée" quand toutes les missions du jour sont terminées */}
-      {!nextTodayMission && tech.activeTab === 'active' && canEndDay && !isDayEnded && (
-        <div className="max-w-md mx-auto px-4 pt-3">
-          <div
-            className="tech-card p-4 mb-3 rounded-3xl overflow-hidden"
-            style={{
-              background: 'linear-gradient(180deg, rgba(0,229,160,0.10) 0%, rgba(0,229,160,0.03) 100%)',
-              border: '1px solid rgba(0,229,160,0.12)',
-            }}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
-                  style={{ background: 'rgba(0,229,160,0.12)', border: '1px solid rgba(0,229,160,0.20)' }}
-                >
-                  <Sun className="w-5 h-5" style={{ color: 'var(--tech-accent)' }} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-[0.25em] font-black mb-0.5" style={{ color: 'var(--tech-accent)' }}>
-                    Aucune mission restante
-                  </p>
-                  <h2 className="text-base font-black leading-tight" style={{ color: 'var(--tech-text)' }}>
-                    Terminer ma journée
-                  </h2>
-                  <p className="text-[11px] mt-0.5 text-[var(--tech-text-secondary)]">
-                    Calcul de l&apos;heure de début à la fin.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  triggerVibrate('success');
-                  tech.openDayEndModal();
-                }}
-                className="px-4 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-wide transition-all active:scale-95 shrink-0"
-                style={{
-                  background: 'var(--tech-accent)',
-                  color: '#000',
-                }}
-              >
-                Terminer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Carte "Journée terminée" quand déjà clôturée */}
-      {!nextTodayMission && tech.activeTab === 'active' && isDayEnded && todayDayLog && (
-        <div className="max-w-md mx-auto px-4 pt-3">
-          <div
-            className="tech-card p-4 mb-3 rounded-3xl overflow-hidden"
-            style={{
-              background: 'linear-gradient(180deg, rgba(0,229,160,0.06) 0%, rgba(0,229,160,0.02) 100%)',
-              border: '1px solid rgba(0,229,160,0.08)',
-            }}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(0,229,160,0.08)', border: '1px solid rgba(0,229,160,0.12)' }}
-              >
-                <Sun className="w-5 h-5" style={{ color: 'var(--tech-accent)' }} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-[0.25em] font-black mb-0.5" style={{ color: 'var(--tech-accent)' }}>
-                  Journée terminée
-                </p>
-                <h2 className="text-base font-black leading-tight" style={{ color: 'var(--tech-text)' }}>
-                  {Math.floor(todayDayLog.totalMinutes / 60)}h{String(todayDayLog.totalMinutes % 60).padStart(2, '0')} aujourd&apos;hui
-                </h2>
-                <p className="text-[11px] mt-0.5 text-[var(--tech-text-secondary)]">
-                  {new Date(todayDayLog.firstMissionStart).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                  <span className="mx-1 opacity-40">→</span>
-                  {new Date(todayDayLog.dayEndTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      ) : null}
 
       {tech.activeTab === 'mes_heures' ? (
         <div className="max-w-md mx-auto tech-animate-in pt-5">
@@ -314,43 +226,6 @@ export default function TechnicianDashboard() {
             threshold={60}
             isRefreshing={pullToRefresh.isRefreshing}
           />
-          {/* Segmented picker */}
-          <div className="px-4">
-            <div
-              className="flex p-1 rounded-2xl"
-              style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid var(--tech-border)',
-              }}
-            >
-              {[
-                { id: 'active' as const, label: 'Missions' },
-                { id: 'history' as const, label: 'Historique' },
-              ].map((tab) => {
-                const isActive = tech.activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      triggerVibrate('click');
-                      tech.setActiveTab(tab.id);
-                    }}
-                    className="flex-1 py-1.5 text-[10px] font-black rounded-xl transition-all duration-200"
-                    style={{
-                      background: isActive
-                        ? 'linear-gradient(135deg, rgba(0,229,160,0.12) 0%, rgba(0,229,160,0.06) 100%)'
-                        : 'transparent',
-                      color: isActive ? 'var(--tech-accent)' : 'var(--tech-text-muted)',
-                      border: isActive ? '1px solid rgba(0,229,160,0.15)' : '1px solid transparent',
-                      boxShadow: isActive ? '0 2px 8px rgba(0,229,160,0.08)' : 'none',
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           {/* Filters */}
           <MissionFilters
@@ -465,8 +340,6 @@ export default function TechnicianDashboard() {
           onOpenSignature={() => tech.setSignatureModalOpen(true)}
           handleContentTouchStart={tech.handleContentTouchStart}
           handleContentTouchEnd={tech.handleContentTouchEnd}
-          isLastMissionToday={isLastMissionToday}
-          isDayEnded={isDayEnded}
           onEndDay={() => tech.openDayEndModal()}
         />
       )}
@@ -496,19 +369,7 @@ export default function TechnicianDashboard() {
         />
       )}
 
-      {/* Signature Modal */}
-      {tech.signatureModalOpen && tech.selectedMission && (
-        <SignaturePad
-          missionId={tech.selectedMission.id}
-          onSave={async (url) => {
-            await tech.updateMission(tech.selectedMission!.id, { signatureUrl: url });
-            tech.setSelectedMission({ ...tech.selectedMission!, signatureUrl: url });
-            tech.setSignatureModalOpen(false);
-            toast.success('Signature enregistrée avec succès');
-          }}
-          onClose={() => tech.setSignatureModalOpen(false)}
-        />
-      )}
+      {/* Signature Modal indisponible dans ce build : bloc retiré temporairement */}
     </div>
   );
 }
