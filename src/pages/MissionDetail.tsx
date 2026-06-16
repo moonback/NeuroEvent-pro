@@ -51,7 +51,7 @@ export default function MissionDetail() {
   );
 
   useEffect(() => {
-    if (mission) {
+    if (mission && !Array.isArray(mission.photos)) {
       fetchMissionPhotos(mission.id).catch(() => undefined);
     }
   }, [mission, fetchMissionPhotos]);

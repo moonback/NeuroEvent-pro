@@ -19,22 +19,11 @@ export default defineConfig(() => {
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webp,jpg,jpeg}'],
           maximumFileSizeToCacheInBytes: 5000000,
-          // Cache les appels réseau (ex: Supabase) avec Network-First
-          runtimeCaching: [
-            {
-              urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'supabase-api-cache',
-                expiration: {
-                  maxEntries: 200,
-                  maxAgeSeconds: 60 * 60 * 24, // 24h
-                },
-                networkTimeoutSeconds: 10,
-              },
-            },
-          ],
+          // IMPORTANT: pour éviter des boucles de refetch, on ne met temporairement
+          // PAS en cache les requêtes Supabase.
+          runtimeCaching: [],
         },
+
         manifest: {
           name: 'NeuroEvent Pro',
           short_name: 'NeuroEvent',

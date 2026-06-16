@@ -270,21 +270,30 @@ export const useStore = create<AppState>()(
         };
       }) || [];
 
-      set({ technicians, trucks, equipment, missions, clients, unavailabilities, loading: false });
+      set({ technicians, trucks, equipment, missions, clients, unavailabilities, missionPhotos: [], loading: false });
 
-      // Realtime : un seul canal, et les rafales d'événements sont
-      // regroupées en un unique re-fetch (debounce 400 ms).
-      const channels = supabase.getChannels();
-      const hasChannel = channels.some(c => c.topic === 'realtime:public_db_changes');
+      // Realtime : on s'assure de ne pas créer plusieurs abonnements lors de plusieurs initialize().
+      // NOTE: supabase-js n'expose pas un handle de canal unique, donc on garde un flag local.
+      const anyGlobal = (globalThis as any);
+      anyGlobal.__eventplanner_realtime_initialized ||= false;
 
-      if (!hasChannel) {
-        supabase.channel('public_db_changes')
-          .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-            if (refetchTimer) clearTimeout(refetchTimer);
-            refetchTimer = setTimeout(() => get().initialize(), 400);
-          })
-          .subscribe();
+      if (!anyGlobal.__eventplanner_realtime_initialized) {
+        anyGlobal.__eventplanner_realtime_initialized = true;
+
+        const channels = supabase.getChannels();
+        const hasChannel = channels.some(c => c.topic === 'realtime:public_db_changes');
+
+        // Si un canal existe déjà (hot reload / autre tab), on évite de s'abonner en double.
+        if (!hasChannel) {
+          supabase.channel('public_db_changes')
+            .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+              if (refetchTimer) clearTimeout(refetchTimer);
+              refetchTimer = setTimeout(() => get().initialize(), 400);
+            })
+            .subscribe();
+        }
       }
+
 
     } catch (error) {
       console.error('Error fetching data:', error);
