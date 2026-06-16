@@ -12,22 +12,55 @@
 -- sauf pour les champs explicitement autorisés aux techniciens (statut mission
 -- et pointage `checked` du matériel).
 --
+-- ⚠️ RLS + sub-selects : toute sous-requête inter-table dans une policy doit
+-- passer par une fonction SECURITY DEFINER, sinon PostgREST détecte une
+-- récursion infinie (`infinite recursion detected in policy`). C'est pour
+-- cette raison que les helpers `app_private.is_technician_on_mission` et
+-- `app_private.is_colleague_on_mission` sont déclarés en `security definer`.
+--
 -- Ce script est idempotent : il peut être rejoué sans danger. Il s'appuie
 -- sur `app_private.is_admin()` défini dans la migration 20260610000000.
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
+-- 0. Helpers SECURITY DEFINER — court-circuitent RLS pour les sous-requêtes
+-- ----------------------------------------------------------------------------
+create or replace function app_private.is_technician_on_mission(p_mission_id uuid)
+returns boolean
+language sql stable security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.mission_technicians mt
+    where mt.mission_id = p_mission_id
+      and mt.technician_id = auth.uid()
+  );
+$$;
+grant execute on function app_private.is_technician_on_mission(uuid) to authenticated;
+
+create or replace function app_private.is_colleague_on_mission(p_mission_id uuid)
+returns boolean
+language sql stable security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.mission_technicians mt
+    where mt.mission_id = p_mission_id
+      and mt.technician_id = auth.uid()
+  );
+$$;
+grant execute on function app_private.is_colleague_on_mission(uuid) to authenticated;
+
+-- ----------------------------------------------------------------------------
 -- 1. MISSIONS — SELECT : admin OU technicien affecté via mission_technicians
+--    (via helper SECURITY DEFINER pour éviter la récursion de policy)
 -- ----------------------------------------------------------------------------
 drop policy if exists missions_select on public.missions;
 create policy missions_select on public.missions
   for select to authenticated
   using (
     app_private.is_admin()
-    or exists (
-      select 1 from public.mission_technicians mt
-      where mt.mission_id = missions.id and mt.technician_id = auth.uid()
-    )
+    or app_private.is_technician_on_mission(missions.id)
   );
 
 -- ----------------------------------------------------------------------------
@@ -58,17 +91,11 @@ create policy missions_update on public.missions
   for update to authenticated
   using (
     app_private.is_admin()
-    or exists (
-      select 1 from public.mission_technicians mt
-      where mt.mission_id = missions.id and mt.technician_id = auth.uid()
-    )
+    or app_private.is_technician_on_mission(missions.id)
   )
   with check (
     app_private.is_admin()
-    or exists (
-      select 1 from public.mission_technicians mt
-      where mt.mission_id = missions.id and mt.technician_id = auth.uid()
-    )
+    or app_private.is_technician_on_mission(missions.id)
   );
 
 -- ----------------------------------------------------------------------------
@@ -126,6 +153,7 @@ create trigger missions_protect_fields
 -- ----------------------------------------------------------------------------
 -- 5. MISSION_TECHNICIANS — SELECT : admin OU sa propre ligne
 --    (évite qu'un tech liste les techniciens de TOUTES les missions)
+--    Utilise le helper SECURITY DEFINER créé en section 0.
 -- ----------------------------------------------------------------------------
 drop policy if exists mission_technicians_select on public.mission_technicians;
 create policy mission_technicians_select on public.mission_technicians
@@ -133,11 +161,7 @@ create policy mission_technicians_select on public.mission_technicians
   using (
     app_private.is_admin()
     or technician_id = auth.uid()
-    or exists (
-      select 1 from public.mission_technicians mt2
-      where mt2.mission_id = mission_technicians.mission_id
-        and mt2.technician_id = auth.uid()
-    )
+    or app_private.is_colleague_on_mission(mission_id)
   );
 
 -- INSERT / UPDATE / DELETE : admin only (inchangé, recréé pour idempotence)
@@ -157,11 +181,7 @@ create policy mission_equipments_select on public.mission_equipments
   for select to authenticated
   using (
     app_private.is_admin()
-    or exists (
-      select 1 from public.mission_technicians mt
-      where mt.mission_id = mission_equipments.mission_id
-        and mt.technician_id = auth.uid()
-    )
+    or app_private.is_technician_on_mission(mission_equipments.mission_id)
   );
 
 -- INSERT / DELETE : admin only
@@ -181,19 +201,11 @@ create policy mission_equipments_update on public.mission_equipments
   for update to authenticated
   using (
     app_private.is_admin()
-    or exists (
-      select 1 from public.mission_technicians mt
-      where mt.mission_id = mission_equipments.mission_id
-        and mt.technician_id = auth.uid()
-    )
+    or app_private.is_technician_on_mission(mission_equipments.mission_id)
   )
   with check (
     app_private.is_admin()
-    or exists (
-      select 1 from public.mission_technicians mt
-      where mt.mission_id = mission_equipments.mission_id
-        and mt.technician_id = auth.uid()
-    )
+    or app_private.is_technician_on_mission(mission_equipments.mission_id)
   );
 
 -- Trigger durcissant l'UPDATE par un non-admin sur mission_equipments :
