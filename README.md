@@ -1,496 +1,233 @@
-# 🎯 NeuroEventPlanning Pro
+# NeuroEvent — Plateforme de gestion événementielle
 
-> **Plateforme professionnelle de gestion d'événements** pour orchestrer vos missions, techniciens, véhicules et matériel en temps réel.
-
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://reactjs.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green.svg)](https://supabase.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.1-38bdf8.svg)](https://tailwindcss.com/)
+> **Application web moderne** pour les agences événementielles qui gèrent des interventions terrain : livraisons, montages, démontages. Elle orchestre missions, techniciens, véhicules et matériel en temps réel.
 
 ---
 
-## 📋 Table des Matières
+## Pitch
 
-- [À Propos](#-à-propos)
-- [Fonctionnalités](#-fonctionnalités)
-- [Stack Technique](#-stack-technique)
-- [Installation](#-installation)
-- [Configuration](#-configuration)
-- [Utilisation](#-utilisation)
-- [Architecture](#-architecture)
-- [Roadmap](#-roadmap)
-- [Sécurité](#-sécurité)
-- [Contribution](#-contribution)
-- [Licence](#-licence)
+- **Pour qui** : agences événementielles avec équipes terrain (techniciens, chauffeurs) et administrateurs.
+- **Problème résolu** : coordination complexe entre missions, double-affectation de techniciens/camions, suivi du matériel, pointage terrain.
+- **Solution** : un portail Admin (planning FullCalendar, CRUD complet, stats Recharts) + un portail Technicien mobile-first (dashboard, scan QR, pointage matériel, signature tactile).
+- **Stack** : React 19 + TypeScript strict + Vite + Tailwind CSS v4 + Zustand + Supabase (PostgreSQL, Auth, Realtime, Storage) + PWA.
+- **Valeur ajoutée** : synchronisation temps-réel entre tous les utilisateurs, mode offline pour le terrain, détection de conflits logistiques, PWA installable.
 
 ---
 
-## 🎬 À Propos
+## Badges
 
-**NeuroEventPlanning Pro** est une application web moderne conçue pour les **agences événementielles** qui gèrent des interventions sur le terrain : livraisons, montages, démontages d'événements.
-
-### Problématique résolue
-
-Les agences événementielles jonglent avec :
-- Des missions complexes nécessitant coordination entre plusieurs techniciens
-- Une flotte de véhicules à optimiser
-- Un parc matériel technique (sonorisation, éclairage, scène, arcade, etc.) à suivre
-- Des risques de conflits logistiques (double réservation, matériel manquant)
-
-**EventFlow** centralise tout cela dans une interface intuitive avec synchronisation temps-réel.
-
-### Caractéristiques principales
-
-✅ **Planning interactif** avec calendrier drag & drop  
-✅ **Détection automatique** des conflits logistiques  
-✅ **Interface mobile optimisée** pour les techniciens sur le terrain  
-✅ **Scan QR Code** pour le pointage matériel  
-✅ **Synchronisation temps-réel** entre tous les utilisateurs  
-✅ **Gestion de rôles** (Admin / Technicien) avec RLS Supabase  
-✅ **Fiches de mission** imprimables avec signature client  
-✅ **Statistiques & Analytics** pour le suivi d'activité  
+| Badge | Valeur |
+|-------|--------|
+| **Build** | `npm run build` — Vite 6 + TypeScript 5.8 |
+| **Licence** | MIT |
+| **Version** | `0.0.0` |
 
 ---
 
-## ✨ Fonctionnalités
+## Stack technique
 
-### 🖥️ Interface Administrateur
-
-#### Planning & Missions
-- **Calendrier interactif** (FullCalendar) : vues mois, semaine, jour
-- **Création de missions** par clic ou drag & drop
-- **Types de missions** : Livraison, Montage, Démontage, Événement complet
-- **Affectation** de techniciens, véhicules et matériel par mission
-- **Détection de conflits** en temps réel :
-  - Technicien déjà affecté sur une autre mission
-  - Camion réservé sur un créneau identique
-  - Matériel insuffisant (stock épuisé)
-- **Codes couleur** personnalisables par mission
-- **Statuts** : Planifiée, En cours, Terminée
-
-#### Gestion du Parc
-- **Techniciens** : prénom, nom, spécialité, couleur d'identification
-- **Véhicules** : nom, immatriculation, volume (m³)
-- **Matériel** : nom, catégorie (Arcade, Sonorisation, Éclairage, Scène, Décoration, Autre), quantité totale
-- **Clients** : fiche complète (coordonnées, adresse, notes)
-
-#### Outils
-- **QR Codes** : génération et impression d'étiquettes multi-colonnes pour le matériel
-- **Fiches de mission** : récapitulatif imprimable avec emplacement signature client
-- **Statistiques** : tableaux de bord analytiques (Recharts)
-  - Nombre de missions par période
-  - Top techniciens
-  - Taux d'utilisation du matériel
-- **Gestion des utilisateurs** : création de comptes, attribution de rôles
-
-### 📱 Interface Technicien (Mobile-First)
-
-#### Dashboard Personnel
-- **Mes missions** : vue filtrée (à venir / en cours / terminées)
-- **Détails mission** :
-  - Date, heure, adresse (lien Google Maps)
-  - Collègues affectés
-  - Camion assigné
-  - Liste du matériel requis
-- **Actions** :
-  - Démarrer la mission
-  - Terminer la mission
-  - Pointer le matériel (check-list interactive)
-
-#### Scan QR Code
-- **Scanner embarqué** (html5-qrcode)
-- **Pointage instantané** du matériel scanné
-- **Feedback visuel** : matériel coché persiste en base
-- **Mise à jour optimiste** : réactivité immédiate même en cas de latence réseau
-
-#### Profil & Paramètres
-- Modification prénom / nom
-- Déconnexion
+| Technologie | Rôle | Version détectée |
+|-------------|------|------------------|
+| React | UI framework | 19.0.1 |
+| TypeScript | Typage statique | 5.8.2 |
+| Vite | Build tool / dev server | 6.2.3 |
+| Tailwind CSS | Styles | 4.1.14 |
+| Zustand | Gestion d'état | 5.0.14 |
+| Supabase | Backend-as-a-Service (PostgreSQL, Auth, Realtime, Storage) | — |
+| React Router | Routage | 7.17.0 |
+| FullCalendar | Calendrier interactif | 6.1.20 |
+| Recharts | Graphiques / stats | 3.8.1 |
+| html5-qrcode | Scan QR code | 2.3.8 |
+| react-qr-code | Génération QR code | 2.2.0 |
+| react-signature-canvas | Signature tactile | 1.1.0-alpha.2 |
+| Lucide React | Icônes | 0.546.0 |
+| date-fns | Manipulation de dates | 4.4.0 |
+| vite-plugin-pwa | Progressive Web App | 1.3.0 |
 
 ---
 
-## 🛠️ Stack Technique
+## Fonctionnalités principales
 
-| Domaine | Technologies |
-|---------|-------------|
-| **Frontend** | React 19, TypeScript 5.8, Vite 6 |
-| **State Management** | Zustand 5 (store unique, synchronisation Realtime) |
-| **Backend & BDD** | Supabase (PostgreSQL, Auth, Realtime, Storage) |
-| **Authentification** | Supabase Auth (email/password, RLS natif) |
-| **UI/UX** | Tailwind CSS v4 (thème custom "Professional Polish") |
-| **Calendrier** | FullCalendar 6 (Daygrid, Timegrid, Resource Timeline) |
-| **Graphiques** | Recharts 3 |
-| **QR Code** | html5-qrcode (scan), react-qr-code (génération) |
-| **Icônes** | Lucide React |
-| **Routage** | React Router 7 |
-| **Utilitaires** | date-fns 4, clsx, tailwind-merge |
+### Interface Administrateur
+
+- **Planning interactif** — Calendrier FullCalendar (mois / semaine / jour / resource timeline) avec vue des missions, camions et compétences requises.
+- **Kanban** — Vue en colonnes par statut (Planifiée / En cours / Terminée).
+- **Gestion des missions** — CRUD complet avec affectation de techniciens, véhicules, matériel ; types : Livraison, Montage, Démontage, Événement complet.
+- **Gestion des techniciens** — Prénom, nom, spécialité, couleur, compétences, permis de conduire, avatar.
+- **Gestion des indisponibilités** — Congés et indisponibilités par technicien, détectés lors de l'affectation.
+- **Gestion des véhicules** — Camions avec nom, immatriculation, volume (m³).
+- **Gestion du matériel** — Équipements par catégorie (Arcade, Sonorisation, Éclairage, Scène, Décoration, Autre), import CSV.
+- **Gestion des clients** — Fiches complètes avec coordonnées et notes.
+- **Gestion des utilisateurs** — Création de comptes, attribution du rôle Admin / Technicien.
+- **Détection de conflits** — Avertissement si un technicien ou camion est déjà affecté sur le créneau, ou si le stock matériel est insuffisant.
+- **Fiches de mission** — Récapitulatifs imprimables avec section signature client.
+- **QR Codes** — Génération et impression multi-étiquettes pour le matériel.
+- **Statistiques** — Tableau de bord analytique (missions par période, top techniciens, taux d'utilisation du matériel).
+- **Gestion des heures techniciens** — Suivi des heures par technicien admin (time logs + day logs).
+
+### Interface Technicien (mobile-first)
+
+- **Dashboard personnel** — Liste des missions assignées (à venir / en cours / terminées).
+- **Détail mission** — Adresse avec lien Google Maps, collègues assignés, camion, check-list du matériel.
+- **Scan QR embarqué** — Pointage instantané du matériel scanné via `html5-qrcode`.
+- **Signature tactile** — Canvas de signature pour le bon de livraison, verrouillé après validation.
+- **Photos terrain** — Upload de photos avant/après avec compression côté client et stockage dans Supabase Storage.
+- **Profil et paramètres** — Modification du nom, avatar, déconnexion.
 
 ---
 
-## 🚀 Installation
+## Prérequis
 
-### Prérequis
+| Prérequis | Version minimale |
+|-----------|-----------------|
+| Node.js | 18+ |
+| npm | 9+ |
+| Compte Supabase | Cloud ou Local |
 
-- **Node.js** 18+ et **npm** (ou yarn/pnpm)
-- Un compte **Supabase** (gratuit sur [supabase.com](https://supabase.com))
+> ⚠️ À compléter : ajouter les comptes de service tiers requis (Gemini API key si utilisé dans le projet).
 
-### 1. Cloner le dépôt
+---
+
+## Installation
 
 ```bash
-git clone https://github.com/votre-username/eventplanner-pro.git
+# 1. Cloner le dépôt
+git clone https://github.com/<username>/eventplanner-pro.git
 cd eventplanner-pro
-```
 
-### 2. Installer les dépendances
-
-```bash
+# 2. Installer les dépendances
 npm install
-```
 
-### 3. Créer le fichier `.env.local`
-
-Copiez `.env.example` et renseignez vos identifiants Supabase :
-
-```bash
+# 3. Créer le fichier .env.local
 cp .env.example .env.local
+
+# 4. Renseigner les variables Supabase
+# Supabase Dashboard → Settings → API → Récupérer les valeurs
 ```
-
-Éditez `.env.local` :
-
-```env
-VITE_SUPABASE_URL=https://votre-projet.supabase.co
-VITE_SUPABASE_ANON_KEY=votre_cle_publique_anon
-```
-
-> **Note** : ces clés sont disponibles dans **Supabase Dashboard → Settings → API**.
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
-### Base de données Supabase
+Toutes les variables d'environnement (fichier `.env.local`) :
 
-#### 1. Créer le schéma initial
+| Variable | Description | Exemple | Obligatoire |
+|----------|-------------|---------|-------------|
+| `VITE_SUPABASE_URL` | URL publique du projet Supabase | `https://xyz.supabase.co` | ✅ |
+| `VITE_SUPABASE_ANON_KEY` | Clé publique anon | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` | ✅ |
+| `GEMINI_API_KEY` | Clé API Gemini (AI Studio) | `AIza...` | ⬜ (si utilisé) |
+| `APP_URL` | URL de déploiement (OAuth callbacks) | `https://monapp.vercel.app` | ⬜ |
+| `DISABLE_HMR` | Désactiver le Hot Module Replacement (AI Studio) | `true` | ⬜ |
 
-Ouvrez **SQL Editor** dans votre projet Supabase et exécutez :
-
-```bash
-supabase_schema.sql
-```
-
-Puis la migration de sécurité complète :
-
-```bash
-supabase/migrations/20260610000000_audit_security_and_features.sql
-```
-
-> Ce script est **idempotent** (peut être rejoué sans danger).
-
-#### 2. Créer votre premier compte Admin
-
-Après exécution de la migration, promouvoir un utilisateur :
-
-```sql
-update public.profiles set role = 'Admin' where email = 'votre@email.com';
-```
-
-#### 3. Activer Realtime
-
-Dans **Database → Replication**, activez les tables :
-
-- `profiles`
-- `technicians`
-- `trucks`
-- `equipments`
-- `clients`
-- `missions`
-- `mission_technicians`
-- `mission_equipments`
-
-### Variables d'environnement
-
-| Variable | Description | Exemple |
-|----------|-------------|---------|
-| `VITE_SUPABASE_URL` | URL publique du projet Supabase | `https://xyz.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | Clé publique (anon) | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
+> ⚠️ À compléter : documenter toute variable `VITE_*` ou secret ajouté après la création de `.env.example`.
 
 ---
 
-## 💻 Utilisation
-
-### Démarrage en développement
+## Lancement
 
 ```bash
+# Développement (http://localhost:3000)
 npm run dev
-```
 
-Ouvre l'application sur **http://localhost:3000**
-
-### Build de production
-
-```bash
+# Build de production → /dist
 npm run build
-```
 
-Les fichiers optimisés sont générés dans `/dist`.
-
-### Aperçu de production
-
-```bash
+# Aperçu production
 npm run preview
-```
 
-### Lint TypeScript
-
-```bash
+# Vérification TypeScript (tsc --noEmit)
 npm run lint
 ```
 
 ---
 
-## 📂 Architecture
-
-### Structure des dossiers
+## Structure du projet
 
 ```
 eventplanner-pro/
 ├── src/
-│   ├── components/         # Composants UI
-│   │   ├── layout/         # Layout principal (Admin)
-│   │   ├── ui/             # Composants réutilisables (Modal, Toaster)
+│   ├── components/
+│   │   ├── layout/          # Layout principal Admin (sidebar, header)
+│   │   ├── ui/              # Composants réutilisables (Modal, Toaster, Avatar, etc.)
 │   │   ├── ClientModal.tsx
+│   │   ├── CSVImportModal.tsx
 │   │   ├── EquipmentModal.tsx
+│   │   ├── EquipmentTable.tsx
 │   │   ├── MissionModal.tsx
 │   │   ├── QRCodePrintModal.tsx
 │   │   ├── QRScannerModal.tsx
+│   │   ├── SignaturePad.tsx
+│   │   ├── TechnicianHoursAdmin.tsx
 │   │   ├── TechnicianModal.tsx
+│   │   ├── TechnicianMyHours.tsx
+│   │   ├── TechnicianUnavailabilities.tsx
+│   │   ├── TimeLogPanel.tsx
 │   │   └── TruckModal.tsx
-│   ├── hooks/              # Hooks custom (useMediaQuery)
-│   ├── lib/                # Utilitaires
-│   │   ├── supabase.ts     # Client Supabase typé
-│   │   ├── conflicts.ts    # Détection conflits logistiques
-│   │   └── utils.ts        # Helpers (cn)
-│   ├── pages/              # Pages principales
-│   │   ├── Auth.tsx        # Authentification
-│   │   ├── Planning.tsx    # Calendrier Admin
-│   │   ├── TechnicianDashboard.tsx  # Dashboard mobile Technicien
-│   │   ├── Technicians.tsx
-│   │   ├── Trucks.tsx
-│   │   ├── Equipment.tsx
-│   │   ├── Clients.tsx
-│   │   ├── Users.tsx
-│   │   ├── MissionBriefs.tsx
-│   │   ├── Stats.tsx
-│   │   └── Settings.tsx
-│   ├── store/              # État global (Zustand)
-│   │   ├── index.ts        # Store principal (missions, techniciens, etc.)
-│   │   ├── auth.ts         # Authentification (session, rôle)
-│   │   └── toast.ts        # Notifications
-│   ├── types/              # Types TypeScript
-│   │   ├── index.ts        # Types métier (Mission, Technician, etc.)
-│   │   └── database.ts     # Types base Supabase
-│   ├── App.tsx             # Routeur principal (RBAC)
-│   ├── main.tsx            # Point d'entrée
-│   └── index.css           # Styles Tailwind
+│   ├── hooks/
+│   │   ├── useFullscreen.ts
+│   │   ├── useMediaQuery.ts
+│   │   └── useSwipeGestures.ts
+│   ├── lib/
+│   │   ├── avatar.ts        # Génération avatar (initiales / Gravatar)
+│   │   ├── conflicts.ts     # Détection de conflits logistiques
+│   │   ├── constants.ts     # Catalogue des compétences (SKILL_CATALOG)
+│   │   ├── supabase.ts     # Client Supabase typé Database
+│   │   └── utils.ts         # Helpers (cn via clsx)
+│   ├── pages/
+│   │   ├── Auth.tsx                 # Login / Inscription
+│   │   ├── Clients.tsx              # Gestion clients
+│   │   ├── Disponibilites.tsx       # Gestion indisponibilités
+│   │   ├── Equipment.tsx             # Gestion matériel
+│   │   ├── Kanban.tsx               # Vue kanban missions
+│   │   ├── MissionBriefs.tsx       # Fiches de mission imprimables
+│   │   ├── MissionDetail.tsx        # Détail d'une mission
+│   │   ├── MissionList.tsx          # Liste des missions
+│   │   ├── Planning.tsx             # Calendrier FullCalendar
+│   │   ├── Settings.tsx             # Paramètres / Profil
+│   │   ├── Stats.tsx                # Tableau de bord analytique
+│   │   ├── TechnicianDashboard.tsx # Dashboard mobile Technician
+│   │   ├── TechnicianHours.tsx      # Suivi des heures Technician
+│   │   ├── Technicians.tsx          # Gestion techniciens
+│   │   ├── Trucks.tsx               # Gestion véhicules
+│   │   └── Users.tsx                # Gestion utilisateurs
+│   ├── store/
+│   │   ├── index.ts          # Store Zustand principal (missions, techs, trucks, etc.)
+│   │   ├── auth.ts           # Session, résolution du rôle serveur
+│   │   └── toast.ts          # Notifications toast
+│   ├── types/
+│   │   ├── index.ts          # Types métier (Mission, Technician, etc.)
+│   │   └── database.ts       # Types ligne Supabase (Database public.Tables)
+│   ├── App.tsx               # Routeur + RBAC (Admin vs Technicien)
+│   └── main.tsx              # Point d'entrée React
 ├── supabase/
-│   └── migrations/         # Migrations SQL
-├── .env.example            # Template variables d'environnement
+│   └── migrations/           # Migrations SQL (sécurité, nouvelles colonnes, triggers)
+│       ├── 20260610000000_audit_security_and_features.sql
+│       ├── 20260611115500_add_technician_skills_and_license.sql
+│       ├── 20260611122200_add_mission_time_logs.sql
+│       ├── 20260611130000_add_mission_photos.sql
+│       ├── 20260616130000_add_profile_phone_and_admin_preferences.sql
+│       ├── 20260616140000_add_avatars_bucket_and_avatar_url.sql
+│       ├── 20260616150000_add_avatar_url_to_technicians.sql
+│       └── 20260617_technician_day_logs.sql
+├── .env.example              # Template des variables d'environnement
+├── .env.local                # ⚠️ Ne pas commiter (gitignore)
 ├── package.json
 ├── tsconfig.json
-├── vite.config.ts
+├── vite.config.ts            # Vite + Tailwind v4 + PWA
+├── vercel.json               # Rewrites SPA pour Vercel
 └── README.md
 ```
 
-### Flux de données
+---
 
-```
-┌─────────────┐
-│   Supabase  │  (PostgreSQL + Realtime)
-└──────┬──────┘
-       │
-       │ WebSocket (Realtime)
-       │
-┌──────▼──────┐
-│   Zustand   │  (Store unique, debounce 400ms)
-└──────┬──────┘
-       │
-┌──────▼──────┐
-│  React 19   │  (UI Components)
-└─────────────┘
-```
+## Contribuer
 
-- **Mutations** : `store.addMission()` → INSERT Supabase → `get().initialize()`
-- **Synchronisation** : événement Realtime → debounce → `initialize()` (re-fetch)
-- **Optimistic UI** : `toggleEquipmentCheck` met à jour le store immédiatement, puis appelle Supabase
-
-### Modèle de données (ERD simplifié)
-
-```
-profiles (Auth)
-   ├─ id (UUID, ref auth.users)
-   ├─ email
-   ├─ first_name, last_name
-   └─ role (Admin / Technicien)
-
-technicians
-   ├─ id (UUID)
-   ├─ first_name, last_name
-   ├─ specialty
-   └─ color
-
-trucks
-   ├─ id (UUID)
-   ├─ name, plate
-   └─ volume (numeric)
-
-equipments
-   ├─ id (UUID)
-   ├─ name
-   ├─ category (enum)
-   └─ total_quantity (int)
-
-clients
-   ├─ id (UUID)
-   ├─ name
-   └─ contact_name, email, phone, address, notes
-
-missions
-   ├─ id (UUID)
-   ├─ title, type (enum), status (enum)
-   ├─ client (text), client_id (FK clients)
-   ├─ address
-   ├─ start_date, end_date
-   ├─ truck_id (FK trucks)
-   └─ color
-
-mission_technicians (jointure)
-   ├─ mission_id (FK missions)
-   └─ technician_id (FK technicians)
-
-mission_equipments (jointure)
-   ├─ mission_id (FK missions)
-   ├─ equipment_id (FK equipments)
-   ├─ quantity (int)
-   └─ checked (bool, pointage technicien)
-```
+Voir [CONTRIBUTING.md](CONTRIBUTING.md) pour le guide complet : workflow Git, standards de code, processus de review.
 
 ---
 
-## 🔮 Roadmap
+## Licence
 
-Voir **[ROADMAP.md](ROADMAP.md)** pour le backlog complet priorisé.
+MIT
 
-### 🔴 P0 — Fiabilité (en cours)
-
-- ✅ Supprimer les `any` du store (100% typé)
-- 🔄 Normaliser le stock matériel (disponibilité réelle vs réservé)
-- 🔄 Remplacer le re-fetch global par des mutations ciblées
-- 🔄 Durcir les politiques RLS Supabase
-
-### 🟠 P1 — Terrain (forte valeur métier)
-
-- 🎯 **Mode PWA / Offline-first** (cache missions + synchro différée)
-- 🎯 **Signature électronique tactile** (canvas pour bon de livraison)
-- 🎯 **Cartographie & GPS** (lien Maps, calcul trajet)
-- 🎯 **Suivi des pannes** (statut maintenance + upload photo)
-- 🎯 **Glisser-déposer enrichi** (drop zones visuelles)
-
-### 🟡 P2 — Confort & Communication
-
-- Notifications push & mini-chat de mission
-- Mode sombre (Tailwind dark:)
-- Accessibilité (WAI-ARIA, Radix UI)
-- Recherche & filtres globaux
-- Notifications de conflit proactives
-
-### 🟢 P3 — Croissance
-
-- Multi-agences (SaaS multi-tenant)
-- Exports comptables / facturation
-- Gestion disponibilités techniciens (congés, compétences)
-- Historique & journal d'audit
-- Rapports planifiés (Edge Functions + cron)
-
----
-
-## 🔒 Sécurité
-
-### Row-Level Security (RLS)
-
-Toutes les tables sont protégées par des politiques PostgreSQL RLS :
-
-| Table | Lecture | Écriture |
-|-------|---------|----------|
-| **profiles** | Soi-même ou Admin | Soi-même ou Admin (rôle protégé par trigger) |
-| **missions** | Tous | Admin (création/suppression), Technicien affecté (update statut) |
-| **mission_equipments** | Tous | Admin (ajout/suppression), Technicien affecté (pointage `checked`) |
-| **technicians, trucks, equipments, clients** | Tous | Admin uniquement |
-
-### Trigger anti auto-promotion
-
-Un trigger `profiles_protect_role` empêche un utilisateur de se promouvoir Admin lui-même.
-
-### Authentification
-
-- Supabase Auth (email/password)
-- Session JWT stockée côté client
-- Résolution du rôle **serveur** (table `profiles`, pas métadonnées client modifiables)
-
-### Bonnes pratiques
-
-- **Jamais de secrets côté client** : seules les clés `anon` publiques sont exposées
-- **Variables d'environnement** : `.env.local` gitignore
-- **HTTPS obligatoire** en production (géré par Supabase/Vercel)
-
----
-
-## 🤝 Contribution
-
-Les contributions sont les bienvenues !
-
-### Workflow
-
-1. **Fork** le dépôt
-2. Créer une branche feature : `git checkout -b feature/ma-feature`
-3. Commit : `git commit -m 'feat: ajout signature électronique'`
-4. Push : `git push origin feature/ma-feature`
-5. Ouvrir une **Pull Request**
-
-### Standards
-
-- **TypeScript strict** : pas de `any` (sauf exceptions documentées)
-- **Lint** : `npm run lint` doit passer
-- **Commits** : convention [Conventional Commits](https://www.conventionalcommits.org/)
-- **Tests** : à venir (Vitest + Playwright)
-
----
-
-## 📄 Licence
-
-**Apache 2.0** — Voir [LICENSE](LICENSE) pour plus de détails.
-
----
-
-## 📞 Support
-
-- 📧 Email : support@eventflow.app (fictif)
-- 🐛 Issues : [GitHub Issues](https://github.com/votre-username/eventplanner-pro/issues)
-- 📖 Documentation complète : [Wiki](https://github.com/votre-username/eventplanner-pro/wiki) (à venir)
-
----
-
-## 🎉 Remerciements
-
-Projet développé avec ❤️ pour les professionnels de l'événementiel.
-
-Technologies open-source utilisées :
-- [React](https://reactjs.org/)
-- [Supabase](https://supabase.com/)
-- [FullCalendar](https://fullcalendar.io/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Recharts](https://recharts.org/)
-- [Lucide Icons](https://lucide.dev/)
-
----
-
-**NeuroEventPlanning Pro** — *Orchestrez vos événements en toute sérénité* 🚀
+> ⚠️ À compléter : le fichier `LICENSE` n'a pas été détecté dans le dépôt. Créer un fichier `LICENSE` contenant le texte de la licence MIT si nécessaire.
