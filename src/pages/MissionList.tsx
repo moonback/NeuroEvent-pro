@@ -122,8 +122,24 @@ export default function MissionList() {
         const client = pick(clients);
         const street = pick(streets);
         const city = pick(cities);
-        const deliveryDate = new Date(year, month, currentDay, startHour - 2, startMinute);
-        const pickupDate = new Date(year, month, currentDay, startHour + durationHours, startMinute);
+
+        // Livraison : aléatoire entre J-1 05h et J start-1h (pertinent pour l'IDF)
+        const deliveryOffsetDays = Math.random() < 0.7 ? 0 : -1; // 70% même jour, 30% veille
+        const deliveryDay = currentDay + deliveryOffsetDays;
+        const deliveryHour = deliveryOffsetDays === 0
+          ? Math.max(5, startHour - Math.floor(Math.random() * 3) - 1)
+          : pick([17, 18, 19, 20, 21, 22]);
+        const deliveryMinute = pick(startMinutes);
+        const deliveryDate = new Date(year, month, deliveryDay, deliveryHour, deliveryMinute);
+
+        // Reprise : aléatoire entre J end+1h et J+1 22h
+        const pickupOffsetDays = Math.random() < 0.6 ? 0 : 1; // 60% même jour, 40% lendemain
+        const pickupDay = currentDay + pickupOffsetDays;
+        const pickupHour = pickupOffsetDays === 0
+          ? Math.min(23, startHour + durationHours + Math.floor(Math.random() * 3) + 1)
+          : pick([8, 9, 10, 11, 12, 13, 14]);
+        const pickupMinute = pick(startMinutes);
+        const pickupDate = new Date(year, month, pickupDay, pickupHour, pickupMinute);
 
         generated.push({
           title: `${pick(titles)} ${pick(suffixes)} #${created + 1}`,
@@ -335,7 +351,7 @@ export default function MissionList() {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-10 text-center text-sm text-[#64748b]">Aucune mission correspondant aux critères.</td>
+                  <td colSpan={11} className="px-4 py-10 text-center text-sm text-[#64748b]">Aucune mission correspondant aux critères.</td>
                 </tr>
               ) : (
                 filtered.map((mission) => {
