@@ -71,10 +71,9 @@ export default function MissionBriefs() {
       return matchSearch && matchStatus;
     })
     .sort((a, b) => b.start.getTime() - a.start.getTime());
-
-  const selectedMission = missions.find(m => m.id === selectedMissionId);
-
-  // Quick status change directly from the brief
+   
+   
+    // Quick status change directly from the brief
   const handleStatusChange = async (newStatus: 'Planifi\u00e9e' | 'En cours' | 'Termin\u00e9e') => {
     if (!selectedMission || selectedMission.status === newStatus) return;
     await updateMission(selectedMission.id, { status: newStatus });
