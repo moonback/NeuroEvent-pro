@@ -1,0 +1,321 @@
+
+<style>
+  .section { margin-bottom: 2rem; }
+  .score-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 1rem 0; }
+  .score-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.85rem 1rem; text-align: center; }
+  .score-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 6px; }
+  .score-value { font-size: 22px; font-weight: 500; }
+  .score-crit { color: #A32D2D; }
+  .score-warn { color: #BA7517; }
+  .score-ok   { color: #3B6D11; }
+  .score-mid  { color: #185FA5; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+  .badge-crit { background: var(--color-background-danger); color: var(--color-text-danger); }
+  .badge-high { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .badge-med  { background: var(--color-background-info); color: var(--color-text-info); }
+  .badge-low  { background: var(--color-background-secondary); color: var(--color-text-secondary); }
+  .issue-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .issue-row:last-child { border-bottom: none; }
+  .issue-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 2px; }
+  .issue-desc  { font-size: 13px; color: var(--color-text-secondary); line-height: 1.5; }
+  .phase-block { border-left: 3px solid; padding: 10px 0 10px 14px; margin-bottom: 14px; }
+  .phase-p0 { border-color: #E24B4A; }
+  .phase-p1 { border-color: #EF9F27; }
+  .phase-p2 { border-color: #378ADD; }
+  .phase-p3 { border-color: #1D9E75; }
+  .phase-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+  .phase-item { font-size: 13px; color: var(--color-text-secondary); line-height: 1.8; }
+  .phase-item::before { content: "→ "; color: var(--color-text-tertiary); }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .tab { font-size: 13px; padding: 5px 12px; border-radius: var(--border-radius-md); background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); cursor: pointer; color: var(--color-text-secondary); }
+  .tab.active { background: var(--color-background-primary); border-color: var(--color-border-primary); color: var(--color-text-primary); font-weight: 500; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .meter-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .meter-label { font-size: 13px; color: var(--color-text-secondary); width: 150px; flex-shrink: 0; }
+  .meter-bar { flex: 1; height: 7px; background: var(--color-border-tertiary); border-radius: 4px; overflow: hidden; }
+  .meter-fill { height: 100%; border-radius: 4px; }
+  .meter-val { font-size: 13px; font-weight: 500; width: 36px; text-align: right; }
+  .global-score { text-align: center; padding: 2rem 0 1.5rem; }
+  .global-num { font-size: 64px; font-weight: 500; line-height: 1; color: var(--color-text-primary); }
+  .global-sub { font-size: 14px; color: var(--color-text-secondary); margin-top: 6px; }
+  .verdict { display: inline-block; margin-top: 14px; padding: 6px 20px; border-radius: var(--border-radius-lg); background: var(--color-background-warning); color: var(--color-text-warning); font-size: 14px; font-weight: 500; }
+  h2.sec { font-size: 16px; font-weight: 500; margin: 0 0 12px; color: var(--color-text-primary); border-bottom: 0.5px solid var(--color-border-tertiary); padding-bottom: 8px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 520px) { .two-col { grid-template-columns: 1fr; } .meter-label { width: 120px; } }
+</style>
+
+<h2 class="sr-only">Tableau de bord d'audit technique — Plateforme NeuroEvent (Juin 2026)</h2>
+
+<div class="global-score">
+  <div class="global-num">57<span style="font-size:32px;color:var(--color-text-secondary)">/100</span></div>
+  <div class="global-sub">Score global d'audit technique</div>
+  <div class="verdict">⚠ MVP fonctionnel — non prêt pour la production</div>
+</div>
+
+<div class="score-grid">
+  <div class="score-card"><div class="score-label">Architecture</div><div class="score-value score-warn">5/10</div></div>
+  <div class="score-card"><div class="score-label">Sécurité</div><div class="score-value score-crit">3/10</div></div>
+  <div class="score-card"><div class="score-label">Performances</div><div class="score-value score-warn">5/10</div></div>
+  <div class="score-card"><div class="score-label">UX</div><div class="score-value score-ok">7/10</div></div>
+  <div class="score-card"><div class="score-label">UI</div><div class="score-value score-mid">6/10</div></div>
+  <div class="score-card"><div class="score-label">Qualité code</div><div class="score-value score-warn">4/10</div></div>
+  <div class="score-card"><div class="score-label">Évolutivité</div><div class="score-value score-warn">4/10</div></div>
+  <div class="score-card"><div class="score-label">Maintenabilité</div><div class="score-value score-warn">4/10</div></div>
+</div>
+
+<div class="tabs" style="margin-top:2rem">
+  <div class="tab active" onclick="switchTab('vulns')">Vulnérabilités</div>
+  <div class="tab" onclick="switchTab('code')">Qualité code</div>
+  <div class="tab" onclick="switchTab('perf')">Performances</div>
+  <div class="tab" onclick="switchTab('roadmap')">Roadmap</div>
+  <div class="tab" onclick="switchTab('scalability')">Scalabilité</div>
+</div>
+
+<div id="vulns" class="panel active section">
+  <h2 class="sec">Problèmes de sécurité identifiés</h2>
+  <div class="issue-row">
+    <span class="badge badge-crit">Critique</span>
+    <div>
+      <div class="issue-title">Buckets Storage publics (signatures & photos)</div>
+      <div class="issue-desc">Toute URL expose des documents contractuels confidentiels sans authentification. Risque RGPD immédiat. Solution : URLs signées à durée limitée via Supabase Storage.</div>
+    </div>
+  </div>
+  <div class="issue-row">
+    <span class="badge badge-crit">Critique</span>
+    <div>
+      <div class="issue-title">Fallback user_metadata pour la résolution des rôles</div>
+      <div class="issue-desc">Les données user_metadata sont modifiables côté client. Un attaquant peut s'auto-promouvoir administrateur. Résolution exclusive via la table <code>profiles</code> côté serveur obligatoire.</div>
+    </div>
+  </div>
+  <div class="issue-row">
+    <span class="badge badge-crit">Critique</span>
+    <div>
+      <div class="issue-title">Politiques RLS configurées à true (accès total)</div>
+      <div class="issue-desc">Absence de filtrage par user_id : un technicien peut lire toutes les missions. Chaque politique doit être filtrée par l'identité authentifiée.</div>
+    </div>
+  </div>
+  <div class="issue-row">
+    <span class="badge badge-high">Élevé</span>
+    <div>
+      <div class="issue-title">JWT stocké dans localStorage (exposition XSS)</div>
+      <div class="issue-desc">Un script injecté peut exfiltrer le token de session. Migration vers des cookies HttpOnly + SameSite=Strict recommandée.</div>
+    </div>
+  </div>
+  <div class="issue-row">
+    <span class="badge badge-high">Élevé</span>
+    <div>
+      <div class="issue-title">Logique métier 100% client-side (conflits & stocks)</div>
+      <div class="issue-desc">lib/conflicts.ts et lib/stock.ts s'exécutent dans le navigateur. Contournable via la console. Migration vers PostgreSQL Functions (RPC) indispensable pour garantir l'atomicité.</div>
+    </div>
+  </div>
+  <div class="issue-row">
+    <span class="badge badge-high">Élevé</span>
+    <div>
+      <div class="issue-title">Anti-pattern "meta:" dans required_skills</div>
+      <div class="issue-desc">Violation de la 1NF : métadonnées hétérogènes (dates, URLs, rapports) sérialisées dans un tableau de strings. Rend le filtrage SQL impossible et expose à des crashs si une chaîne est corrompue.</div>
+    </div>
+  </div>
+  <div class="issue-row">
+    <span class="badge badge-med">Moyen</span>
+    <div>
+      <div class="issue-title">Absence de validation Zod sur les entrées</div>
+      <div class="issue-desc">Aucune validation de schéma côté serveur n'est mentionnée. Zod doit couvrir tous les points d'entrée de données.</div>
+    </div>
+  </div>
+</div>
+
+<div id="code" class="panel section">
+  <h2 class="sec">Dette technique & qualité du code</h2>
+  <div class="issue-row">
+    <span class="badge badge-crit">Critique</span>
+    <div>
+      <div class="issue-title">Store Zustand monolithique — 1 800 lignes</div>
+      <div class="issue-desc">store/index.ts mélange état, logique métier et DAL. Risque élevé d'effets de bord. Refactoriser avec le pattern <code>createSlice</code> ou <code>combine</code>.</div>
+    </div>
+  </div>
+  <div class="issue-row">
+    <span class="badge badge-high">Élevé</span>
+    <div>
+      <div class="issue-title">Composants surdimensionnés</div>
+      <div class="issue-desc">DrawerTabs.tsx (~1 200 lignes), MissionModal.tsx (~600 lignes), Settings.tsx (~700 lignes avec stats codées en dur). Découpage en composants atomiques urgent.</div>
+    </div>
+  </div>
+  <div class="issue-row">
+    <span class="badge badge-high">Élevé</span>
+    <div>
+      <div class="issue-title">Sous-composants déclarés à l'intérieur du parent</div>
+      <div class="issue-desc">Dans DrawerTabs.tsx : les composants d'onglets sont re-instanciés à chaque re-render parent. Anti-pattern React critique sur mobile. Déplacer en dehors du composant parent.</div>
+    </div>
+  </div>
+  <div class="issue-row">
+    <span class="badge badge-med">Moyen</span>
+    <div>
+      <div class="issue-title">Duplications de logique</div>
+      <div class="issue-desc"><code>renderPhotoSection</code> dupliqué entre onglets. <code>formatDuration</code> présent dans deux fichiers distincts. Extraire en hooks ou utilitaires partagés.</div>
+    </div>
+  </div>
+  <div class="issue-row">
+    <span class="badge badge-crit">Critique</span>
+    <div>
+      <div class="issue-title">Zéro test automatisé</div>
+      <div class="issue-desc">"Fear-driven development" : chaque modification du schéma est à haut risque. Mettre en place Vitest (unitaires) + Playwright (E2E) sur les flux critiques immédiatement.</div>
+    </div>
+  </div>
+  <div class="issue-row">
+    <span class="badge badge-med">Moyen</span>
+    <div>
+      <div class="issue-title">Statistiques codées en dur dans Settings.tsx</div>
+      <div class="issue-desc">Nuit à la crédibilité du système en production. Ces valeurs doivent être calculées dynamiquement depuis la base de données.</div>
+    </div>
+  </div>
+</div>
+
+<div id="perf" class="panel section">
+  <h2 class="sec">Analyse des performances</h2>
+  <div class="issue-row">
+    <span class="badge badge-crit">Critique</span>
+    <div>
+      <div class="issue-title">fetchMissions() sans pagination — seuil de rupture à 500 missions</div>
+      <div class="issue-desc">Récupère l'intégralité des données. Saturera la bande passante mobile dès 500 missions actives. Implémenter la pagination + filtrage par plage de dates côté serveur immédiatement.</div>
+    </div>
+  </div>
+  <div class="issue-row">
+    <span class="badge badge-high">Élevé</span>
+    <div>
+      <div class="issue-title">Absence de React.memo et mémoïsation</div>
+      <div class="issue-desc">Re-renders en cascade sur les listes mobile. Ajouter React.memo, useMemo et useCallback sur les composants coûteux.</div>
+    </div>
+  </div>
+  <div class="issue-row">
+    <span class="badge badge-high">Élevé</span>
+    <div>
+      <div class="issue-title">Fuite potentielle de listeners Realtime</div>
+      <div class="issue-desc">Lors des hot-reloads, les abonnements PostgreSQL ne sont pas nettoyés. Implémenter un cleanup rigoureux dans les useEffect.</div>
+    </div>
+  </div>
+  <div class="issue-row">
+    <span class="badge badge-med">Moyen</span>
+    <div>
+      <div class="issue-title">Debounce 400ms sur les changements PostgreSQL</div>
+      <div class="issue-desc">Perceptible sous forte activité. Évaluer la réduction à 100-150ms ou un mécanisme d'invalidation ciblée.</div>
+    </div>
+  </div>
+  <div class="issue-row">
+    <span class="badge badge-med">Moyen</span>
+    <div>
+      <div class="issue-title">localStorage multi-onglets — risque de collision</div>
+      <div class="issue-desc">Les clés <code>eventflow_checklist_${"{userId}"}_{"{missionId}"}</code> peuvent se désynchroniser en multi-onglets. Envisager IndexedDB avec BroadcastChannel ou Supabase Realtime pour le mode offline.</div>
+    </div>
+  </div>
+</div>
+
+<div id="roadmap" class="panel section">
+  <h2 class="sec">Plan d'action priorisé</h2>
+
+  <div class="phase-block phase-p0">
+    <div class="phase-title" style="color:#A32D2D">Phase 0 — Sécurité critique (sprint 1-2, ~2 semaines)</div>
+    <div class="phase-item">Supprimer le fallback user_metadata — résolution des rôles via table profiles uniquement</div>
+    <div class="phase-item">Passer les buckets signatures & mission-photos en privé + URLs signées</div>
+    <div class="phase-item">Réécrire les politiques RLS avec filtrage par user_id</div>
+    <div class="phase-item">Ajouter validation Zod sur tous les points d'entrée</div>
+  </div>
+
+  <div class="phase-block phase-p0">
+    <div class="phase-title" style="color:#A32D2D">Phase 0 — Migration données (sprint 1-2, ~2 semaines)</div>
+    <div class="phase-item">Migrer les métadonnées meta: vers des colonnes SQL typées (delivery_date, pickup_date, setup_time…)</div>
+    <div class="phase-item">Déplacer lib/conflicts.ts et lib/stock.ts vers des PostgreSQL Functions (RPC)</div>
+    <div class="phase-item">Implémenter la pagination + filtrage serveur dans fetchMissions()</div>
+  </div>
+
+  <div class="phase-block phase-p1">
+    <div class="phase-title" style="color:#BA7517">Phase 1 — Refactorisation & fiabilité (sprint 3-5, ~4 semaines)</div>
+    <div class="phase-item">Découper le store Zustand monolithique en slices fonctionnels</div>
+    <div class="phase-item">Extraire les composants atomiques (PhotoGrid, DurationDisplay, etc.)</div>
+    <div class="phase-item">Déplacer les sous-composants DrawerTabs hors du composant parent</div>
+    <div class="phase-item">Supprimer les statistiques codées en dur dans Settings.tsx</div>
+    <div class="phase-item">Mettre en place Vitest (unitaires) + Playwright (E2E) sur flux critiques</div>
+    <div class="phase-item">Migrer JWT vers cookies HttpOnly + SameSite=Strict</div>
+  </div>
+
+  <div class="phase-block phase-p2">
+    <div class="phase-title" style="color:#185FA5">Phase 2 — Observabilité & DevOps (sprint 6-7, ~3 semaines)</div>
+    <div class="phase-item">Déployer Sentry pour le monitoring d'erreurs</div>
+    <div class="phase-item">Mettre en place une pipeline CI/CD avec vérification des types et tests</div>
+    <div class="phase-item">Ajouter React.memo et mémoïsation sur les composants coûteux</div>
+    <div class="phase-item">Nettoyer les listeners Realtime dans les useEffect</div>
+  </div>
+
+  <div class="phase-block phase-p3">
+    <div class="phase-title" style="color:#0F6E56">Phase 3 — Scalabilité (sprint 8+)</div>
+    <div class="phase-item">Implémenter le lazy loading des routes et composants lourds</div>
+    <div class="phase-item">Évaluer une stratégie de cache (React Query / SWR) pour remplacer Zustand + fetch manuels</div>
+    <div class="phase-item">Documenter l'architecture pour l'onboarding des nouveaux développeurs</div>
+    <div class="phase-item">Audit d'accessibilité complet (WCAG 2.1 AA)</div>
+  </div>
+</div>
+
+<div id="scalability" class="panel section">
+  <h2 class="sec">Capacité de charge estimée</h2>
+
+  <div class="meter-row">
+    <span class="meter-label">100 utilisateurs</span>
+    <div class="meter-bar"><div class="meter-fill" style="width:90%;background:#639922"></div></div>
+    <span class="meter-val score-ok">✓</span>
+  </div>
+  <div class="meter-row">
+    <span class="meter-label">1 000 utilisateurs</span>
+    <div class="meter-bar"><div class="meter-fill" style="width:65%;background:#BA7517"></div></div>
+    <span class="meter-val score-warn">⚠</span>
+  </div>
+  <div class="meter-row">
+    <span class="meter-label">10 000 utilisateurs</span>
+    <div class="meter-bar"><div class="meter-fill" style="width:25%;background:#E24B4A"></div></div>
+    <span class="meter-val score-crit">✗</span>
+  </div>
+  <div class="meter-row">
+    <span class="meter-label">100 000 utilisateurs</span>
+    <div class="meter-bar"><div class="meter-fill" style="width:8%;background:#A32D2D"></div></div>
+    <span class="meter-val score-crit">✗</span>
+  </div>
+
+  <div style="margin-top:1.5rem">
+    <div class="issue-row">
+      <span class="badge badge-ok" style="background:var(--color-background-success);color:var(--color-text-success)">100</span>
+      <div>
+        <div class="issue-title">Supporté sans friction</div>
+        <div class="issue-desc">Supabase Free/Pro tier couvre cette charge. L'UX dual-portal est fonctionnelle. Quelques lenteurs sur mobile si le volume de missions dépasse 200.</div>
+      </div>
+    </div>
+    <div class="issue-row">
+      <span class="badge badge-high">1 000</span>
+      <div>
+        <div class="issue-title">Supporté avec dégradations</div>
+        <div class="issue-desc">fetchMissions() sans pagination devient problématique. Les listeners Realtime commencent à fuir. Requiert la Phase 0 complète avant d'atteindre ce seuil.</div>
+      </div>
+    </div>
+    <div class="issue-row">
+      <span class="badge badge-crit">10 000</span>
+      <div>
+        <div class="issue-title">Mur architectural — refonte requise</div>
+        <div class="issue-desc">Le store monolithique et l'absence de pagination provoqueront des timeouts. Les politiques RLS permissives créeront des goulots d'étranglement PostgreSQL. Toutes les phases doivent être complètes.</div>
+      </div>
+    </div>
+    <div class="issue-row">
+      <span class="badge badge-crit">100 000</span>
+      <div>
+        <div class="issue-title">Non atteignable sans refonte infrastructure</div>
+        <div class="issue-desc">Nécessite une architecture multi-région, du connection pooling (PgBouncer), CDN pour les assets, séparation lecture/écriture et monitoring avancé. Hors scope MVP.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>

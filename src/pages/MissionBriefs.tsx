@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../store';
 import { FileText, Printer, Search, Calendar as CalendarIcon, MapPin, Truck as TruckIcon, Users, Package, ArrowLeft, Clock, CheckCircle2, Circle, AlertCircle, Timer, Camera, Image as ImageIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import TechnicianHoursAdmin from '../components/TechnicianHoursAdmin';
+import { supabase } from '../lib/supabase';
 
 export default function MissionBriefs() {
   const missions = useStore(state => state.missions);
@@ -16,6 +17,43 @@ export default function MissionBriefs() {
   const [statusFilter, setStatusFilter] = React.useState<'all' | 'Planifi\u00e9e' | 'En cours' | 'Termin\u00e9e'>('all');
   const [selectedMissionId, setSelectedMissionId] = React.useState<string | null>(null);
   const [detailTab, setDetailTab] = React.useState<'fiche' | 'heures'>('fiche');
+
+  const selectedMission = useMemo(() => selectedMissionId ? missions.find(m => m.id === selectedMissionId) : null, [selectedMissionId, missions]);
+  const [signatureUrlSigned, setSignatureUrlSigned] = useState<string | null>(null);
+  useEffect(() => {
+    if (selectedMission?.signatureUrl) {
+      supabase.storage
+        .from('signatures')
+        .createSignedUrl(selectedMission.signatureUrl, 60 * 60 * 24 * 365)
+        .then(({ data }) => {
+          setSignatureUrlSigned(data?.signedUrl ?? null);
+        })
+        .catch(() => setSignatureUrlSigned(null));
+    } else {
+      setSignatureUrlSigned(null);
+    }
+  }, [selectedMission?.signatureUrl]);
+
+  const [signedPhotoUrls, setSignedPhotoUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchSignedUrls = async () => {
+      const newSignedUrls: Record<string, string> = {};
+      for (const photo of selectedMission?.photos || []) {
+        if (photo.filePath) {
+          // Avoid duplicates
+          if (!newSignedUrls[photo.filePath]) {
+            const signedUrl = await createSignedUrl('mission-photos', photo.filePath);
+            if (signedUrl) {
+              newSignedUrls[photo.filePath] = signedUrl;
+            }
+          }
+        }
+      }
+      setSignedPhotoUrls(newSignedUrls);
+    };
+    fetchSignedUrls();
+  }, [selectedMission?.photos]);
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -338,9 +376,9 @@ export default function MissionBriefs() {
                             .filter((p: any) => p.type === 'before')
                             .map((photo: any) => (
                               <div key={photo.id} className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 aspect-square">
-                                <img 
-                                  src={photo.url} 
-                                  alt="Photo avant"
+                                <img \n
+                                  src={signedPhotoUrls[photo.filePath] || ''} \n
+                                  alt="Photo avant"\n
                                   className="w-full h-full object-cover print:max-h-40"
                                 />
                               </div>
@@ -362,7 +400,7 @@ export default function MissionBriefs() {
                             .map((photo: any) => (
                               <div key={photo.id} className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 aspect-square">
                                 <img 
-                                  src={photo.url} 
+                                  src={signedPhotoUrls[photo.filePath] || ''} 
                                   alt="Photo après"
                                   className="w-full h-full object-cover print:max-h-40"
                                 />
@@ -380,14 +418,14 @@ export default function MissionBriefs() {
                     Signature Client / Référent
                   </h2>
                   <div className="h-32 border-2 border-dashed border-gray-300 rounded-lg p-4 relative flex items-center justify-center bg-white">
-                    {selectedMission.signatureUrl && (
+                    {signatureUrlSigned && (
                       <img 
-                        src={selectedMission.signatureUrl} 
+                        src={signatureUrlSigned} 
                         alt="Signature Client" 
                         className="max-h-full max-w-full object-contain"
                       />
                     )}
-                    {!selectedMission.signatureUrl && (
+                    {!signatureUrlSigned && (
                       <span className="text-sm text-gray-400 italic">Aucune signature enregistrée</span>
                     )}
                   </div>

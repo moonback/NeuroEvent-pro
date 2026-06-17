@@ -56,6 +56,29 @@ export default function MissionDetail() {
     [id, missions]
   );
 
+  const [signatureUrlSigned, setSignatureUrlSigned] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (mission?.signatureUrl) {
+      supabase.storage
+        .from('signatures')
+        .createSignedUrl(mission.signatureUrl, 60 * 60 * 24 * 365) // 1 year
+        .then(({ data }) => {
+          setSignatureUrlSigned(data?.signedUrl ?? null);
+        })
+        .catch(() => setSignatureUrlSigned(null));
+    } else {
+      setSignatureUrlSigned(null);
+    }
+  }, [mission?.signatureUrl]);
+
+  const extractFilePathFromPublicUrl = (publicUrl: string): string | null => {
+    // Example: https://xxx.supabase.co/storage/v1/object/public/mission-photos/abc/def.jpg
+    // We want to get: mission-photos/abc/def.jpg
+    const match = publicUrl.match(/^https:\/\/[^/]+\.supabase\.co\/storage\/v1\/object\/public\/[^/]+\/(.+)$/);
+    return match ? match[1] : null;
+  };
+
   useEffect(() => {
     if (mission && !Array.isArray(mission.photos)) {
       fetchMissionPhotos(mission.id).catch(() => undefined);
@@ -85,9 +108,29 @@ export default function MissionDetail() {
     .filter(Boolean);
   const allPhotos = [
     ...(mission.photos || []),
-    ...(mission.photoBeforeUrl ? [{ id: 'legacy-before', missionId: mission.id, type: 'before', url: mission.photoBeforeUrl, filePath: '', uploadedBy: null, createdAt: new Date() }] : []),
-    ...(mission.photoAfterUrl ? [{ id: 'legacy-after', missionId: mission.id, type: 'after', url: mission.photoAfterUrl, filePath: '', uploadedBy: null, createdAt: new Date() }] : []),
+    ...(mission.photoBeforeUrl ? [{ id: 'legacy-before', missionId: mission.id, type: 'before', url: mission.photoBeforeUrl, filePath: extractFilePathFromPublicUrl(mission.photoBeforeUrl), uploadedBy: null, createdAt: new Date() }] : []),
+    ...(mission.photoAfterUrl ? [{ id: 'legacy-after', missionId: mission.id, type: 'after', url: mission.photoAfterUrl, filePath: extractFilePathFromPublicUrl(mission.photoAfterUrl), uploadedBy: null, createdAt: new Date() }] : []),
   ];
+  const [signedPhotoUrls, setSignedPhotoUrls] = useState<Record<string, string>>({});
+  useEffect(() => {
+   const fetchSignedUrls = async () => {
+     const newSignedUrls: Record<string, string> = {};
+     for (const photo of allPhotos) {
+       if (photo.filePath) {
+         // Avoid duplicates: if we already processed this filePath, skip
+         if (!newSignedUrls[photo.filePath]) {
+           const signedUrl = await createSignedUrl('mission-photos', photo.filePath);
+           if (signedUrl) {
+             newSignedUrls[photo.filePath] = signedUrl;
+           }
+         }
+       }
+     }
+     setSignedPhotoUrls(newSignedUrls);
+   };
+   fetchSignedUrls();
+  }, [allPhotos]);
+
   const beforePhotos = allPhotos.filter((photo) => photo.type === 'before');
   const afterPhotos = allPhotos.filter((photo) => photo.type === 'after');
 
@@ -287,11 +330,11 @@ export default function MissionDetail() {
                         <button
                           key={photo.id}
                           type="button"
-                          onClick={() => openLightbox(beforePhotos.map(p => p.url), idx)}
+                          onClick={() => openLightbox(beforePhotos.map(p => signedPhotoUrls[p.filePath] || ''), idx)}
                           className="group overflow-hidden rounded-3xl border border-[#e2e8f0] bg-[#f8fafc] text-left"
                         >
                           <div className="relative">
-                            <img src={photo.url} alt="Photo avant" className="h-40 w-full object-cover transition-transform group-hover:scale-[1.03]" />
+                            <img src={signedPhotoUrls[photo.filePath] || ''} alt="Photo avant" className="h-40 w-full object-cover transition-transform group-hover:scale-[1.03]" />
                             <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
                               <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
                             </span>
@@ -309,11 +352,11 @@ export default function MissionDetail() {
                         <button
                           key={photo.id}
                           type="button"
-                          onClick={() => openLightbox(afterPhotos.map(p => p.url), idx)}
+                          onClick={() => openLightbox(afterPhotos.map(p => signedPhotoUrls[p.filePath] || ''), idx)}
                           className="group overflow-hidden rounded-3xl border border-[#e2e8f0] bg-[#f8fafc] text-left"
                         >
                           <div className="relative">
-                            <img src={photo.url} alt="Photo après" className="h-40 w-full object-cover transition-transform group-hover:scale-[1.03]" />
+                            <img src={signedPhotoUrls[photo.filePath] || ''} alt="Photo après" className="h-40 w-full object-cover transition-transform group-hover:scale-[1.03]" />
                             <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
                               <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
                             </span>
@@ -335,8 +378,8 @@ export default function MissionDetail() {
                 <h3 className="text-lg font-bold">Signature</h3>
               </div>
               <div className="mt-4 min-h-[10rem] rounded-3xl border border-dashed border-[#e2e8f0] bg-[#f8fafc] p-6 flex items-center justify-center">
-                {mission.signatureUrl ? (
-                  <img src={mission.signatureUrl} alt="Signature client" className="max-h-64 object-contain" />
+                {signatureUrlSigned ? (
+                  <img src={signatureUrlSigned} alt="Signature client" className="max-h-64 object-contain" />
                 ) : (
                   <p className="text-sm text-[#64748b]">Aucune signature disponible.</p>
                 )}

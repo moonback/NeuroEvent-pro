@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
+import { createSignedUrl } from '../../lib/supabase';
 
 /**
  * Calcule les initiales à partir d'un nom complet.
@@ -10,7 +11,7 @@ import { cn } from '../../lib/utils';
  */
 export function getInitials(name: string | null | undefined): string {
   if (!name) return '?';
-  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const parts = name.trim().split(/\\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
   if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
@@ -47,12 +48,12 @@ export interface UserAvatarProps {
   initialsOnly?: boolean;
   /** Texte alt pour l'image (par défaut: "Photo de {name}") */
   alt?: string;
-  /** Objet d'événements à forwarder au wrapper (pour overlays, position absolute…) */
+  /** Objet d'événements à forwarder au wrapper (pour overlays, position absolue…) */
   onClick?: React.MouseEventHandler<HTMLDivElement>;
   /** ARIA */
   role?: string;
   'aria-label'?: string;
-}
+};
 
 const VARIANT_GRADIENTS: Record<NonNullable<UserAvatarProps['variant']>, string> = {
   emerald: 'linear-gradient(135deg, rgba(0,229,160,0.22) 0%, rgba(77,159,255,0.22) 100%)',
@@ -101,7 +102,20 @@ export function UserAvatar({
   role,
   ...aria
 }: UserAvatarProps) {
-  const showImage = !initialsOnly && src && src.length > 0;
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (src && typeof src === 'string' && !src.startsWith('http')) {
+      // It's a filePath, generate signed URL for avatars bucket
+      createSignedUrl('avatars', src).then((signedUrl) => {
+        setAvatarSrc(signedUrl ?? src); // fallback to src if signedUrl is null
+      });
+    } else {
+      setAvatarSrc(src);
+    }
+  }, [src]);
+
+  const showImage = !initialsOnly && avatarSrc && avatarSrc.length > 0;
   const initials = getInitials(name);
   const altText = alt ?? (name ? `Photo de ${name}` : 'Avatar utilisateur');
 
@@ -125,7 +139,7 @@ export function UserAvatar({
     >
       {showImage ? (
         <img
-          src={src}
+          src={avatarSrc}
           alt={altText}
           loading="lazy"
           decoding="async"
