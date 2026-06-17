@@ -128,7 +128,7 @@ interface AppState {
   fetchEquipment: () => Promise<void>;
   fetchClients: () => Promise<void>;
   fetchUnavailabilities: () => Promise<void>;
-  fetchMissions: () => Promise<void>;
+  fetchMissions: (options?: { limit?: number; offset?: number; startDate?: Date; endDate?: Date }) => Promise<void>;
 
   addMission: (mission: Omit<Mission, 'id'>) => Promise<void>;
   updateMission: (id: string, mission: Partial<Mission>) => Promise<void>;
@@ -358,13 +358,27 @@ export const useStore = create<AppState>()(
         set({ unavailabilities: data.map(mapUnavailability) });
       },
 
-      fetchMissions: async () => {
+      fetchMissions: async (options = {}) => {
+        const { limit = 0, offset = 0, startDate, endDate } = options;
         // mission_equipments(*) : tolère l'absence de la colonne `checked`
         // tant que la migration SQL n'a pas été appliquée.
-        const { data, error } = await supabase
+        let query = supabase
           .from('missions')
-          .select('*, mission_technicians(technician_id), mission_equipments(*)')
-          .returns<MissionRowWithRelations[]>();
+          .select('*, mission_technicians(technician_id), mission_equipments(*)');
+
+        if (startDate) {
+          query = query.gte('start_date', startDate.toISOString());
+        }
+        if (endDate) {
+          query = query.lte('end_date', endDate.toISOString());
+        }
+        // Apply pagination only when limit > 0 (0 means no limit)
+        if (limit > 0) {
+          query = query.range(offset, offset + limit - 1);
+        }
+        query = query.returns<MissionRowWithRelations[]>();
+
+        const { data, error } = await query;
 
         if (reportError('Chargement des missions', error) || !data) return;
         set({ missions: data.map(mapMission) });
@@ -678,7 +692,7 @@ export const useStore = create<AppState>()(
 
   importEquipment: async (items) => {
     const payload = items.map(item => {
-      const obj: any = {
+      const obj: { name: string; category: string; total_quantity: number; id?: string } = {
         name: item.name,
         category: item.category,
         total_quantity: item.totalQuantity

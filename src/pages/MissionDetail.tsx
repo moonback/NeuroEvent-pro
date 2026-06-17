@@ -26,6 +26,7 @@ import {
 import { UserAvatar } from '../components/ui/UserAvatar';
 import ImageLightbox from '../components/ui/ImageLightbox';
 import MissionModal from '../components/MissionModal';
+import ConfirmModal from '../components/ui/ConfirmModal';
 
 const getStatusConfig = (status: string) => {
   switch (status) {
@@ -47,6 +48,7 @@ export default function MissionDetail() {
   const deleteMission = useStore(state => state.deleteMission);
   const [editOpen, setEditOpen] = useState(false);
   const [lightbox, setLightbox] = useState<{ open: boolean; urls: string[]; index: number }>({ open: false, urls: [], index: 0 });
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const navigate = useNavigate();
 
   const mission = useMemo(
@@ -90,10 +92,7 @@ export default function MissionDetail() {
   const afterPhotos = allPhotos.filter((photo) => photo.type === 'after');
 
   const handleDelete = async () => {
-    if (window.confirm(`Supprimer la mission « ${mission.title} » ? Cette action est définitive.`)) {
-      await deleteMission(mission.id);
-      navigate('/missions');
-    }
+    setConfirmDeleteOpen(true);
   };
 
   const openLightbox = (urls: string[], index: number) =>
@@ -411,6 +410,20 @@ export default function MissionDetail() {
           }
         />
       )}
+
+      <ConfirmModal
+        isOpen={confirmDeleteOpen}
+        title="Supprimer la mission ?"
+        message={`Supprimer la mission « ${mission.title} » ?\nCette action est définitive.`}
+        confirmLabel="Supprimer"
+        variant="danger"
+        onConfirm={async () => {
+          setConfirmDeleteOpen(false);
+          await deleteMission(mission.id);
+          navigate('/missions');
+        }}
+        onCancel={() => setConfirmDeleteOpen(false)}
+      />
     </div>
   );
 }

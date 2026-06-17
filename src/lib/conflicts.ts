@@ -5,6 +5,8 @@ export interface MissionDraft {
   id?: string | null;
   start: Date;
   end: Date;
+  deliveryDate?: Date | null;
+  pickupDate?: Date | null;
   technicianIds: string[];
   truckId?: string;
   requiredSkills?: string[];
@@ -34,13 +36,17 @@ export function getDraftConflicts(
 ): string[] {
   const messages: string[] = [];
   if (isNaN(draft.start.getTime()) || isNaN(draft.end.getTime())) return messages;
-  if (draft.end <= draft.start) {
+  // Use delivery/pickup as primary window, fallback to start/end
+  const effectiveStart = draft.deliveryDate ?? draft.start;
+  const effectiveEnd = draft.pickupDate ?? draft.end;
+  if (isNaN(effectiveStart.getTime()) || isNaN(effectiveEnd.getTime())) return messages;
+  if (effectiveEnd <= effectiveStart) {
     messages.push('La date de fin doit être postérieure à la date de début.');
     return messages;
   }
 
   const overlapping = missions.filter(
-    m => m.id !== draft.id && rangesOverlap(draft.start, draft.end, m.start, m.end)
+    m => m.id !== draft.id && rangesOverlap(effectiveStart, effectiveEnd, m.start, m.end)
   );
 
   for (const m of overlapping) {
@@ -59,7 +65,7 @@ export function getDraftConflicts(
 
   // Check unavailabilities
   const overlappingUnavailabilities = unavailabilities.filter(
-    u => rangesOverlap(draft.start, draft.end, u.start, u.end)
+    u => rangesOverlap(effectiveStart, effectiveEnd, u.start, u.end)
   );
 
   for (const techId of draft.technicianIds) {
@@ -87,7 +93,7 @@ export function getDraftConflicts(
   // Stock — délègue au module dédié (filtre P0-3 sur les missions actives).
   messages.push(
     ...checkStockShortages(
-      { id: draft.id, start: draft.start, end: draft.end, equipments: draft.equipments },
+      { id: draft.id, start: effectiveStart, end: effectiveEnd, equipments: draft.equipments },
       missions,
       equipment
     )
@@ -116,6 +122,8 @@ export function getGlobalConflicts(
         id: m.id,
         start: m.start,
         end: m.end,
+        deliveryDate: m.deliveryDate,
+        pickupDate: m.pickupDate,
         technicianIds: m.technicianIds,
         truckId: m.truckId,
         equipments: m.equipments,

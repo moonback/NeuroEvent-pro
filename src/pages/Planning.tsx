@@ -3,7 +3,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { AlertTriangle, Maximize2, Minimize2 } from 'lucide-react';
+import { AlertTriangle, Maximize2, Minimize2, EyeOff, Eye } from 'lucide-react';
 import { useStore } from '../store';
 import MissionModal from '../components/MissionModal';
 import { getGlobalConflicts } from '../lib/conflicts';
@@ -23,6 +23,7 @@ export default function Planning() {
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [initialDates, setInitialDates] = useState<{start: Date, end: Date} | null>(null);
   const [conflictsExpanded, setConflictsExpanded] = useState(false);
+  const [conflictsSectionVisible, setConflictsSectionVisible] = useState(false);
   const { ref: fsRef, isFullscreen, toggle: toggleFullscreen } = useFullscreen();
 
   const conflicts = useMemo(
@@ -77,20 +78,35 @@ export default function Planning() {
       <div className="mb-4 flex items-start justify-between gap-2">
         <div className="flex flex-col gap-1">
           <h2 className="text-lg sm:text-xl font-bold text-[#0f172a] uppercase tracking-tight">Calendrier Global</h2>
+          {conflicts.length > 0 && !conflictsSectionVisible && (
+            <span className="ml-1 inline-flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500 text-xs text-white" title={`${conflicts.length} conflit${conflicts.length > 1 ? 's' : ''} détecté`}>
+              {conflicts.length}
+            </span>
+          )}
           <p className="text-xs text-[#64748b] font-medium">Visualisation et gestion des missions événementielles</p>
         </div>
-        <button
-          onClick={toggleFullscreen}
-          title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
-          className="shrink-0 p-2 rounded-md text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9] border border-[#e2e8f0] transition-colors"
-          aria-label={isFullscreen ? 'Quitter le plein écran' : 'Passer en plein écran'}
-        >
-          {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleFullscreen}
+            title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+            className="shrink-0 p-2 rounded-md text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9] border border-[#e2e8f0] transition-colors"
+            aria-label={isFullscreen ? 'Quitter le plein écran' : 'Passer en plein écran'}
+          >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={() => setConflictsSectionVisible(!conflictsSectionVisible)}
+            title={conflictsSectionVisible ? 'Cacher les conflits' : 'Montrer les conflits'}
+            className="shrink-0 p-2 rounded-md text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9] border border-[#e2e8f0] transition-colors"
+            aria-label={conflictsSectionVisible ? 'Cacher les conflits' : 'Montrer les conflits'}
+          >
+            {conflictsSectionVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
       </div>
 
-      {conflicts.length > 0 && (
-        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 print:hidden" role="alert">
+      {conflictsSectionVisible && conflicts.length > 0 && (
+        <div className="mb-2 bg-amber-50 border border-amber-200 rounded-lg p-2 print:hidden" role="alert">
           <div className="flex items-center gap-2 text-amber-800 font-bold text-sm">
             <AlertTriangle className="w-4 h-4 shrink-0" />
             {conflicts.length} conflit{conflicts.length > 1 ? 's' : ''} détecté{conflicts.length > 1 ? 's' : ''} dans le planning

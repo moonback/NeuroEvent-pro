@@ -14,30 +14,11 @@ import {
   BarChart2,
   AlertCircle,
 } from 'lucide-react';
+import { formatDuration, minutesToDisplay, totalMinutesFor } from '../lib/time';
 
 interface TechnicianHoursAdminProps {
   /** If provided, filter logs for a specific mission */
   missionId?: string;
-}
-
-function formatDuration(startTime: Date, endTime: Date | null): string {
-  const end = endTime || new Date();
-  const diffMs = Math.max(0, end.getTime() - startTime.getTime());
-  const totalMinutes = Math.floor(diffMs / 60000);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return `${hours}h${String(minutes).padStart(2, '0')}`;
-}
-
-function totalMinutesFor(logs: { startTime: Date; endTime: Date | null }[]) {
-  return logs.reduce((acc, l) => {
-    const end = l.endTime || new Date();
-    return acc + Math.max(0, Math.floor((end.getTime() - l.startTime.getTime()) / 60000));
-  }, 0);
-}
-
-function minutesToDisplay(mins: number) {
-  return `${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}`;
 }
 
 export default function TechnicianHoursAdmin({ missionId }: TechnicianHoursAdminProps) {
