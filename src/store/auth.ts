@@ -70,6 +70,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   role: null,
   loading: true,
+  profile: null,
 
   initialize: () => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
