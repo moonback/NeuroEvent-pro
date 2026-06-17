@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/auth';
+import { useAuthStore, AuthStore } from '../store/auth';
 import { useStore } from '../store';
 import { supabase } from '../lib/supabase';
 import {
@@ -204,8 +204,7 @@ function ProfileRow({
 }
 
 export default function Settings() {
-  const user = useAuthStore((s) => s.user);
-  const role = useAuthStore((s) => s.role);
+  const { user, role, profile, updateProfile } = useAuthStore((s: AuthStore) => ({ user: s.user, role: s.role, profile: s.profile, updateProfile: s.updateProfile }));
   const technicians = useStore((s) => s.technicians);
   const missions = useStore((s) => s.missions);
   const updateTechnician = useStore((s) => s.updateTechnician);
@@ -216,11 +215,9 @@ export default function Settings() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const [firstName, setFirstName] = useState(user?.user_metadata?.first_name || '');
-  const [lastName, setLastName]   = useState(user?.user_metadata?.last_name || '');
-  const [phone, setPhone]         = useState(user?.user_metadata?.phone || '');
-
-  const [avatarUrl, setAvatarUrl]           = useState<string | null>(null);
+  const [firstName, setFirstName] = useState(profile?.firstName || '');
+  const [lastName, setLastName]   = useState(profile?.lastName || '');
+  const [phone, setPhone]         = useState(profile?.phone || '');
   const [avatarUploading, setAvatarUploading] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -272,7 +269,6 @@ export default function Settings() {
 
       if (!cancelled) {
         if (profile?.phone) setPhone(profile.phone);
-        if (profile?.avatar_url !== undefined) setAvatarUrl(profile.avatar_url);
       }
 
       // 2) Charger les préférences (1:1 sur user_id)
@@ -304,29 +300,30 @@ export default function Settings() {
     setLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
-    const { error } = await supabase.auth.updateUser({
+    const { error: authError } = await supabase.auth.updateUser({
       data: { first_name: firstName, last_name: lastName },
     });
-    if (error) {
-      setErrorMsg(error.message);
-    } else {
-      setSuccessMsg('Profil mis à jour avec succès.');
-      if (user?.id) {
-        const profileUpdate: { first_name: string; last_name: string; phone?: string | null } = {
-          first_name: firstName,
-          last_name: lastName,
-        };
-        if (phone !== (user?.user_metadata?.phone ?? '')) {
-          profileUpdate.phone = phone || null;
-        }
-        await supabase.from('profiles').update(profileUpdate).eq('id', user.id);
-        if (role === 'Technicien') {
-          await supabase.from('technicians').update({
-            first_name: firstName,
-            last_name: lastName,
-          }).eq('id', user.id);
+    if (authError) {
+      setErrorMsg(authError.message);
+      setLoading(false);
+      return;
+    }
+    if (user?.id) {
+      // Update profiles table via auth store
+      await updateProfile({ firstName, lastName, phone: phone !== (profile?.phone ?? '') ? phone : undefined });
+      // If the user is a technician, also update the technicians table
+      if (role === 'Technicien') {
+        const { error: techError } = await supabase
+          .from('technicians')
+          .update({ first_name: firstName, last_name: lastName })
+          .eq('id', user.id);
+        if (techError) {
+          setErrorMsg(techError.message);
+          setLoading(false);
+          return;
         }
       }
+      setSuccessMsg('Profil mis à jour avec succès.');
     }
     setLoading(false);
   };
@@ -408,30 +405,30 @@ export default function Settings() {
 
     setAvatarUploading(true);
     try {
-      const oldPath = pathFromPublicUrl(avatarUrl);
+      const oldPath = pathFromPublicUrl(profile?.avatarUrl ?? null);
       const { url } = await uploadAvatar(user.id, file, oldPath);
       await persistAvatarUrl(user.id, url);
-      setAvatarUrl(url);
+      await updateProfile({ avatarUrl: url });
       toast.success('Photo de profil mise à jour.');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Échec de l\'upload.');
+      toast.error(err instanceof Error ? err.message : "Échec de l'upload.");
     } finally {
       setAvatarUploading(false);
     }
   };
 
   const handleRemoveAvatar = async () => {
-    if (!user?.id || !avatarUrl) return;
+    if (!user?.id || !(profile?.avatarUrl ?? null)) return;
     setConfirmDeleteAvatarOpen(true);
   };
 
   const confirmRemoveAvatar = async () => {
-    if (!user?.id || !avatarUrl) return;
+    if (!user?.id || !(profile?.avatarUrl ?? null)) return;
     setConfirmDeleteAvatarOpen(false);
     setAvatarUploading(true);
     try {
-      await removeAvatar(user.id, avatarUrl);
-      setAvatarUrl(null);
+      await removeAvatar(user.id, profile?.avatarUrl ?? null);
+      await updateProfile({ avatarUrl: null });
       toast.success('Photo de profil supprimée.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Échec de la suppression.');
@@ -440,7 +437,7 @@ export default function Settings() {
     }
   };
 
-  const handleSignOut = async () => { await useAuthStore.getState().signOut(); };
+  const handleSignOut = async () => { await useAuthStore((s: AuthStore) => s.signOut)(); };
 
   const initials = `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || '?';
   const fullName = `${firstName} ${lastName}`.trim() || user?.email || '—';
@@ -551,9 +548,9 @@ export default function Settings() {
                         color: 'var(--tech-accent)',
                       }}
                     >
-                      {avatarUrl ? (
+                      {profile?.avatarUrl ? (
                         <img
-                          src={avatarUrl}
+                          src={profile?.avatarUrl}
                           alt={`Photo de ${fullName}`}
                           className="absolute inset-0 w-full h-full object-cover"
                         />
@@ -575,7 +572,7 @@ export default function Settings() {
                     >
                       <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
-                    {avatarUrl && !avatarUploading && (
+                    {profile?.avatarUrl && !avatarUploading && (
                       <button
                         type="button"
                         onClick={handleRemoveAvatar}

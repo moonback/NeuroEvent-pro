@@ -45,27 +45,11 @@ const toolsNavigation: NavItem[] = [
 export function Layout() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [myAvatarUrl, setMyAvatarUrl] = useState<string | null>(null);
-  const user = useAuthStore(state => state.user);
-  const role = useAuthStore(state => state.role);
-  const fullName = user?.user_metadata?.first_name
-    ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`
+  const { user, role, profile } = useAuthStore(state => ({ user: state.user, role: state.role, profile: state.profile }));
+  const fullName = profile?.firstName
+    ? `${profile.firstName} ${profile.lastName || ''}`
     : (user?.email || 'Utilisateur');
-
-  // Charge l'avatar de l'admin connecté depuis la table `profiles` (RLS: sa propre ligne)
-  useEffect(() => {
-    if (!user?.id) { setMyAvatarUrl(null); return; }
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('avatar_url')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (!cancelled) setMyAvatarUrl(data?.avatar_url ?? null);
-    })();
-    return () => { cancelled = true; };
-  }, [user?.id]);
+  const myAvatarUrl = profile?.avatarUrl ?? null;
 
   const signOut = useAuthStore(state => state.signOut);
 

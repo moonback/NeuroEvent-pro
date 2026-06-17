@@ -59,8 +59,8 @@ export default function TechnicianDashboard() {
 
   const currentTech = tech.technicians.find((t) => t.id === tech.user?.id);
   const userName = currentTech
-    ? currentTech.firstName
-    : tech.user?.user_metadata?.first_name || '';
+    ? `${currentTech.firstName} ${currentTech.lastName || ''}`
+    : tech.user?.email || '';
 
   const todayMissions = React.useMemo(
     () =>
