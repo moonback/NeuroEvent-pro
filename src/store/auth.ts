@@ -19,6 +19,15 @@ export interface AuthState {
   initialize: () => void;
   signOut: () => Promise<void>;
 }
+export interface AuthSlice extends Pick<AuthState, 'user' | 'role' | 'profile'> {
+  updateProfile: (updates: {
+    firstName?: string | null;
+    lastName?: string | null;
+    phone?: string | null;
+    avatarUrl?: string | null;
+  }) => Promise<void>;
+}
+
 export interface AuthStore extends AuthState {
   initialize: () => void;
   signOut: () => Promise<void>;

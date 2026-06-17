@@ -204,7 +204,13 @@ function ProfileRow({
 }
 
 export default function Settings() {
-  const { user, role, profile, updateProfile } = useAuthStore((s: AuthStore) => ({ user: s.user, role: s.role, profile: s.profile, updateProfile: s.updateProfile }));
+  const { user, role, profile, updateProfile, signOut } = useAuthStore(s => ({
+    user: s.user,
+    role: s.role,
+    profile: s.profile,
+    updateProfile: s.updateProfile,
+    signOut: s.signOut
+  }));
   const technicians = useStore((s) => s.technicians);
   const missions = useStore((s) => s.missions);
   const updateTechnician = useStore((s) => s.updateTechnician);
@@ -437,7 +443,7 @@ export default function Settings() {
     }
   };
 
-  const handleSignOut = async () => { await useAuthStore((s: AuthStore) => s.signOut)(); };
+  const handleSignOut = async () => { await signOut(); };
 
   const initials = `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || '?';
   const fullName = `${firstName} ${lastName}`.trim() || user?.email || '—';
