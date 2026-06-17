@@ -678,7 +678,7 @@ export const useStore = create<AppState>()(
 
   importEquipment: async (items) => {
     const payload = items.map(item => {
-      const obj: any = {
+      const obj: { name: string; category: string; total_quantity: number; id?: string } = {
         name: item.name,
         category: item.category,
         total_quantity: item.totalQuantity

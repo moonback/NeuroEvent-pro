@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '../store';
-import { MissionType, MissionStatus } from '../types';
+import { MissionType, MissionStatus, Technician, MissionPhoto } from '../types';
 import {
   X, AlertTriangle, Calendar, Users, Plus, Trash2, MapPin, Check,
   Camera, FileText, Image, ArrowLeft, ArrowRight
@@ -31,7 +31,7 @@ const typeColors: Record<MissionType, string> = {
 };
 
 interface RenderTechCardProps {
-  tech: any;
+  tech: Technician;
   isChecked: boolean;
   toggleTech: (id: string) => void;
   triggerVibrate: () => void;
@@ -204,11 +204,11 @@ interface TabResourcesProps {
   readonly updateEquipmentSelection: (index: number, id: string, qty: number) => void;
   readonly removeEquipmentSelection: (index: number) => void;
   readonly categorizedTechs: {
-    recommended: any[];
-    available: any[];
-    unavailable: any[];
+    recommended: Technician[];
+    available: Technician[];
+    unavailable: Technician[];
   };
-  readonly technicians: any[];
+  readonly technicians: Technician[];
   readonly selectedTechs: string[];
   readonly toggleTech: (id: string) => void;
   readonly triggerVibrate: () => void;
@@ -313,7 +313,7 @@ const TabResources = ({
 
 interface TabReportProps {
   readonly existingMission: {
-    photos?: any[];
+    photos?: MissionPhoto[];
     photoBeforeUrl?: string | null;
     photoAfterUrl?: string | null;
     report?: string | null;
@@ -339,8 +339,8 @@ const TabReport = ({ existingMission, setAdminLightbox }: TabReportProps) => {
     );
   }
 
-  const renderGrid = (photos: any[], legacyUrl: string | null | undefined, label: string, accent: string) => {
-    const items = [...photos.map((p: any) => p.url), ...(legacyUrl && !photos.length ? [legacyUrl] : [])];
+  const renderGrid = (photos: MissionPhoto[], legacyUrl: string | null | undefined, label: string, accent: string) => {
+    const items = [...photos.map((p) => p.url), ...(legacyUrl && !photos.length ? [legacyUrl] : [])];
     if (!items.length) return null;
     return (
       <div className="space-y-2">
