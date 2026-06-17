@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
+import { toast } from '../store/toast';
 import { Technician } from '../types';
 import Modal from './ui/Modal';
 import ConfirmModal from './ui/ConfirmModal';
 import { Award, Car, Shield, CalendarDays, Plus, Trash2, User } from 'lucide-react';
 import { SKILL_CATALOG } from '../lib/constants';
 import { UnavailabilityType, TechnicianUnavailability } from '../types';
+import { technicianSchema, type TechnicianFormValues } from '../lib/validations';
 
 
 
@@ -42,6 +44,8 @@ export default function TechnicianModal({ isOpen, onClose, technician = null }: 
   const [unavailReason, setUnavailReason] = useState('');
 
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof TechnicianFormValues, string>>>({});
 
   const techUnavailabilities = technician 
     ? unavailabilities.filter(u => u.technicianId === technician.id).sort((a, b) => b.start.getTime() - a.start.getTime())
@@ -51,6 +55,27 @@ export default function TechnicianModal({ isOpen, onClose, technician = null }: 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const result = technicianSchema.safeParse({
+      firstName,
+      lastName,
+      specialty,
+      color,
+      checklistEnabled,
+      unavailStart,
+      unavailEnd,
+      unavailReason,
+    });
+    if (!result.success) {
+      const fieldErrs: Partial<Record<keyof TechnicianFormValues, string>> = {};
+      for (const issue of result.error.issues) {
+        const key = issue.path[0] as keyof TechnicianFormValues;
+        fieldErrs[key] = issue.message;
+      }
+      setFormErrors(fieldErrs);
+      toast.error('Corrigez les erreurs du formulaire.');
+      return;
+    }
+    setFormErrors({});
     if (technician) {
       updateTechnician(technician.id, { firstName, lastName, specialty, color, checklistEnabled });
     } else {
@@ -62,11 +87,16 @@ export default function TechnicianModal({ isOpen, onClose, technician = null }: 
   const handleDelete = () => setConfirmDelete(true);
 
   const confirmDeleteAction = () => {
-    if (technician) {
-      deleteTechnician(technician.id);
-      onClose();
+    if (!technician) return;
+    const trimmed = deleteReason.trim();
+    if (!trimmed) {
+      toast.error('Veuillez indiquer la raison de la suppression.');
+      return;
     }
+    deleteTechnician(technician.id);
     setConfirmDelete(false);
+    setDeleteReason('');
+    onClose();
   };
 
   const handleAddUnavailability = () => {

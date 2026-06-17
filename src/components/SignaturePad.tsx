@@ -17,9 +17,7 @@ export default function SignaturePad({ missionId, onSave, onClose }: SignaturePa
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
 
   const clear = () => {
-    if (sigCanvas.current) {
-      sigCanvas.current.clear();
-    }
+    sigCanvas.current?.clear();
   };
 
   /** Demande confirmation si la signature n'est pas vide, sinon ferme directement. */
@@ -49,17 +47,11 @@ export default function SignaturePad({ missionId, onSave, onClose }: SignaturePa
 
     setIsUploading(true);
     try {
-      // Get base64 Data URL (PNG) from the full canvas to avoid getTrimmedCanvas ESM bug
       const dataUrl = sigCanvas.current.getCanvas().toDataURL('image/png');
-      
-      // Convert base64 to Blob
       const res = await fetch(dataUrl);
       const blob = await res.blob();
-      
-      // Generate a unique filename
       const fileName = `signature_${missionId}_${Date.now()}.png`;
-      
-      // Upload to Supabase Storage
+
       const { data, error } = await supabase.storage
         .from('signatures')
         .upload(fileName, blob, {
@@ -70,7 +62,6 @@ export default function SignaturePad({ missionId, onSave, onClose }: SignaturePa
 
       if (error) throw error;
 
-      // Get public URL
       const { data: publicUrlData } = supabase.storage
         .from('signatures')
         .getPublicUrl(data.path);

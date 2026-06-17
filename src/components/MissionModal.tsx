@@ -12,6 +12,7 @@ import { toast } from '../store/toast';
 import { getDraftConflicts, rangesOverlap } from '../lib/conflicts';
 import { SKILL_CATALOG } from '../lib/constants';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import { missionSchema } from '../lib/validations';
 
 interface MissionModalProps {
   isOpen: boolean;
@@ -411,6 +412,7 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
   const [confirmConflictOpen, setConfirmConflictOpen] = useState(false);
   // Données en attente de confirmation lors d'un conflit
   const [pendingMissionData, setPendingMissionData] = useState<Parameters<typeof addMission>[0] | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   React.useEffect(() => {
     if (isOpen && missionId) {
       fetchMissionPhotos(missionId).catch(console.error);
@@ -515,6 +517,29 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
       pickupDate: pickup,
       setupDuration: setup,
     };
+
+    const missionResult = missionSchema.safeParse({
+      title,
+      client,
+      type,
+      address,
+      startDate,
+      endDate,
+      status,
+      deliveryDate,
+      pickupDate,
+      setupDuration,
+    });
+    if (!missionResult.success) {
+      const errs: Record<string, string> = {};
+      for (const issue of missionResult.error.issues) {
+        errs[String(issue.path[0] ?? '')] = issue.message;
+      }
+      setFieldErrors(errs);
+      toast.error('Corrigez les erreurs du formulaire.');
+      return;
+    }
+    setFieldErrors({});
 
     if (conflicts.length > 0) {
       // Stocker les données et ouvrir la modale de confirmation de conflit

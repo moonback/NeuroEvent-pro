@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
+import { toast } from '../store/toast';
 import { Client } from '../types';
 import Modal from './ui/Modal';
 import ConfirmModal from './ui/ConfirmModal';
+import { clientSchema, type ClientFormValues } from '../lib/validations';
 
 interface Props {
   isOpen: boolean;
@@ -26,12 +28,25 @@ export default function ClientModal({ isOpen, onClose, client = null }: Props) {
   const [address, setAddress] = useState(client?.address || '');
   const [notes, setNotes] = useState(client?.notes || '');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const data = { name, contactName, email, phone, address, notes };
+    const result = clientSchema.safeParse(data);
+    if (!result.success) {
+      const fieldErrs: Record<string, string> = {};
+      for (const issue of result.error.issues) {
+        const key = issue.path[0] as string;
+        fieldErrs[key] = issue.message;
+      }
+      setFormErrors(fieldErrs);
+      toast.error('Corrigez les erreurs du formulaire.');
+      return;
+    }
+    setFormErrors({});
     if (client) {
       updateClient(client.id, data);
     } else {
@@ -75,28 +90,34 @@ export default function ClientModal({ isOpen, onClose, client = null }: Props) {
           <div>
             <label htmlFor="client-name" className={labelClass}>Nom de l'entreprise / organisation</label>
             <input id="client-name" required type="text" value={name} onChange={e => setName(e.target.value)} placeholder="ex: Acme Corp" className={inputClass} />
+            {formErrors.name && <span className="text-red-500 text-xs">{formErrors.name}</span>}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="client-contact" className={labelClass}>Personne de contact</label>
               <input id="client-contact" type="text" value={contactName} onChange={e => setContactName(e.target.value)} placeholder="ex: Marie Dupont" className={inputClass} />
+              {formErrors.contactName && <span className="text-red-500 text-xs">{formErrors.contactName}</span>}
             </div>
             <div>
               <label htmlFor="client-phone" className={labelClass}>Téléphone</label>
               <input id="client-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="ex: 06 12 34 56 78" className={inputClass} />
+              {formErrors.phone && <span className="text-red-500 text-xs">{formErrors.phone}</span>}
             </div>
           </div>
           <div>
             <label htmlFor="client-email" className={labelClass}>Email</label>
             <input id="client-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="ex: contact@acme.fr" className={inputClass} />
+            {formErrors.email && <span className="text-red-500 text-xs">{formErrors.email}</span>}
           </div>
           <div>
             <label htmlFor="client-address" className={labelClass}>Adresse</label>
             <input id="client-address" type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder="ex: 12 rue des Fêtes, 75019 Paris" className={inputClass} />
+            {formErrors.address && <span className="text-red-500 text-xs">{formErrors.address}</span>}
           </div>
           <div>
             <label htmlFor="client-notes" className={labelClass}>Notes internes</label>
             <textarea id="client-notes" rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Accès, contraintes, historique..." className={inputClass} />
+            {formErrors.notes && <span className="text-red-500 text-xs">{formErrors.notes}</span>}
           </div>
         </form>
       </Modal>
