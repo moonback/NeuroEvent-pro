@@ -518,7 +518,7 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
       setupDuration: setup,
     };
 
-    const missionResult = missionSchema.safeParse({
+    const zodInput = {
       title,
       client,
       type,
@@ -529,16 +529,27 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
       deliveryDate,
       pickupDate,
       setupDuration,
-    });
+    };
+    console.group('[MissionModal] Validation Zod');
+    console.log('Entrée safeParse :', zodInput);
+
+    const missionResult = missionSchema.safeParse(zodInput);
+
     if (!missionResult.success) {
       const errs: Record<string, string> = {};
       for (const issue of missionResult.error.issues) {
         errs[String(issue.path[0] ?? '')] = issue.message;
+        console.warn(`  ❌ champ "${issue.path.join('.')}" — code: ${issue.code} — message: ${issue.message}`);
       }
+      console.log('fieldErrors :', errs);
+      console.groupEnd();
       setFieldErrors(errs);
       toast.error('Corrigez les erreurs du formulaire.');
       return;
     }
+
+    console.log('  ✅ Validation réussie :', missionResult.data);
+    console.groupEnd();
     setFieldErrors({});
 
     if (conflicts.length > 0) {

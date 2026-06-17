@@ -24,8 +24,8 @@ export const missionSchema = z.object({
   startDate: z.string().min(1, 'Date de début requise'),
   endDate: z.string().min(1, 'Date de fin requise'),
   status: z.enum(['Planifiée', 'En cours', 'Terminée']),
-  deliveryDate: z.string().datetime().optional().or(z.literal('').transform(() => undefined)),
-  pickupDate: z.string().datetime().optional().or(z.literal('').transform(() => undefined)),
+  deliveryDate: z.string().optional().or(z.literal('').transform(() => undefined)),
+  pickupDate: z.string().optional().or(z.literal('').transform(() => undefined)),
   setupDuration: z.coerce.number().int().min(0, 'Durée >= 0').optional(),
 });
 
