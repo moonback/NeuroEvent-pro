@@ -244,6 +244,7 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
         />
         <div className="p-4 grid grid-cols-2 gap-3">
           <button
+            type="button"
             onClick={() => {
               triggerVibrate('click');
               if (mission.status === 'Planifiée') {
@@ -265,6 +266,7 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
           </button>
 
           <button
+            type="button"
             onClick={() => { triggerVibrate('click'); setDrawerTab('report'); }}
             className="flex flex-col items-center justify-center gap-2 rounded-2xl py-3 text-xs font-black uppercase tracking-wider transition-all active:scale-[0.97]"
             style={{
@@ -304,6 +306,7 @@ function GeneralTab({ mission, getTruckName, getEquipmentProgress, setDrawerTab,
       {/* ── Equipment shortcut ── */}
       {mission.equipments?.length > 0 && (
         <button
+          type="button"
           onClick={() => { triggerVibrate('click'); setDrawerTab('equipment'); }}
           className="w-full flex items-center gap-4 p-4 rounded-2xl transition-all active:scale-[0.97] text-left"
           style={{

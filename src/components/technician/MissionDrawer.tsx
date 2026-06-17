@@ -82,7 +82,6 @@ export default function MissionDrawer(props: MissionDrawerProps) {
   );
 
   const selectedClient: Client | null = props.getClientInfo(mission.clientId) ?? null;
-  const isLocked = mission.status === 'En cours';
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
@@ -92,13 +91,9 @@ export default function MissionDrawer(props: MissionDrawerProps) {
           background: 'rgba(0,0,0,0.75)',
           WebkitBackdropFilter: 'blur(6px)',
           backdropFilter: 'blur(6px)',
-          cursor: isLocked ? 'default' : 'pointer',
+          cursor: 'pointer',
         }}
         onClick={() => {
-          if (isLocked) {
-            triggerVibrate('error');
-            return;
-          }
           triggerVibrate('click');
           onClose();
         }}
@@ -117,15 +112,15 @@ export default function MissionDrawer(props: MissionDrawerProps) {
         }}
       >
         <div
-          onTouchStart={isLocked ? undefined : props.handleDragStart}
-          onTouchMove={isLocked ? undefined : props.handleDragMove}
-          onTouchEnd={isLocked ? undefined : props.handleDragEnd}
+          onTouchStart={props.handleDragStart}
+          onTouchMove={props.handleDragMove}
+          onTouchEnd={props.handleDragEnd}
           className="w-full pt-3 pb-2 flex justify-center select-none shrink-0"
-          style={{ cursor: isLocked ? 'default' : 'grab' }}
+          style={{ cursor: 'grab' }}
         >
           <div
             className="w-10 h-1 rounded-full"
-            style={{ background: isLocked ? 'rgba(255,183,0,0.55)' : 'rgba(255,255,255,0.18)' }}
+            style={{ background: 'rgba(255,255,255,0.18)' }}
           />
         </div>
 
@@ -143,32 +138,17 @@ export default function MissionDrawer(props: MissionDrawerProps) {
             style={{ background: 'rgba(0,0,0,0.55)', filter: 'blur(22px)' }}
           />
 
-          {!isLocked && (
-            <button
-              onClick={() => {
-                triggerVibrate('click');
-                onClose();
-              }}
-              className="absolute top-3 right-3 h-9 px-2.5 rounded-full transition-all active:scale-90 z-30 cursor-pointer"
-              style={{ background: 'rgba(0,0,0,0.28)' }}
-              aria-label="Fermer le detail de mission"
-            >
-              <X className="w-4 h-4 text-white" />
-            </button>
-          )}
-
-          {isLocked && (
-            <div
-              className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-2 rounded-full z-30"
-              style={{ background: 'rgba(0,0,0,0.28)', border: '1px solid rgba(255,183,0,0.4)' }}
-              title="Mission en cours — terminez-la pour continuer"
-            >
-              <span className="w-2 h-2 rounded-full" style={{ background: '#ffb700', boxShadow: '0 0 8px #ffb700' }} />
-              <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#ffb700' }}>
-                Verrouillé
-              </span>
-            </div>
-          )}
+          <button
+            onClick={() => {
+              triggerVibrate('click');
+              onClose();
+            }}
+            className="absolute top-3 right-3 h-9 px-2.5 rounded-full transition-all active:scale-90 z-30 cursor-pointer"
+            style={{ background: 'rgba(0,0,0,0.28)' }}
+            aria-label="Fermer le detail de mission"
+          >
+            <X className="w-4 h-4 text-white" />
+          </button>
 
           <div className="relative z-10 text-white p-4">
             <h2 className="text-[17px] font-black leading-tight truncate">{mission.title}</h2>
@@ -229,32 +209,11 @@ export default function MissionDrawer(props: MissionDrawerProps) {
           </div>
         </div>
 
-        {isLocked && (
-          <div
-            className="mx-3 mt-2 px-3 py-2 rounded-xl flex items-center gap-2.5 shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, rgba(255,183,0,0.14) 0%, rgba(255,183,0,0.05) 100%)',
-              border: '1px solid rgba(255,183,0,0.35)',
-            }}
-            role="alert"
-            aria-live="polite"
-          >
-            <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(255,183,0,0.18)', border: '1px solid rgba(255,183,0,0.35)' }}>
-              <Lock className="w-3.5 h-3.5" style={{ color: '#ffb700' }} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#ffb700' }}>Mission en cours</p>
-              <p className="text-[11px] font-semibold leading-snug mt-0.5" style={{ color: 'var(--tech-text-secondary)' }}>
-                Terminez cette mission pour retrouver la navigation.
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* Carte "Terminer ma journée" — dernière mission du jour terminée */}
         {mission.status === 'Terminée' && isLastMissionToday && !isDayEnded && onEndDay && (
           <div className="mx-3 mt-2 shrink-0">
             <button
+              type="button"
               onClick={() => {
                 triggerVibrate('success');
                 onEndDay();
@@ -366,22 +325,20 @@ export default function MissionDrawer(props: MissionDrawerProps) {
               photoUploading={props.photoUploading}
               handlePhotoUpload={props.handlePhotoUpload}
               handlePhotoDelete={props.handlePhotoDelete}
-              isLocked={isLocked}
+              isLocked={false}
             />
           </div>
         </div>
 
         <div className="h-2 shrink-0" style={{ background: 'var(--tech-bg)' }} />
 
-        {mission.status === 'En cours' && (
-          <TechFAB
-            selectedMission={mission}
-            selectedClient={selectedClient}
-            onOpenScanner={props.openScanner}
-            onOpenSignature={onOpenSignature}
-            onTerminateMission={() => onStatusChange(mission, 'Terminée')}
-          />
-        )}
+        <TechFAB
+          selectedMission={mission}
+          selectedClient={selectedClient}
+          onOpenScanner={props.openScanner}
+          onOpenSignature={onOpenSignature}
+          onTerminateMission={mission.status === 'En cours' ? () => onStatusChange(mission, 'Terminée') : undefined}
+        />
       </div>
     </div>
   );

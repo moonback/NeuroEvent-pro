@@ -16,6 +16,7 @@ import TechnicianMyHours from '../components/TechnicianMyHours';
 import TechnicianUnavailabilities from '../components/TechnicianUnavailabilities';
 import Settings from './Settings';
 
+import { useStore } from '../store';
 import { toast } from '../store/toast';
 import { Calendar } from 'lucide-react';
 import { isSameDay } from 'date-fns';
@@ -370,6 +371,20 @@ export default function TechnicianDashboard() {
       )}
 
       {/* Signature Modal indisponible dans ce build : bloc retiré temporairement */}
+
+      {tech.signatureModalOpen && (
+        <SignaturePad
+          missionId={tech.selectedMission!.id}
+          onSave={(url) => {
+            const missionId = tech.selectedMission!.id;
+            tech.setSelectedMission((prev) => (prev ? { ...prev, signatureUrl: url } : prev));
+            useStore.getState().updateMission(missionId, { signatureUrl: url }).catch(console.error);
+            toast.success('Signature enregistrée');
+            tech.setSignatureModalOpen(false);
+          }}
+          onClose={() => tech.setSignatureModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -1,15 +1,21 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
-import { Search, List, Calendar, Users, Truck, Package, FileText, ChevronRight, MapPin } from 'lucide-react';
+import { Search, List, Calendar, Users, Truck, Package, FileText, ChevronRight, MapPin, Wand2, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { toast } from '../store/toast';
+import { MissionType, MissionStatus, MissionEquipment } from '../types';
 
 export default function MissionList() {
   const missions = useStore((state) => state.missions);
   const trucks = useStore((state) => state.trucks);
+  const technicians = useStore((state) => state.technicians);
+  const addMission = useStore((state) => state.addMission);
+  const fetchMissions = useStore((state) => state.fetchMissions);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Planifiée' | 'En cours' | 'Terminée'>('all');
+  const [generating, setGenerating] = useState(false);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -39,16 +45,154 @@ export default function MissionList() {
     }
   };
 
+  const buildJune2026Missions = () => {
+    const year = 2026;
+    const month = 5; // June (0-based)
+    const startDay = 17;
+    const eventsPerDay = 3;
+    const totalEvents = 10;
+
+    const clients = ['Paris Event', 'Lyon Show', 'Studio Lumière', 'Agence Rise', 'Dj Marno', 'BJ Festival', 'Star Prod', 'Chez Léo', 'Night Vibe', 'Le Hangar'];
+    const streets = [
+      '12 Rue de la République', '8 Av. Jean Jaurès', '45 Bd Victor Hugo', '2 Rue de la Paix',
+      '15 Rue des Fêtes', '33 Av. de Clichy', '6 Rue Oberkampf', '19 Rue de Bretagne'
+    ];
+    const cities = ['Lyon', 'Paris', 'Marseille', 'Bordeaux', 'Strasbourg', 'Nantes', 'Toulouse', 'Lille'];
+    const prefixes = ['Montage', 'Montage', 'Montage', 'Montage', 'Montage', 'Démontage', 'Démontage', 'Livraison', 'Événement complet'];
+    const suffixes = [
+      'sono + scène', 'éclairage + effets', 'showcase', 'soirée privée', 'festival',
+      'production', 'tournée', 'séminaire', 'lancement', 'mariage'
+    ];
+
+    const titles = [
+      'Montage scène et sono', 'Montage structure et autres équipements', 'Démontage complet',
+      'Livraison camion 12T3', 'Événement complet', 'Montage light show', 'Démontage après soirée',
+      'Livraison et récupération de matériel', 'Montage pour cocktail événementiel', 'Prestation complète'
+    ];
+
+    const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+    const pickUniqueIds = <T,>(arr: T[], count: number): T[] => {
+      const shuffled = [...arr].sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, Math.min(count, arr.length));
+    };
+
+    const startHours = [6, 7, 8, 9, 10, 11];
+    const startMinutes = [0, 15, 30];
+    const durations = [4, 5, 6, 7, 8];
+
+    const generated: {
+      title: string;
+      type: 'Montage' | 'Démontage' | 'Livraison' | 'Événement complet';
+      client: string;
+      address: string;
+      start: Date;
+      end: Date;
+      technicianIds: string[];
+      truckId?: string;
+      status: 'Planifiée';
+      color: string;
+    }[] = [];
+
+    let created = 0;
+    let dayOffset = 0;
+
+    while (created < totalEvents) {
+      const remaining = totalEvents - created;
+      const eventsToday = Math.min(eventsPerDay, remaining);
+
+      for (let i = 0; i < eventsToday; i += 1) {
+        const currentDay = startDay + dayOffset;
+        if (currentDay > 30) {
+          return generated.sort((a, b) => a.start.getTime() - b.start.getTime());
+        }
+
+        const startHour = pick(startHours);
+        const startMinute = pick(startMinutes);
+        const durationHours = pick(durations);
+
+        const start = new Date(year, month, currentDay, startHour, startMinute);
+        const end = new Date(year, month, currentDay, startHour + durationHours, startMinute);
+        const type = pick(prefixes) as MissionType;
+        const client = pick(clients);
+        const street = pick(streets);
+
+        generated.push({
+          title: `${pick(titles)} ${pick(suffixes)} #${created + 1}`,
+          type,
+          client,
+          address: `${street}, ${pick(cities)}`,
+          start,
+          end,
+          technicianIds: pickUniqueIds(technicians, 3).map(t => t.id),
+          truckId: trucks.length > 0 ? pick(trucks).id : undefined,
+          status: 'Planifiée',
+          color: '#2563eb'
+        });
+
+        created += 1;
+      }
+
+      dayOffset += 1;
+    }
+
+    return generated.sort((a, b) => a.start.getTime() - b.start.getTime());
+  };
+
+  const handleGenerateMissions = async () => {
+    try {
+      setGenerating(true);
+      const data = buildJune2026Missions();
+
+      await Promise.all(
+        data.map(item =>
+          addMission({
+            title: item.title,
+            type: item.type,
+            client: item.client,
+            address: item.address,
+            start: item.start,
+            end: item.end,
+            technicianIds: item.technicianIds,
+            truckId: item.truckId,
+            status: item.status,
+            color: item.color,
+            requiredSkills: [],
+            equipments: [],
+          })
+        )
+      );
+
+      await fetchMissions();
+      toast.success('10 missions fictives juin 2026 générées.');
+    } catch (error) {
+      console.error(error);
+      toast.error("Impossible de générer les missions d'exemple.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="mb-4 flex flex-col gap-3">
         <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <List className="w-5 h-5 text-[#2563eb]" />
-            <div>
-              <h1 className="text-lg sm:text-xl font-bold text-[#0f172a] uppercase tracking-tight">Liste des missions</h1>
-              <p className="text-[10px] sm:text-xs text-[#64748b]">Affichage en lecture seule sans action directe sur les missions.</p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <List className="w-5 h-5 text-[#2563eb]" />
+              <div>
+                <h1 className="text-lg sm:text-xl font-bold text-[#0f172a] uppercase tracking-tight">Liste des missions</h1>
+                <p className="text-[10px] sm:text-xs text-[#64748b]">Affichage en lecture seule sans action directe sur les missions.</p>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={handleGenerateMissions}
+              disabled={generating}
+              className="inline-flex items-center gap-2 rounded-full bg-[#0f172a] text-white px-3 py-1.5 text-[10px] sm:text-xs font-bold shadow-sm hover:bg-black active:scale-95 transition-all disabled:opacity-60"
+            >
+              {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+              {generating ? 'Génération...' : '10 events juin'}
+            </button>
           </div>
           <div className="flex flex-wrap gap-2">
             {(['all', 'Planifiée', 'En cours', 'Terminée'] as const).map((status) => (

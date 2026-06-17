@@ -13,7 +13,7 @@ interface TechFABProps {
   /** Ouvre le pad de signature. */
   onOpenSignature: () => void;
   /** Déclenche la clôture de la mission (ouvre le TimeModal de fin). */
-  onTerminateMission: () => void;
+  onTerminateMission?: () => void;
 }
 
 interface FabAction {
@@ -79,7 +79,8 @@ export default function TechFAB({
       enabled: isMissionInProgress,
       disabledReason: 'Démarrez la mission pour pouvoir la terminer',
       onTrigger: () => {
-        onTerminateMission();
+        if (!isMissionInProgress) return;
+        onTerminateMission?.();
         setIsOpen(false);
       },
     },
