@@ -65,7 +65,7 @@ async function fetchProfileData(user: User | null): Promise<{
   }
 }
 
-export const useAuthStore = create((set, get) => ({
+export const useAuthStore = create<AuthStore>((set, get) => ({
   session: null,
   user: null,
   role: null,
