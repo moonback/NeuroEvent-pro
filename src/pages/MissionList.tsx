@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
-import { Search, List, Calendar, Users, Truck, Package, FileText, ChevronRight, MapPin, Wand2, Loader2 } from 'lucide-react';
+import { Search, List, Calendar, Users, Truck, Package, FileText, ChevronRight, MapPin, Wand2, Loader2, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from '../store/toast';
@@ -57,7 +57,7 @@ export default function MissionList() {
       '12 Rue de la République', '8 Av. Jean Jaurès', '45 Bd Victor Hugo', '2 Rue de la Paix',
       '15 Rue des Fêtes', '33 Av. de Clichy', '6 Rue Oberkampf', '19 Rue de Bretagne'
     ];
-    const cities = ['Lyon', 'Paris', 'Marseille', 'Bordeaux', 'Strasbourg', 'Nantes', 'Toulouse', 'Lille'];
+    const cities = ['Paris', 'Boulogne-Billancourt', 'Montreuil', 'Saint-Denis', 'Nanterre', 'Ivry-sur-Seine', 'Vitry-sur-Seine', 'Charenton-le-Pont'];
     const prefixes = ['Montage', 'Montage', 'Montage', 'Montage', 'Montage', 'Démontage', 'Démontage', 'Livraison', 'Événement complet'];
     const suffixes = [
       'sono + scène', 'éclairage + effets', 'showcase', 'soirée privée', 'festival',
@@ -69,6 +69,8 @@ export default function MissionList() {
       'Livraison camion 12T3', 'Événement complet', 'Montage light show', 'Démontage après soirée',
       'Livraison et récupération de matériel', 'Montage pour cocktail événementiel', 'Prestation complète'
     ];
+
+    const setupDurations = [60, 90, 120, 150, 180];
 
     const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
     const pickUniqueIds = <T,>(arr: T[], count: number): T[] => {
@@ -91,6 +93,9 @@ export default function MissionList() {
       truckId?: string;
       status: 'Planifiée';
       color: string;
+      deliveryDate?: Date;
+      pickupDate?: Date;
+      setupDuration?: number;
     }[] = [];
 
     let created = 0;
@@ -109,24 +114,31 @@ export default function MissionList() {
         const startHour = pick(startHours);
         const startMinute = pick(startMinutes);
         const durationHours = pick(durations);
+        const setupDurationMinutes = pick(setupDurations);
 
         const start = new Date(year, month, currentDay, startHour, startMinute);
         const end = new Date(year, month, currentDay, startHour + durationHours, startMinute);
         const type = pick(prefixes) as MissionType;
         const client = pick(clients);
         const street = pick(streets);
+        const city = pick(cities);
+        const deliveryDate = new Date(year, month, currentDay, startHour - 2, startMinute);
+        const pickupDate = new Date(year, month, currentDay, startHour + durationHours, startMinute);
 
         generated.push({
           title: `${pick(titles)} ${pick(suffixes)} #${created + 1}`,
           type,
           client,
-          address: `${street}, ${pick(cities)}`,
+          address: `${street}, ${city}`,
           start,
           end,
           technicianIds: pickUniqueIds(technicians, 3).map(t => t.id),
           truckId: trucks.length > 0 ? pick(trucks).id : undefined,
           status: 'Planifiée',
-          color: '#2563eb'
+          color: '#2563eb',
+          deliveryDate,
+          pickupDate,
+          setupDuration: setupDurationMinutes,
         });
 
         created += 1;
@@ -136,7 +148,7 @@ export default function MissionList() {
     }
 
     return generated.sort((a, b) => a.start.getTime() - b.start.getTime());
-  };
+  }
 
   const handleGenerateMissions = async () => {
     try {
@@ -158,6 +170,9 @@ export default function MissionList() {
             color: item.color,
             requiredSkills: [],
             equipments: [],
+            deliveryDate: item.deliveryDate,
+            pickupDate: item.pickupDate,
+            setupDuration: item.setupDuration,
           })
         )
       );
@@ -259,6 +274,24 @@ export default function MissionList() {
                     <Truck className="w-3.5 h-3.5 text-[#64748b] shrink-0" />
                     <span className="truncate">{truck ? truck.name : 'Non attribué'}</span>
                   </div>
+                  {mission.deliveryDate && (
+                    <div className="flex items-center gap-2 text-[11px] text-[#475569]">
+                      <Calendar className="w-3.5 h-3.5 text-[#2563eb] shrink-0" />
+                      <span className="truncate">Livraison : {format(mission.deliveryDate, 'dd/MM/yyyy HH:mm', { locale: fr })}</span>
+                    </div>
+                  )}
+                  {mission.pickupDate && (
+                    <div className="flex items-center gap-2 text-[11px] text-[#475569]">
+                      <Calendar className="w-3.5 h-3.5 text-[#059669] shrink-0" />
+                      <span className="truncate">Reprise : {format(mission.pickupDate, 'dd/MM/yyyy HH:mm', { locale: fr })}</span>
+                    </div>
+                  )}
+                  {mission.setupDuration != null && (
+                    <div className="flex items-center gap-2 text-[11px] text-[#475569]">
+                      <Clock className="w-3.5 h-3.5 text-[#d97706] shrink-0" />
+                      <span className="truncate">Montage : {mission.setupDuration} min</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#f1f5f9]">
@@ -293,13 +326,16 @@ export default function MissionList() {
                 <th className="px-4 py-3 text-left text-[10px] uppercase tracking-wider text-[#64748b]">Techniciens</th>
                 <th className="px-4 py-3 text-left text-[10px] uppercase tracking-wider text-[#64748b]">Camion</th>
                 <th className="px-4 py-3 text-left text-[10px] uppercase tracking-wider text-[#64748b]">Période</th>
+                <th className="px-4 py-3 text-left text-[10px] uppercase tracking-wider text-[#64748b]">Livraison</th>
+                <th className="px-4 py-3 text-left text-[10px] uppercase tracking-wider text-[#64748b]">Reprise</th>
+                <th className="px-4 py-3 text-left text-[10px] uppercase tracking-wider text-[#64748b]">Durée</th>
                 <th className="px-4 py-3 text-left text-[10px] uppercase tracking-wider text-[#64748b]">Détails</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-sm text-[#64748b]">Aucune mission correspondant aux critères.</td>
+                  <td colSpan={10} className="px-4 py-10 text-center text-sm text-[#64748b]">Aucune mission correspondant aux critères.</td>
                 </tr>
               ) : (
                 filtered.map((mission) => {
@@ -318,6 +354,15 @@ export default function MissionList() {
                       <td className="px-4 py-4 align-top text-sm text-[#334155]">{truck ? truck.name : 'Non attribué'}</td>
                       <td className="px-4 py-4 align-top text-sm text-[#334155]">
                         {format(mission.start, 'dd/MM/yyyy HH:mm', { locale: fr })}–{format(mission.end, 'dd/MM/yyyy HH:mm', { locale: fr })}
+                      </td>
+                      <td className="px-4 py-4 align-top text-sm text-[#334155]">
+                        {mission.deliveryDate ? format(mission.deliveryDate, 'dd/MM/yyyy HH:mm', { locale: fr }) : '—'}
+                      </td>
+                      <td className="px-4 py-4 align-top text-sm text-[#334155]">
+                        {mission.pickupDate ? format(mission.pickupDate, 'dd/MM/yyyy HH:mm', { locale: fr }) : '—'}
+                      </td>
+                      <td className="px-4 py-4 align-top text-sm text-[#334155]">
+                        {mission.setupDuration != null ? `${mission.setupDuration} min` : '—'}
                       </td>
                       <td className="px-4 py-4 align-top text-sm text-[#2563eb]">
                         <Link
