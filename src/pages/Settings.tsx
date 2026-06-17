@@ -784,7 +784,7 @@ export default function Settings() {
                       </div>
                       <div className="min-w-0">
                         <div className="text-[10px] font-bold text-[#94a3b8] uppercase">Organisation</div>
-                        <div className="text-sm font-extrabold text-[#0f172a] truncate">EventPlanner Pro</div>
+                        <div className="text-sm font-extrabold text-[#0f172a] truncate">Esil-Event</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
