@@ -72,6 +72,18 @@ export default function CSVImportModal({ isOpen, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Réinitialiser tous les états à la fermeture (évite que les données stales
+  // réapparaissent à la prochaine ouverture)
+  React.useEffect(() => {
+    if (!isOpen) {
+      setDragActive(false);
+      setFile(null);
+      setParsedData([]);
+      setError(null);
+      setLoading(false);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleDrag = (e: React.DragEvent) => {

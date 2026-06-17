@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { Technician } from '../types';
 import Modal from './ui/Modal';
+import ConfirmModal from './ui/ConfirmModal';
 import { Award, Car, Shield, CalendarDays, Plus, Trash2, User } from 'lucide-react';
 import { SKILL_CATALOG } from '../lib/constants';
 import { UnavailabilityType, TechnicianUnavailability } from '../types';
@@ -40,6 +41,8 @@ export default function TechnicianModal({ isOpen, onClose, technician = null }: 
   const [unavailType, setUnavailType] = useState<UnavailabilityType>('Congé');
   const [unavailReason, setUnavailReason] = useState('');
 
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   const techUnavailabilities = technician 
     ? unavailabilities.filter(u => u.technicianId === technician.id).sort((a, b) => b.start.getTime() - a.start.getTime())
     : [];
@@ -56,11 +59,14 @@ export default function TechnicianModal({ isOpen, onClose, technician = null }: 
     onClose();
   };
 
-  const handleDelete = () => {
-    if (technician && window.confirm(`Supprimer ${technician.firstName} ${technician.lastName} ? Ses affectations aux missions seront retirées.`)) {
+  const handleDelete = () => setConfirmDelete(true);
+
+  const confirmDeleteAction = () => {
+    if (technician) {
       deleteTechnician(technician.id);
       onClose();
     }
+    setConfirmDelete(false);
   };
 
   const handleAddUnavailability = () => {
@@ -78,6 +84,7 @@ export default function TechnicianModal({ isOpen, onClose, technician = null }: 
   };
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -288,5 +295,16 @@ export default function TechnicianModal({ isOpen, onClose, technician = null }: 
         )}
       </form>
     </Modal>
+
+    <ConfirmModal
+      isOpen={confirmDelete}
+      title="Supprimer le technicien ?"
+      message={`Supprimer ${technician?.firstName} ${technician?.lastName} ?\nSes affectations aux missions seront retirées.`}
+      confirmLabel="Supprimer"
+      variant="danger"
+      onConfirm={confirmDeleteAction}
+      onCancel={() => setConfirmDelete(false)}
+    />
+    </>
   );
 }

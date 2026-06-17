@@ -17,26 +17,13 @@ import {
 } from 'lucide-react';
 import { toast } from '../store/toast';
 import { TimeLog } from '../types';
+import { formatDuration, formatDatetimeLocal } from '../lib/time';
+import ConfirmModal from './ui/ConfirmModal';
 
 interface TimeLogPanelProps {
   missionId: string;
   missionColor: string;
   missionStatus: string;
-}
-
-function formatDuration(startTime: Date, endTime: Date | null): string {
-  const end = endTime || new Date();
-  const diffMs = end.getTime() - startTime.getTime();
-  if (diffMs <= 0) return '0h00';
-  const totalMinutes = Math.floor(diffMs / 60000);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return `${hours}h${String(minutes).padStart(2, '0')}`;
-}
-
-function formatDatetimeLocal(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 export default function TimeLogPanel({ missionId, missionColor, missionStatus }: TimeLogPanelProps) {
@@ -50,6 +37,7 @@ export default function TimeLogPanel({ missionId, missionColor, missionStatus }:
   const [isAdding, setIsAdding] = React.useState(false);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null);
 
   // Form state
   const [formStart, setFormStart] = React.useState('');
@@ -146,8 +134,7 @@ export default function TimeLogPanel({ missionId, missionColor, missionStatus }:
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Supprimer ce créneau ?')) return;
-    await deleteTimeLog(id);
+    setConfirmDeleteId(id);
   };
 
   // Total hours for this mission
@@ -360,6 +347,19 @@ export default function TimeLogPanel({ missionId, missionColor, missionStatus }:
           Les heures saisies sont synchronisées en temps réel et visibles par l'administrateur.
         </p>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmDeleteId !== null}
+        title="Supprimer ce créneau ?"
+        message="Cette action est définitive."
+        confirmLabel="Supprimer"
+        variant="danger"
+        onConfirm={async () => {
+          if (confirmDeleteId) await deleteTimeLog(confirmDeleteId);
+          setConfirmDeleteId(null);
+        }}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }

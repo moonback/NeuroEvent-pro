@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Modal from './ui/Modal';
+import ConfirmModal from './ui/ConfirmModal';
 import { toast } from '../store/toast';
 import { getDraftConflicts, rangesOverlap } from '../lib/conflicts';
 import { SKILL_CATALOG } from '../lib/constants';
@@ -405,6 +406,11 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
 
   const [activeTab, setActiveTab] = useState<'general' | 'resources' | 'report'>('general');
   const [adminLightbox, setAdminLightbox] = useState<string | null>(null);
+  // États des modales de confirmation (remplacent window.confirm)
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [confirmConflictOpen, setConfirmConflictOpen] = useState(false);
+  // Données en attente de confirmation lors d'un conflit
+  const [pendingMissionData, setPendingMissionData] = useState<Parameters<typeof addMission>[0] | null>(null);
   React.useEffect(() => {
     if (isOpen && missionId) {
       fetchMissionPhotos(missionId).catch(console.error);
@@ -487,10 +493,6 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
       toast.error('La date de fin doit être postérieure à la date de début.');
       return;
     }
-    if (conflicts.length > 0) {
-      const ok = window.confirm(`Conflits détectés :\n\n- ${conflicts.join('\n- ')}\n\nEnregistrer quand même ?`);
-      if (!ok) return;
-    }
     const delivery = deliveryDate ? new Date(deliveryDate) : null;
     const pickup = pickupDate ? new Date(pickupDate) : null;
     const setup = setupDuration ? parseInt(setupDuration, 10) : null;
@@ -514,17 +516,18 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
       setupDuration: setup,
     };
 
+    if (conflicts.length > 0) {
+      // Stocker les données et ouvrir la modale de confirmation de conflit
+      setPendingMissionData(missionData);
+      setConfirmConflictOpen(true);
+      return;
+    }
     if (existingMission) updateMission(existingMission.id, missionData);
     else addMission(missionData);
     onClose();
   };
 
-  const handleDelete = () => {
-    if (existingMission && window.confirm(`Supprimer la mission « ${existingMission.title} » ? Cette action est définitive.`)) {
-      deleteMission(existingMission.id);
-      onClose();
-    }
-  };
+  const handleDelete = () => setConfirmDeleteOpen(true);
 
   const toggleTech = (id: string) => setSelectedTechs((prev) => (prev.includes(id) ? prev.filter((tId) => tId !== id) : [...prev, id]));
   const toggleRequiredSkill = (id: string) => setRequiredSkills((prev) => (prev.includes(id) ? prev.filter((sId) => sId !== id) : [...prev, id]));
@@ -557,6 +560,7 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
   }, [startDate, endDate, technicians, missions, unavailabilities, requiredSkills, missionId]);
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -697,5 +701,43 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
         </div>
       )}
     </Modal>
+
+    {/* Confirmation suppression mission */}
+    <ConfirmModal
+      isOpen={confirmDeleteOpen}
+      title="Supprimer la mission ?"
+      message={`Supprimer la mission « ${existingMission?.title} » ?\nCette action est définitive.`}
+      confirmLabel="Supprimer"
+      variant="danger"
+      onConfirm={() => {
+        if (existingMission) { deleteMission(existingMission.id); onClose(); }
+        setConfirmDeleteOpen(false);
+      }}
+      onCancel={() => setConfirmDeleteOpen(false)}
+    />
+
+    {/* Confirmation enregistrement malgré conflits */}
+    <ConfirmModal
+      isOpen={confirmConflictOpen}
+      title="Conflits planning détectés"
+      message={pendingMissionData ? `Enregistrer quand même ?\n\nConflits :\n${conflicts.map(c => `• ${c}`).join('\n')}` : ''}
+      confirmLabel="Enregistrer quand même"
+      cancelLabel="Corriger"
+      variant="warning"
+      onConfirm={() => {
+        if (pendingMissionData) {
+          if (existingMission) updateMission(existingMission.id, pendingMissionData);
+          else addMission(pendingMissionData);
+          onClose();
+        }
+        setConfirmConflictOpen(false);
+        setPendingMissionData(null);
+      }}
+      onCancel={() => {
+        setConfirmConflictOpen(false);
+        setPendingMissionData(null);
+      }}
+    />
+    </>
   );
 }

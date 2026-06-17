@@ -19,6 +19,7 @@ import {
   pathFromPublicUrl,
 } from '../lib/avatar';
 import { toast } from '../store/toast';
+import ConfirmModal from '../components/ui/ConfirmModal';
 
 const SKILL_CATALOG = [
   { id: 'montage_scene',  label: 'Montage scène',      emoji: '🎭' },
@@ -206,6 +207,7 @@ export default function Settings() {
   const user = useAuthStore((s) => s.user);
   const role = useAuthStore((s) => s.role);
   const technicians = useStore((s) => s.technicians);
+  const missions = useStore((s) => s.missions);
   const updateTechnician = useStore((s) => s.updateTechnician);
   const techProfile = technicians.find((t) => t.id === user?.id);
   const isMobile = useIsMobile();
@@ -241,6 +243,7 @@ export default function Settings() {
   const [licenseModal, setLicenseModal] = useState(false);
   const [securityModal, setSecurityModal] = useState(false);
   const [prefsModal, setPrefsModal] = useState(false);
+  const [confirmDeleteAvatarOpen, setConfirmDeleteAvatarOpen] = useState(false);
 
   const isTechnician = role !== 'Admin';
 
@@ -419,7 +422,12 @@ export default function Settings() {
 
   const handleRemoveAvatar = async () => {
     if (!user?.id || !avatarUrl) return;
-    if (!window.confirm('Supprimer votre photo de profil ?')) return;
+    setConfirmDeleteAvatarOpen(true);
+  };
+
+  const confirmRemoveAvatar = async () => {
+    if (!user?.id || !avatarUrl) return;
+    setConfirmDeleteAvatarOpen(false);
     setAvatarUploading(true);
     try {
       await removeAvatar(user.id, avatarUrl);
@@ -439,11 +447,12 @@ export default function Settings() {
   const roleColor = isTechnician ? '#00e5a0' : '#4d9fff';
   const roleLabel = isTechnician ? 'Technicien' : 'Administrateur';
 
-  // Stats admin (raccourci visuel)
+  // Stats admin calculées dynamiquement depuis le store
+  const activeMissionsCount = missions.filter(m => m.status === 'En cours' || m.status === 'Planifiée').length;
   const adminStats = [
-    { label: 'Missions actives',  value: 12, color: '#2563eb' },
+    { label: 'Missions actives',  value: activeMissionsCount, color: '#2563eb' },
     { label: 'Techniciens',       value: technicians.length, color: '#a78bfa' },
-    { label: 'Alertes en cours',  value: 3, color: '#ff4d6d' },
+    { label: 'Alertes en cours',  value: 0, color: '#ff4d6d' },
   ];
 
   return (
@@ -1271,6 +1280,16 @@ export default function Settings() {
           </div>
         </div>
       </BottomSheet>
+
+      <ConfirmModal
+        isOpen={confirmDeleteAvatarOpen}
+        title="Supprimer la photo de profil ?"
+        message="Votre photo de profil sera supprimée définitivement."
+        confirmLabel="Supprimer"
+        variant="danger"
+        onConfirm={confirmRemoveAvatar}
+        onCancel={() => setConfirmDeleteAvatarOpen(false)}
+      />
     </div>
   );
 }

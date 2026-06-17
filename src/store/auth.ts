@@ -14,11 +14,12 @@ interface AuthState {
 }
 
 /**
- * Le rôle fait autorité depuis la table `profiles`, protégée par RLS et par un
- * trigger anti auto-promotion. `user_metadata` n'est qu'un repli pour les bases
- * non migrées : il est modifiable par l'utilisateur et ne doit jamais suffire
- * (la vraie barrière reste les politiques RLS côté serveur).
- * Principe de moindre privilège : tout rôle inconnu = Technicien.
+ * Le rôle fait UNIQUEMENT autorité depuis la table `profiles`, protégée par RLS.
+ * Le fallback sur `user_metadata` est intentionnellement supprimé : user_metadata
+ * est modifiable par le client et ne constitue pas une source de vérité sécurisée.
+ * Principe de moindre privilège :
+ *   - erreur réseau / profil absent → null (accès bloqué côté UI jusqu'à résolution)
+ *   - rôle inconnu dans profiles → 'Technicien'
  */
 async function resolveRole(user: User | null): Promise<UserRole | null> {
   if (!user) return null;
@@ -28,15 +29,16 @@ async function resolveRole(user: User | null): Promise<UserRole | null> {
       .select('role')
       .eq('id', user.id)
       .single();
-    
+
     if (error) {
-      console.error('Error resolving role:', error);
-      return (user.user_metadata?.role as UserRole) || 'Technicien';
+      // Profil introuvable ou erreur réseau : on refuse de deviner le rôle.
+      console.error('[auth] Impossible de résoudre le rôle depuis profiles :', error.message);
+      return null;
     }
     return (data?.role as UserRole) || 'Technicien';
   } catch (err) {
-    console.error('Error in resolveRole:', err);
-    return (user.user_metadata?.role as UserRole) || 'Technicien';
+    console.error('[auth] Exception dans resolveRole :', err);
+    return null;
   }
 }
 
