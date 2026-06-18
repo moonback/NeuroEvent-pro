@@ -4,7 +4,7 @@ import { FileText, Printer, Search, Calendar as CalendarIcon, MapPin, Truck as T
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import TechnicianHoursAdmin from '../components/TechnicianHoursAdmin';
-import { supabase } from '../lib/supabase';
+import { supabase, createSignedUrl } from '../lib/supabase';
 
 export default function MissionBriefs() {
   const missions = useStore(state => state.missions);
@@ -375,9 +375,9 @@ export default function MissionBriefs() {
                             .filter((p: any) => p.type === 'before')
                             .map((photo: any) => (
                               <div key={photo.id} className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 aspect-square">
-                                <img \n
-                                  src={signedPhotoUrls[photo.filePath] || ''} \n
-                                  alt="Photo avant"\n
+                                <img
+                                  src={signedPhotoUrls[photo.filePath] || ''}
+                                  alt="Photo avant"
                                   className="w-full h-full object-cover print:max-h-40"
                                 />
                               </div>
