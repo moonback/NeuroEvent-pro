@@ -918,7 +918,7 @@ export const useStore = create<AppState>()(
       id: r.id,
       missionId: r.mission_id,
       type: r.type as 'before' | 'after',
-      url: r.url,
+      url: null,
       filePath: r.file_path,
       uploadedBy: r.uploaded_by,
       createdAt: new Date(r.created_at),
@@ -973,13 +973,10 @@ export const useStore = create<AppState>()(
       return null;
     }
 
-    const { data: urlData } = supabase.storage.from('mission-photos').getPublicUrl(storageData.path);
-    const publicUrl = urlData.publicUrl;
-
-    // 3. Insert row in mission_photos table
+    // 3. Insert row in mission_photos table (url will be NULL, we use signed URLs when needed)
     const { data, error } = await supabase
       .from('mission_photos')
-      .insert({ mission_id: missionId, type, url: publicUrl, file_path: filePath, uploaded_by: uploadedBy || null })
+      .insert({ mission_id: missionId, type, url: null, file_path: filePath, uploaded_by: uploadedBy || null })
       .select()
       .single();
 
@@ -989,7 +986,7 @@ export const useStore = create<AppState>()(
       id: data.id,
       missionId: data.mission_id,
       type: data.type as 'before' | 'after',
-      url: data.url,
+      url: null,
       filePath: data.file_path,
       uploadedBy: data.uploaded_by,
       createdAt: new Date(data.created_at),

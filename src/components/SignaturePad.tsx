@@ -62,11 +62,8 @@ export default function SignaturePad({ missionId, onSave, onClose }: SignaturePa
 
       if (error) throw error;
 
-      const { data: publicUrlData } = supabase.storage
-        .from('signatures')
-        .getPublicUrl(data.path);
-
-      onSave(publicUrlData.publicUrl);
+      // Return the file path (not a public URL) for storage in the database
+      onSave(data.path);
     } catch (error) {
       console.error('Erreur lors de l\'enregistrement de la signature', error);
       toast.error('Erreur lors de l\'enregistrement de la signature.');

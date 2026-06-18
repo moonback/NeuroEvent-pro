@@ -13,6 +13,7 @@ import { getDraftConflicts, rangesOverlap } from '../lib/conflicts';
 import { SKILL_CATALOG } from '../lib/constants';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { missionSchema } from '../lib/validations';
+import { createSignedUrl } from '../lib/supabase';
 
 interface MissionModalProps {
   isOpen: boolean;
@@ -378,11 +379,11 @@ const TabReport = ({ existingMission, setAdminLightbox }: TabReportProps) => {
         </div>
       )}
 
-      {existingMission.signatureUrl && (
+      {signatureUrlSigned && (
         <div>
           <label className={labelClass}>Signature du client (Bon de Livraison)</label>
           <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col items-center justify-center gap-2">
-            <img src={existingMission.signatureUrl} alt="Signature" className="max-h-[150px] object-contain" />
+            <img src={signatureUrlSigned} alt="Signature" className="max-h-[150px] object-contain" />
             <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1"><Check className="w-3 h-3" /> Signé</span>
           </div>
         </div>
@@ -402,9 +403,88 @@ export default function MissionModal({ isOpen, onClose, missionId, initialDates 
   const deleteMission = useStore((state) => state.deleteMission);
   const unavailabilities = useStore((state) => state.unavailabilities);
   const fetchMissionPhotos = useStore((state) => state.fetchMissionPhotos);
+  const existingMission = useMemo(() => missions.find(m => m.id === missionId), [missions, missionId]);
+  const [signatureUrlSigned, setSignatureUrlSigned] = useState<string | null>(null);
+  const [photoBeforeUrlSigned, setPhotoBeforeUrlSigned] = useState<string | null>(null);
+  const [photoAfterUrlSigned, setPhotoAfterUrlSigned] = useState<string | null>(null);
+  const [signedPhotoUrls, setSignedPhotoUrls] = useState<Record<string, string>>({});
 
-  const existingMission = missionId ? missions.find((m) => m.id === missionId) : null;
+  const extractFilePathFromPublicUrl = (publicUrl: string): string | null => {
+    // Example: https://xxx.supabase.co/storage/v1/object/public/mission-photos/abc/def.jpg
+    // We want to get: mission-photos/abc/def.jpg
+    const match = publicUrl.match(/^https:\/\/[^/]+\.supabase\.co\/storage\/v1\/object\/public\/[^/]+\/(.+)$/);
+    return match ? match[1] : null;
+  };
 
+  useEffect(() => {
+    const fetchSignatureUrl = async () => {
+      if (existingMission?.signatureUrl) {
+        const filePath = extractFilePathFromPublicUrl(existingMission.signatureUrl);
+        if (filePath) {
+          const signedUrl = await createSignedUrl('signatures', filePath);
+          setSignatureUrlSigned(signedUrl ?? null);
+        } else {
+          setSignatureUrlSigned(null);
+        }
+      } else {
+        setSignatureUrlSigned(null);
+      }
+    };
+    fetchSignatureUrl();
+  }, [existingMission?.signatureUrl]);
+
+  useEffect(() => {
+    const fetchPhotoBeforeUrl = async () => {
+      if (existingMission?.photoBeforeUrl) {
+        const filePath = extractFilePathFromPublicUrl(existingMission.photoBeforeUrl);
+        if (filePath) {
+          const signedUrl = await createSignedUrl('mission-photos', filePath);
+          setPhotoBeforeUrlSigned(signedUrl ?? null);
+        } else {
+          setPhotoBeforeUrlSigned(null);
+        }
+      } else {
+        setPhotoBeforeUrlSigned(null);
+      }
+    };
+    fetchPhotoBeforeUrl();
+  }, [existingMission?.photoBeforeUrl]);
+
+  useEffect(() => {
+    const fetchPhotoAfterUrl = async () => {
+      if (existingMission?.photoAfterUrl) {
+        const filePath = extractFilePathFromPublicUrl(existingMission.photoAfterUrl);
+        if (filePath) {
+          const signedUrl = await createSignedUrl('mission-photos', filePath);
+          setPhotoAfterUrlSigned(signedUrl ?? null);
+        } else {
+          setPhotoAfterUrlSigned(null);
+        }
+      } else {
+        setPhotoAfterUrlSigned(null);
+      }
+    };
+    fetchPhotoAfterUrl();
+  }, [existingMission?.photoAfterUrl]);
+
+  useEffect(() => {
+    const fetchSignedPhotoUrls = async () => {
+      const newSignedUrls: Record<string, string> = {};
+      for (const photo of existingMission?.photos || []) {
+        if (photo.filePath) {
+          // Avoid duplicates
+          if (!newSignedUrls[photo.filePath]) {
+            const signedUrl = await createSignedUrl('mission-photos', photo.filePath);
+            if (signedUrl) {
+              newSignedUrls[photo.filePath] = signedUrl;
+            }
+          }
+        }
+      }
+      setSignedPhotoUrls(newSignedUrls);
+    };
+    fetchSignedPhotoUrls();
+  }, [existingMission?.photos]);
   const [activeTab, setActiveTab] = useState<'general' | 'resources' | 'report'>('general');
   const [adminLightbox, setAdminLightbox] = useState<string | null>(null);
   // États des modales de confirmation (remplacent window.confirm)

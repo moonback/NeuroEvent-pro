@@ -83,7 +83,7 @@ export interface MissionPhoto {
   id: string;
   missionId: string;
   type: 'before' | 'after';
-  url: string;
+  url?: string | null;
   filePath: string;
   uploadedBy?: string | null;
   createdAt: Date;
